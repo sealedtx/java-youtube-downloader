@@ -24,6 +24,10 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.github.kiulian.downloader.model.*;
+import com.github.kiulian.downloader.model.formats.AudioFormat;
+import com.github.kiulian.downloader.model.formats.AudioVideoFormat;
+import com.github.kiulian.downloader.model.formats.Format;
+import com.github.kiulian.downloader.model.formats.VideoFormat;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -45,42 +49,27 @@ public class YoutubeDownloader {
         void onError(Throwable throwable);
     }
 
-    private static final String DETAILS = "\\\"videoDetails\\\":";
-    private static final String ANNOTATIONS = ",\\\"annotations\\\"";
-    private static final String FORMATS = "\\\"formats\\\"";
+    private static final String CONFIG_START = "ytplayer.config = ";
+    private static final String CONFIG_END = ";ytplayer.load";
+
 
     public static YoutubeVideo getVideo(String videoId) throws YoutubeException, IOException {
         String page = loadPage("https://www.youtube.com/watch?v=" + videoId);
 
         VideoDetails videoDetails = new VideoDetails(videoId);
 
-        int detailsIndex = page.indexOf(DETAILS);
-        if (detailsIndex != -1) {
-            int detailsIndexEnd = page.indexOf(ANNOTATIONS, detailsIndex);
-            if (detailsIndexEnd != -1) {
-                String details = page.substring(detailsIndex + DETAILS.length(), detailsIndexEnd)
-                        .replaceAll("\\\\{1,2}\"", "\"");
+        int start = page.indexOf(CONFIG_START);
+        int end = page.indexOf(CONFIG_END);
 
-                videoDetails.setDetails(JSON.parseObject(details));
-            }
-        }
-
-
-        int beginIndex = page.indexOf(FORMATS);
-        if (beginIndex == -1) {
-            if (page.contains("\"status\":\"ERROR\""))
-                throw new YoutubeException.VideoUnavailableException("Video unavailable");
-            else
-                throw new YoutubeException.BadPageException("Could not parse web page");
-        }
-        int endIndex = page.indexOf("}]}", beginIndex) + 3;
-        String config = "{" + page.substring(beginIndex, endIndex)
-                .replaceAll("\\\\{1,2}\"", "\"")
-                .replace("\u0026", "&");
+        String cfg = page.substring(start + CONFIG_START.length(), end);
 
         JSONObject object;
         try {
-            object = JSON.parseObject(config);
+            JSONObject config = JSON.parseObject(cfg);
+            JSONObject player_response = JSON.parseObject(config.getJSONObject("args").getString("player_response"));
+            object = player_response.getJSONObject("streamingData");
+            if (player_response.containsKey("videoDetails"))
+                videoDetails.setDetails(player_response.getJSONObject("videoDetails"));
         } catch (Exception e) {
             throw new YoutubeException.BadPageException("Could not parse web page");
         }

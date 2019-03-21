@@ -1,4 +1,4 @@
-package com.github.kiulian.downloader.model;
+package com.github.kiulian.downloader.model.formats;
 
 /*-
  * #
@@ -22,33 +22,15 @@ package com.github.kiulian.downloader.model;
 
 import com.alibaba.fastjson.JSONObject;
 
-public class AudioVideoFormat extends Format {
+public class AudioFormat extends Format {
 
-    private String qualityLabel;
-    private int width;
-    private int height;
     private String audioQuality;
     private int audioSampleRate;
 
-    public AudioVideoFormat(JSONObject json) throws NullPointerException {
+    public AudioFormat(JSONObject json) throws NullPointerException {
         super(json);
-        qualityLabel = json.getString("qualityLabel");
-        width = json.getInteger("width");
-        height = json.getInteger("height");
         audioQuality = json.getString("audioQuality");
         audioSampleRate = json.getInteger("audioSampleRate");
-    }
-
-    public String qualityLabel() {
-        return qualityLabel;
-    }
-
-    public int width() {
-        return width;
-    }
-
-    public int height() {
-        return height;
     }
 
     public String audioQuality() {

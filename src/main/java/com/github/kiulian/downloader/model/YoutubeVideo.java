@@ -22,6 +22,7 @@ package com.github.kiulian.downloader.model;
 
 import com.github.kiulian.downloader.Constants;
 import com.github.kiulian.downloader.YoutubeDownloader;
+import com.github.kiulian.downloader.model.formats.Format;
 
 import java.io.*;
 import java.net.URL;
