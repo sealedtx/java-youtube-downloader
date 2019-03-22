@@ -21,28 +21,38 @@ package com.github.kiulian.downloader.model.formats;
  */
 
 import com.alibaba.fastjson.JSONObject;
+import com.github.kiulian.downloader.model.quality.VideoQuality;
 
 public class VideoFormat extends Format {
 
-    private int fps;
-    private String qualityLabel;
-    private int width;
-    private int height;
-    private long contentLength;
-    private long lastModified;
+    private final int fps;
+    private final VideoQuality videoQuality;
+    private final String qualityLabel;
+    private final int width;
+    private final int height;
+    private final long lastModified;
 
     public VideoFormat(JSONObject json) throws NullPointerException {
         super(json);
         fps = json.getInteger("fps");
+        videoQuality = VideoQuality.valueOf(json.getString("quality"));
         qualityLabel = json.getString("qualityLabel");
         width = json.getInteger("width");
         height = json.getInteger("height");
-        contentLength = json.getLong("contentLength");
         lastModified = json.getLong("lastModified");
+    }
+
+    @Override
+    public String type() {
+        return "video";
     }
 
     public int fps() {
         return fps;
+    }
+
+    public VideoQuality videoQuality() {
+        return videoQuality;
     }
 
     public String qualityLabel() {
@@ -55,10 +65,6 @@ public class VideoFormat extends Format {
 
     public int height() {
         return height;
-    }
-
-    public long contentLength() {
-        return contentLength;
     }
 
     public long lastModified() {

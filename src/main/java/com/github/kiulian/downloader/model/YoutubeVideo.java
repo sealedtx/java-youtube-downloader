@@ -9,9 +9,9 @@ package com.github.kiulian.downloader.model;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,13 +20,19 @@ package com.github.kiulian.downloader.model;
  * #
  */
 
-import com.github.kiulian.downloader.Constants;
 import com.github.kiulian.downloader.YoutubeDownloader;
+import com.github.kiulian.downloader.YoutubeException;
+import com.github.kiulian.downloader.model.formats.AudioFormat;
 import com.github.kiulian.downloader.model.formats.Format;
+import com.github.kiulian.downloader.model.formats.VideoFormat;
+import com.github.kiulian.downloader.model.quality.AudioQuality;
+import com.github.kiulian.downloader.model.quality.VideoQuality;
 
 import java.io.*;
 import java.net.URL;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Optional;
 
 public class YoutubeVideo {
 
@@ -38,7 +44,7 @@ public class YoutubeVideo {
         this.formats = formats;
     }
 
-    public VideoDetails videoDetails() {
+    public VideoDetails details() {
         return videoDetails;
     }
 
@@ -46,7 +52,85 @@ public class YoutubeVideo {
         return formats;
     }
 
-    public File download(Format format, File outDir) throws IOException {
+    public Optional<Format> findFormatByItag(int itag) {
+        for (int i = 0; i < formats.size(); i++) {
+            Format format = formats.get(i);
+            if (format.itag() == itag)
+                return Optional.of(format);
+        }
+        return Optional.empty();
+    }
+
+    public List<VideoFormat> getVideoFormats() {
+        List<VideoFormat> find = new LinkedList<>();
+
+        for (int i = 0; i < formats.size(); i++) {
+            Format format = formats.get(i);
+            if (format instanceof VideoFormat)
+                find.add((VideoFormat) format);
+        }
+        return find;
+    }
+
+    public List<VideoFormat> findVideoWithQuality(VideoQuality videoQuality) {
+        List<VideoFormat> find = new LinkedList<>();
+
+        for (int i = 0; i < formats.size(); i++) {
+            Format format = formats.get(i);
+            if (format instanceof VideoFormat && ((VideoFormat) format).videoQuality() == videoQuality)
+                find.add((VideoFormat) format);
+        }
+        return find;
+    }
+
+    public List<VideoFormat> findVideoWithExtension(Extension extension) {
+        List<VideoFormat> find = new LinkedList<>();
+
+        for (int i = 0; i < formats.size(); i++) {
+            Format format = formats.get(i);
+            if (format instanceof VideoFormat && format.extension().equals(extension))
+                find.add((VideoFormat) format);
+        }
+        return find;
+    }
+
+    public List<AudioFormat> getAudioFormats() {
+        List<AudioFormat> find = new LinkedList<>();
+
+        for (int i = 0; i < formats.size(); i++) {
+            Format format = formats.get(i);
+            if (format instanceof AudioFormat)
+                find.add((AudioFormat) format);
+        }
+        return find;
+    }
+
+    public List<AudioFormat> findAudioWithQuality(AudioQuality audioQuality) {
+        List<AudioFormat> find = new LinkedList<>();
+
+        for (int i = 0; i < formats.size(); i++) {
+            Format format = formats.get(i);
+            if (format instanceof AudioFormat && ((AudioFormat) format).audioQuality() == audioQuality)
+                find.add((AudioFormat) format);
+        }
+        return find;
+    }
+
+    public List<AudioFormat> findAudioWithExtension(Extension extension) {
+        List<AudioFormat> find = new LinkedList<>();
+
+        for (int i = 0; i < formats.size(); i++) {
+            Format format = formats.get(i);
+            if (format instanceof AudioFormat && format.extension() == extension)
+                find.add((AudioFormat) format);
+        }
+        return find;
+    }
+
+    public File download(Format format, File outDir) throws IOException, YoutubeException {
+        if (videoDetails.isLive())
+            throw new YoutubeException.LiveVideoException("Can not download live stream");
+
         if (!outDir.exists()) {
             boolean mkdirs = outDir.mkdirs();
             if (!mkdirs)
@@ -69,7 +153,10 @@ public class YoutubeVideo {
         return outputFile;
     }
 
-    public void downloadAsync(Format format, File outDir, YoutubeDownloader.DownloadCallback callback) throws IOException {
+    public void downloadAsync(Format format, File outDir, YoutubeDownloader.DownloadCallback callback) throws IOException, YoutubeException {
+        if (videoDetails.isLive())
+            throw new YoutubeException.LiveVideoException("Can not download live stream");
+
         if (!outDir.exists()) {
             boolean mkdirs = outDir.mkdirs();
             if (!mkdirs)
@@ -85,7 +172,7 @@ public class YoutubeVideo {
 
             int i = 1;
             while (outputFile.exists()) {
-                fileName = videoDetails.title()  + "(" + i++ + ")" +  "." + format.extension();
+                fileName = videoDetails.title() + "(" + i++ + ")" + "." + format.extension();
                 outputFile = new File(outDir, cleanFilename(fileName));
             }
 
@@ -111,9 +198,8 @@ public class YoutubeVideo {
         thread.start();
     }
 
-
     private String cleanFilename(String filename) {
-        for (char c : Constants.ILLEGAL_FILENAME_CHARACTERS) {
+        for (char c : YoutubeDownloader.ILLEGAL_FILENAME_CHARACTERS) {
             filename = filename.replace(c, '_');
         }
         return filename;
