@@ -26,20 +26,22 @@ import com.github.kiulian.downloader.model.quality.VideoQuality;
 public class VideoFormat extends Format {
 
     private final int fps;
-    private final VideoQuality videoQuality;
     private final String qualityLabel;
-    private final int width;
-    private final int height;
-    private final long lastModified;
+    private final Integer width;
+    private final Integer height;
 
-    public VideoFormat(JSONObject json) throws NullPointerException {
+    public VideoFormat(JSONObject json) throws Exception {
         super(json);
         fps = json.getInteger("fps");
-        videoQuality = VideoQuality.valueOf(json.getString("quality"));
-        qualityLabel = json.getString("qualityLabel");
-        width = json.getInteger("width");
-        height = json.getInteger("height");
-        lastModified = json.getLong("lastModified");
+        qualityLabel = json.getString("quality_label");
+        if (json.containsKey("size")){
+            String[] split = json.getString("size").split("x");
+            width = Integer.parseInt(split[0]);
+            height = Integer.parseInt(split[1]);
+        } else {
+            width = json.getInteger("width");
+            height = json.getInteger("height");
+        }
     }
 
     @Override
@@ -52,22 +54,19 @@ public class VideoFormat extends Format {
     }
 
     public VideoQuality videoQuality() {
-        return videoQuality;
+        return itag.videoQuality();
     }
 
     public String qualityLabel() {
         return qualityLabel;
     }
 
-    public int width() {
+    public Integer width() {
         return width;
     }
 
-    public int height() {
+    public Integer height() {
         return height;
     }
 
-    public long lastModified() {
-        return lastModified;
-    }
 }

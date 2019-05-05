@@ -35,9 +35,10 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.net.URLConnection;
+import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Pattern;
 
 public class YoutubeDownloader {
 
@@ -78,38 +79,46 @@ public class YoutubeDownloader {
         }
         String cfg = page.substring(start + CONFIG_START.length(), end);
 
-        JSONObject object;
+        JSONArray jsonAdaptiveFormats;
+
+        String adaptive_fmts;
+        String url_encoded_fmt_stream_map;
         try {
             JSONObject config = JSON.parseObject(cfg);
-            JSONObject player_response = JSON.parseObject(config.getJSONObject("args").getString("player_response"));
-            object = player_response.getJSONObject("streamingData");
+            JSONObject args = config.getJSONObject("args");
+
+            url_encoded_fmt_stream_map = args.getString("url_encoded_fmt_stream_map");
+
+            adaptive_fmts = args.getString("adaptive_fmts");
+            jsonAdaptiveFormats = parseAdaptiveFormats(adaptive_fmts);
+            JSONObject player_response = JSON.parseObject(args.getString("player_response"));
             if (player_response.containsKey("videoDetails"))
                 videoDetails.setDetails(player_response.getJSONObject("videoDetails"));
         } catch (Exception e) {
             throw new YoutubeException.BadPageException("Could not parse web page");
         }
 
-        JSONArray jsonFormats = object.containsKey("formats") ? object.getJSONArray("formats") : new JSONArray();
-        JSONArray jsonAdaptiveFormats = object.containsKey("adaptiveFormats") ? object.getJSONArray("adaptiveFormats") : new JSONArray();
+        List<Format> formats = new ArrayList<>(jsonAdaptiveFormats.size() + 1);
 
-        List<Format> formats = new ArrayList<>(jsonAdaptiveFormats.size() + jsonFormats.size());
-        int i;
-        for (i = 0; i < jsonFormats.size(); i++) {
-            try {
-                formats.add(new AudioVideoFormat(jsonFormats.getJSONObject(i)));
-            } catch (NullPointerException e) {
-                e.printStackTrace();
-            }
+        try {
+            formats.add(new AudioVideoFormat(splitQuery(url_encoded_fmt_stream_map)));
+        } catch (Exception e) {
+            e.printStackTrace();
         }
 
-        for (i = 0; i < jsonAdaptiveFormats.size(); i++) {
+        for (int i = 0; i < jsonAdaptiveFormats.size(); i++) {
+            JSONObject json = jsonAdaptiveFormats.getJSONObject(i);
             try {
-                JSONObject json = jsonAdaptiveFormats.getJSONObject(i);
-                String mimeType = json.getString("mimeType");
-                if (mimeType.contains(AUDIO))
-                    formats.add(new AudioFormat(json));
-                else if (mimeType.contains(VIDEO))
+                Itag itag = Itag.valueOf("i" + json.getInteger("itag"));
+
+                if (itag.isVideo() && itag.isAudio())
+                    formats.add(new AudioVideoFormat(json));
+                else if (itag.isVideo())
                     formats.add(new VideoFormat(json));
+                else if (itag.isAudio())
+                    formats.add(new AudioFormat(json));
+            } catch (IllegalArgumentException e) {
+                System.err.println("Unknown itag " + json.getInteger("itag"));
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -135,5 +144,43 @@ public class YoutubeDownloader {
         return sb.toString();
     }
 
+    private static JSONArray parseAdaptiveFormats(String adaptive_fmts) {
+        JSONArray array = new JSONArray();
+
+        String splitBy = adaptive_fmts.substring(0, adaptive_fmts.indexOf("=") + 1);
+        Pattern pattern = Pattern.compile("&" + splitBy + "|^" + splitBy + "|," + splitBy);
+        for (String s : pattern.split(adaptive_fmts)) {
+            if (!s.isEmpty()) {
+                JSONObject params = splitQuery(splitBy + s);
+                if (params.containsKey("url"))
+                    array.add(params);
+            }
+
+        }
+
+        return array;
+    }
+
+    private static JSONObject splitQuery(String requestString) {
+        JSONObject query_pairs = new JSONObject();
+        try {
+            if (requestString != null) {
+                String[] pairs = requestString.split("&");
+
+                for (String pair : pairs) {
+                    String[] commaPairs = pair.split(",");
+                    for (String commaPair : commaPairs) {
+                        int idx = commaPair.indexOf("=");
+                        query_pairs.put(URLDecoder.decode(commaPair.substring(0, idx), "UTF-8"), URLDecoder.decode(commaPair.substring(idx + 1), "UTF-8"));
+
+                    }
+                }
+            }
+        } catch (Exception e) {
+            System.err.println(requestString);
+            e.printStackTrace();
+        }
+        return query_pairs;
+    }
 
 }

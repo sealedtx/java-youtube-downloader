@@ -29,7 +29,9 @@ import com.github.kiulian.downloader.model.quality.AudioQuality;
 import com.github.kiulian.downloader.model.quality.VideoQuality;
 
 import java.io.*;
+import java.net.HttpURLConnection;
 import java.net.URL;
+import java.net.URLConnection;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
@@ -55,13 +57,13 @@ public class YoutubeVideo {
     public Optional<Format> findFormatByItag(int itag) {
         for (int i = 0; i < formats.size(); i++) {
             Format format = formats.get(i);
-            if (format.itag() == itag)
+            if (format.itag().id() == itag)
                 return Optional.of(format);
         }
         return Optional.empty();
     }
 
-    public List<VideoFormat> getVideoFormats() {
+    public List<VideoFormat> videoFormats() {
         List<VideoFormat> find = new LinkedList<>();
 
         for (int i = 0; i < formats.size(); i++) {
@@ -94,7 +96,7 @@ public class YoutubeVideo {
         return find;
     }
 
-    public List<AudioFormat> getAudioFormats() {
+    public List<AudioFormat> audioFormats() {
         List<AudioFormat> find = new LinkedList<>();
 
         for (int i = 0; i < formats.size(); i++) {
@@ -137,7 +139,7 @@ public class YoutubeVideo {
                 throw new IOException("Could not create output directory: " + outDir);
         }
 
-        String fileName = videoDetails.title() + "." + format.extension();
+        String fileName = videoDetails.title() + "." + format.extension().value();
         File outputFile = new File(outDir, cleanFilename(fileName));
 
         URL url = new URL(format.url());
@@ -165,34 +167,40 @@ public class YoutubeVideo {
 
         URL url = new URL(format.url());
 
+        String fileName = videoDetails.title() + "." + format.extension().value();
+        File outputFile = new File(outDir, cleanFilename(fileName));
+
+        int i = 1;
+        while (outputFile.exists()) {
+            fileName = videoDetails.title() + "(" + i++ + ")" + "." + format.extension().value();
+            outputFile = new File(outDir, cleanFilename(fileName));
+        }
+
+        File finalOutputFile = outputFile;
+
         Thread thread = new Thread(() -> {
-
-            String fileName = videoDetails.title() + "." + format.extension();
-            File outputFile = new File(outDir, cleanFilename(fileName));
-
-            int i = 1;
-            while (outputFile.exists()) {
-                fileName = videoDetails.title() + "(" + i++ + ")" + "." + format.extension();
-                outputFile = new File(outDir, cleanFilename(fileName));
-            }
-
             try (BufferedInputStream bis = new BufferedInputStream(url.openStream())) {
-                FileOutputStream fis = new FileOutputStream(outputFile);
+                try (BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(finalOutputFile))) {
+                    double total = 0;
+                    byte[] buffer = new byte[4096];
+                    int count = 0;
+                    int progress = 0;
+                    while ((count = bis.read(buffer, 0, 4096)) != -1) {
+                        bos.write(buffer, 0, count);
+                        total += count;
+                        int newProgress = (int) ((total / format.contentLength()) * 100);
+                        if (newProgress > progress) {
+                            progress = newProgress;
+                            callback.onDownloading(progress);
+                        }
+                    }
 
-                double total = 0;
-                byte[] buffer = new byte[4096];
-                int count = 0;
-                while ((count = bis.read(buffer, 0, 4096)) != -1) {
-                    fis.write(buffer, 0, count);
-                    total += count;
-                    double progress = ((total / format.contentLength()) * 100);
-                    callback.onDownloading((int) progress);
+                    callback.onFinished(finalOutputFile);
+                } catch (IOException e) {
+                    callback.onError(e);
                 }
-                fis.close();
-
-                callback.onFinished(outputFile);
             } catch (IOException e) {
-                callback.onError(e);
+                e.printStackTrace();
             }
         });
         thread.start();

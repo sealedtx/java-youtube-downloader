@@ -25,13 +25,11 @@ import com.github.kiulian.downloader.model.quality.AudioQuality;
 
 public class AudioFormat extends Format {
 
-    private final AudioQuality audioQuality;
     private final Integer audioSampleRate;
 
     public AudioFormat(JSONObject json) throws Exception {
         super(json);
-        audioQuality = AudioQuality.valueOf(json.getString("audioQuality").split("_")[2].toLowerCase());
-        audioSampleRate = json.getInteger("audioSampleRate");
+        audioSampleRate = json.getInteger("audio_sample_rate");
     }
 
     @Override
@@ -40,7 +38,7 @@ public class AudioFormat extends Format {
     }
 
     public AudioQuality audioQuality() {
-        return audioQuality;
+        return itag.audioQuality();
     }
 
     public Integer audioSampleRate() {

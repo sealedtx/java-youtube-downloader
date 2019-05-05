@@ -22,25 +22,31 @@ package com.github.kiulian.downloader.model.formats;
 
 import com.alibaba.fastjson.JSONObject;
 import com.github.kiulian.downloader.model.Extension;
+import com.github.kiulian.downloader.model.Itag;
 
 public abstract class Format {
 
-    private final int itag;
+    protected Itag itag;
     private final String url;
     private final String mimeType;
     private final Extension extension;
-    private final int bitrate;
-    private final long lastModified;
+    private final Integer bitrate;
+    private final Long contentLength;
+    private final Long lastModified;
 
-    private Long contentLength;
-
-    protected Format(JSONObject json) throws NullPointerException {
-        itag = json.getInteger("itag");
+    protected Format(JSONObject json) throws Exception {
+        try {
+            itag = Itag.valueOf("i" + json.getInteger("itag"));
+        } catch (ExceptionInInitializerError e) {
+            e.printStackTrace();
+            itag = Itag.unknown;
+            itag.setId(json.getIntValue("itag"));
+        }
         url = json.getString("url").replace("\\u0026", "&");
-        mimeType = json.getString("mimeType");
+        mimeType = (String) json.getOrDefault("type", "");
         bitrate = json.getInteger("bitrate");
-        contentLength = json.getLong("contentLength");
-        lastModified = json.getLong("lastModified");
+        contentLength = json.getLong("clen");
+        lastModified = json.getLong("lmt");
 
         if (mimeType.contains(Extension.MP4.value()))
             extension = Extension.MP4;
@@ -61,11 +67,11 @@ public abstract class Format {
 
     public abstract String type();
 
-    public int itag() {
+    public Itag itag() {
         return itag;
     }
 
-    public int bitrate() {
+    public Integer bitrate() {
         return bitrate;
     }
 
