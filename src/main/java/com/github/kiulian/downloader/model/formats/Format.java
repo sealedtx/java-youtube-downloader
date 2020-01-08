@@ -43,10 +43,10 @@ public abstract class Format {
             itag.setId(json.getIntValue("itag"));
         }
         url = json.getString("url").replace("\\u0026", "&");
-        mimeType = (String) json.getOrDefault("type", "");
+        mimeType = (String) json.getOrDefault("mimeType", "");
         bitrate = json.getInteger("bitrate");
-        contentLength = json.getLong("clen");
-        lastModified = json.getLong("lmt");
+        contentLength = json.getLong("contentLength");
+        lastModified = json.getLong("lastModified");
 
         if (mimeType.contains(Extension.MP4.value()))
             extension = Extension.MP4;

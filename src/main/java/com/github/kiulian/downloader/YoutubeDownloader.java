@@ -81,15 +81,15 @@ public class YoutubeDownloader {
 
         JSONArray jsonAdaptiveFormats;
 
-        String adaptive_fmts;
-        String url_encoded_fmt_stream_map;
+        JSONArray adaptive_fmts;
+        JSONArray url_encoded_fmt_stream_map;
         try {
             JSONObject config = JSON.parseObject(cfg);
             JSONObject args = config.getJSONObject("args");
 
-            url_encoded_fmt_stream_map = args.getString("url_encoded_fmt_stream_map");
+            url_encoded_fmt_stream_map = args.getJSONObject("player_response").getJSONObject("streamingData").getJSONArray("formats");
 
-            adaptive_fmts = args.getString("adaptive_fmts");
+            adaptive_fmts = args.getJSONObject("player_response").getJSONObject("streamingData").getJSONArray("adaptiveFormats");
             jsonAdaptiveFormats = parseAdaptiveFormats(adaptive_fmts);
             JSONObject player_response = JSON.parseObject(args.getString("player_response"));
             if (player_response.containsKey("videoDetails"))
@@ -101,7 +101,7 @@ public class YoutubeDownloader {
         List<Format> formats = new ArrayList<>(jsonAdaptiveFormats.size() + 1);
 
         try {
-            formats.add(new AudioVideoFormat(splitQuery(url_encoded_fmt_stream_map)));
+            formats.add(new AudioVideoFormat((JSONObject)url_encoded_fmt_stream_map.get(0)));
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -144,43 +144,16 @@ public class YoutubeDownloader {
         return sb.toString();
     }
 
-    private static JSONArray parseAdaptiveFormats(String adaptive_fmts) {
+    private static JSONArray parseAdaptiveFormats(JSONArray adaptive_fmts) {
         JSONArray array = new JSONArray();
 
-        String splitBy = adaptive_fmts.substring(0, adaptive_fmts.indexOf("=") + 1);
-        Pattern pattern = Pattern.compile("&" + splitBy + "|^" + splitBy + "|," + splitBy);
-        for (String s : pattern.split(adaptive_fmts)) {
-            if (!s.isEmpty()) {
-                JSONObject params = splitQuery(splitBy + s);
-                if (params.containsKey("url"))
-                    array.add(params);
-            }
-
+        for (Object e : adaptive_fmts) {
+            JSONObject o = (JSONObject)e;
+            String url = o.getString("url");
+            if (url != null)
+                array.add(o);
         }
 
         return array;
     }
-
-    private static JSONObject splitQuery(String requestString) {
-        JSONObject query_pairs = new JSONObject();
-        try {
-            if (requestString != null) {
-                String[] pairs = requestString.split("&");
-
-                for (String pair : pairs) {
-                    String[] commaPairs = pair.split(",");
-                    for (String commaPair : commaPairs) {
-                        int idx = commaPair.indexOf("=");
-                        query_pairs.put(URLDecoder.decode(commaPair.substring(0, idx), "UTF-8"), URLDecoder.decode(commaPair.substring(idx + 1), "UTF-8"));
-
-                    }
-                }
-            }
-        } catch (Exception e) {
-            System.err.println(requestString);
-            e.printStackTrace();
-        }
-        return query_pairs;
-    }
-
 }
