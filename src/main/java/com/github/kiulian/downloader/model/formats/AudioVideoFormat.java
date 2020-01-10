@@ -29,7 +29,7 @@ public class AudioVideoFormat extends AudioFormat {
     private final Integer width;
     private final Integer height;
 
-    public AudioVideoFormat(JSONObject json) throws Exception {
+    public AudioVideoFormat(JSONObject json) {
         super(json);
         qualityLabel = json.getString("qualityLabel");
         width = json.getInteger("width");

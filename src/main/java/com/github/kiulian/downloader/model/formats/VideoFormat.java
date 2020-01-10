@@ -31,7 +31,7 @@ public class VideoFormat extends Format {
     private final Integer height;
     private final VideoQuality videoQuality;
 
-    public VideoFormat(JSONObject json) throws Exception {
+    public VideoFormat(JSONObject json) {
         super(json);
         fps = json.getInteger("fps");
         qualityLabel = json.getString("qualityLabel");

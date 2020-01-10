@@ -12,17 +12,18 @@ public enum Itag {
         }
     },
 
-    i5(VideoQuality.small, AudioQuality.unknown),
-    i6(VideoQuality.small, AudioQuality.unknown),
-    i17(VideoQuality.tiny, AudioQuality.unknown),
-    i18(VideoQuality.medium, AudioQuality.unknown),
-    i22(VideoQuality.hd720, AudioQuality.unknown),
+    i5(VideoQuality.small, AudioQuality.low),
+    i6(VideoQuality.small, AudioQuality.low),
+    i13(VideoQuality.unknown, AudioQuality.low),
+    i17(VideoQuality.tiny, AudioQuality.low),
+    i18(VideoQuality.medium, AudioQuality.low),
+    i22(VideoQuality.hd720, AudioQuality.medium),
 
-    i34(VideoQuality.medium, AudioQuality.unknown),
-    i35(VideoQuality.large, AudioQuality.unknown),
+    i34(VideoQuality.medium, AudioQuality.medium),
+    i35(VideoQuality.large, AudioQuality.medium),
     i36(VideoQuality.tiny, AudioQuality.unknown),
-    i37(VideoQuality.hd1080, AudioQuality.unknown),
-    i38(VideoQuality.highres, AudioQuality.unknown),
+    i37(VideoQuality.hd1080, AudioQuality.medium),
+    i38(VideoQuality.highres, AudioQuality.medium),
 
     i43(VideoQuality.medium, AudioQuality.unknown),
     i44(VideoQuality.large, AudioQuality.unknown),

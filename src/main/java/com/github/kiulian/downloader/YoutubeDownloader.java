@@ -20,19 +20,18 @@ package com.github.kiulian.downloader;
  * #
  */
 
-import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
-import com.github.kiulian.downloader.cipher.Cipher;
+import com.github.kiulian.downloader.cipher.CachedCipherFactory;
+import com.github.kiulian.downloader.cipher.CipherFactory;
+import com.github.kiulian.downloader.extractor.DefaultExtractor;
+import com.github.kiulian.downloader.extractor.Extractor;
 import com.github.kiulian.downloader.model.*;
-import com.github.kiulian.downloader.model.formats.AudioFormat;
-import com.github.kiulian.downloader.model.formats.AudioVideoFormat;
 import com.github.kiulian.downloader.model.formats.Format;
-import com.github.kiulian.downloader.model.formats.VideoFormat;
+import com.github.kiulian.downloader.parser.DefaultParser;
+import com.github.kiulian.downloader.parser.Parser;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.URLDecoder;
-import java.util.ArrayList;
 import java.util.List;
 
 public class YoutubeDownloader {
@@ -48,82 +47,29 @@ public class YoutubeDownloader {
         void onError(Throwable throwable);
     }
 
+    private Parser parser;
 
-    public static YoutubeVideo getVideo(String videoId) throws YoutubeException, IOException {
-        String htmlUrl = "https://www.youtube.com/watch?v=" + videoId;
-        String html = Extractor.loadUrl(htmlUrl);
-        JSONObject ytPlayerConfig = Extractor.getYtPlayerConfig(html);
-
-        String jsUrl = Extractor.getJsUrl(ytPlayerConfig);
-        String js = Extractor.loadUrl(jsUrl);
-
-        JSONObject args = ytPlayerConfig.getJSONObject("args");
-        JSONObject playerResponse = args.getJSONObject("player_response");
-
-        VideoDetails videoDetails = new VideoDetails(videoId);
-        if (playerResponse.containsKey("videoDetails")) {
-            videoDetails.setDetails(playerResponse.getJSONObject("videoDetails"));
-        }
-
-        if (!playerResponse.containsKey("streamingData")) {
-            throw new YoutubeException.BadPageException("Streaming data not found");
-        }
-
-        JSONObject streamingData = playerResponse.getJSONObject("streamingData");
-        JSONArray jsonFormats = new JSONArray();
-        if (streamingData.containsKey("formats")) {
-            jsonFormats.addAll(streamingData.getJSONArray("formats"));
-        }
-        if (streamingData.containsKey("adaptiveFormats")) {
-            jsonFormats.addAll(streamingData.getJSONArray("adaptiveFormats"));
-        }
-
-        List<Format> formats = new ArrayList<>(jsonFormats.size());
-        for (int i = 0; i < jsonFormats.size(); i++) {
-            JSONObject json = jsonFormats.getJSONObject(i);
-            try {
-                Format format = parseFormat(json, js);
-                formats.add(format);
-            } catch (IllegalArgumentException e) {
-                System.err.println("Unknown itag " + json.getInteger("itag"));
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
-        return new YoutubeVideo(videoDetails, formats);
+    public YoutubeDownloader() {
+        Extractor extractor = new DefaultExtractor();
+        CipherFactory cipherFactory = new CachedCipherFactory(extractor);
+        this.parser = new DefaultParser(extractor, cipherFactory);
+    }
+    public YoutubeDownloader(Parser parser) {
+        this.parser = parser;
     }
 
-    private static Format parseFormat(JSONObject json, String js) throws Exception {
-        if (json.containsKey("cipher")) {
-            JSONObject jsonCipher = new JSONObject();
-            String[] cipherData = json.getString("cipher").replace("\\u0026", "&").split("&");
-            for (String s : cipherData) {
-                String[] keyValue = s.split("=");
-                jsonCipher.put(keyValue[0], keyValue[1]);
-            }
-            if (!jsonCipher.containsKey("url")) {
-                throw new YoutubeException.BadPageException("Could not found url in cipher data");
-            }
-            String urlWithSig = jsonCipher.getString("url");
-            String decodedUrl = URLDecoder.decode(urlWithSig, "UTF-8");
-            if (urlWithSig.contains("signature")
-                    || (!jsonCipher.containsKey("s") && (decodedUrl.contains("&sig=") || decodedUrl.contains("&lsig=")))) {
-                // do nothing, this is pre-signed videos with signature
-            } else {
-                String s = URLDecoder.decode(jsonCipher.getString("s"), "UTF-8");
-                String signature = Cipher.getSignature(js, s);
-                String decipheredUrl = decodedUrl + "&sig=" + signature;
-                json.put("url", decipheredUrl);
-            }
-        }
+    public YoutubeVideo getVideo(String videoId) throws YoutubeException, IOException {
+        String htmlUrl = "https://www.youtube.com/watch?v=" + videoId;
 
-        Itag itag = Itag.valueOf("i" + json.getInteger("itag"));
-        if (itag.isVideo() && itag.isAudio())
-            return new AudioVideoFormat(json);
-        else if (itag.isVideo())
-            return new VideoFormat(json);
+        // get player config from web page
+        JSONObject ytPlayerConfig = parser.getPlayerConfig(htmlUrl);
 
-        return new AudioFormat(json);
+        // get video details
+        VideoDetails videoDetails = parser.getVideoDetails(ytPlayerConfig);
+
+        // parse formats;
+        List<Format> formats = parser.parseFormats(ytPlayerConfig);
+        return new YoutubeVideo(videoDetails, formats);
     }
 
 }

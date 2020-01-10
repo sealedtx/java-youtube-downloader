@@ -29,7 +29,7 @@ public class AudioFormat extends Format {
     private final Integer audioSampleRate;
     private final AudioQuality audioQuality;
 
-    public AudioFormat(JSONObject json) throws Exception {
+    public AudioFormat(JSONObject json) {
         super(json);
         audioSampleRate = json.getInteger("audioSampleRate");
         averageBitrate = json.getInteger("averageBitrate");

@@ -40,12 +40,11 @@ public class VideoDetails {
     private int averageRating;
     private boolean isLiveContent;
 
-    public VideoDetails(String videoId) {
-        this.videoId = videoId;
-        this.title = videoId;
+    public VideoDetails() {
     }
 
-    public void setDetails(JSONObject json) {
+    public VideoDetails(JSONObject json) {
+        videoId = json.getString("videoId");
         title = json.getString("title");
         lengthSeconds = json.getInteger("lengthSeconds");
         keywords = json.containsKey("keywords") ? json.getJSONArray("keywords").toJavaList(String.class) : Collections.emptyList();

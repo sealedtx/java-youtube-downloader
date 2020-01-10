@@ -6,7 +6,7 @@
 
     <groupId>com.github.ikiulian</groupId>
     <artifactId>java-youtube-downloader</artifactId>
-    <version>1.0.1</version>
+    <version>2.0.0</version>
 
     <name>Java youtube video and audio downloader</name>
     <description>Easy download youtube videos and audio with java</description>
@@ -40,7 +40,7 @@
                     <licenseFile>LICENSE</licenseFile>
                     <organizationName>Igor Kiulian</organizationName>
                     <projectName>Java youtube video and audio downloader</projectName>
-                    <inceptionYear>2019</inceptionYear>
+                    <inceptionYear>2020</inceptionYear>
                 </configuration>
 
                 <executions>
@@ -70,17 +70,26 @@
 
     <dependencies>
 
+        <!-- test -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-engine</artifactId>
-            <version>5.3.0</version>
+            <version>5.3.2</version>
             <scope>test</scope>
         </dependency>
 
         <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-core</artifactId>
+            <version>2.23.4</version>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- json -->
+        <dependency>
             <groupId>com.alibaba</groupId>
             <artifactId>fastjson</artifactId>
-            <version>1.2.47</version>
+            <version>1.2.62</version>
         </dependency>
 
     </dependencies>

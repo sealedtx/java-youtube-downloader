@@ -61,4 +61,11 @@ public class YoutubeException extends Exception {
             super(message);
         }
     }
+
+    public static class NetworkException extends YoutubeException {
+
+        public NetworkException(String message) {
+            super(message);
+        }
+    }
 }

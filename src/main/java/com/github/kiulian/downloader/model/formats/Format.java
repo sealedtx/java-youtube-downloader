@@ -40,7 +40,7 @@ public abstract class Format {
     private final Long lastModified;
     private final Long approxDurationMs;
 
-    protected Format(JSONObject json) throws Exception {
+    protected Format(JSONObject json) {
         try {
             itag = Itag.valueOf("i" + json.getInteger("itag"));
         } catch (ExceptionInInitializerError e) {
