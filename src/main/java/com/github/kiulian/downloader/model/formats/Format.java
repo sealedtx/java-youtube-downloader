@@ -26,6 +26,11 @@ import com.github.kiulian.downloader.model.Itag;
 
 public abstract class Format {
 
+    public static final String AUDIO = "audio";
+    public static final String VIDEO = "video";
+    public static final String AUDIO_VIDEO = "audio/video";
+
+
     protected Itag itag;
     private final String url;
     private final String mimeType;
@@ -33,6 +38,7 @@ public abstract class Format {
     private final Integer bitrate;
     private final Long contentLength;
     private final Long lastModified;
+    private final Long approxDurationMs;
 
     protected Format(JSONObject json) throws Exception {
         try {
@@ -43,12 +49,15 @@ public abstract class Format {
             itag.setId(json.getIntValue("itag"));
         }
         url = json.getString("url").replace("\\u0026", "&");
-        mimeType = (String) json.getOrDefault("type", "");
+        mimeType = json.getString("mimeType");
         bitrate = json.getInteger("bitrate");
-        contentLength = json.getLong("clen");
-        lastModified = json.getLong("lmt");
+        contentLength = json.getLong("contentLength");
+        lastModified = json.getLong("lastModified");
+        approxDurationMs = json.getLong("approxDurationMs");
 
-        if (mimeType.contains(Extension.MP4.value()))
+        if (mimeType == null || mimeType.isEmpty())
+            extension = Extension.UNKNOWN;
+        else if (mimeType.contains(Extension.MP4.value()))
             extension = Extension.MP4;
         else if (mimeType.contains(Extension.WEBM.value()))
             extension = Extension.WEBM;
@@ -89,6 +98,10 @@ public abstract class Format {
 
     public long lastModified() {
         return lastModified;
+    }
+
+    public Long duration() {
+        return approxDurationMs;
     }
 
     public Extension extension() {

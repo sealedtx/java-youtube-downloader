@@ -54,4 +54,11 @@ public class YoutubeException extends Exception {
         }
 
     }
+
+    public static class CipherException extends YoutubeException {
+
+        public CipherException(String message) {
+            super(message);
+        }
+    }
 }

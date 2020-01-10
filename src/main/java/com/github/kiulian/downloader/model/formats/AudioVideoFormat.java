@@ -23,25 +23,22 @@ package com.github.kiulian.downloader.model.formats;
 import com.alibaba.fastjson.JSONObject;
 import com.github.kiulian.downloader.model.quality.AudioQuality;
 
-public class AudioVideoFormat extends Format {
+public class AudioVideoFormat extends AudioFormat {
 
     private final String qualityLabel;
     private final Integer width;
     private final Integer height;
-
-    private Integer audioSampleRate;
 
     public AudioVideoFormat(JSONObject json) throws Exception {
         super(json);
         qualityLabel = json.getString("qualityLabel");
         width = json.getInteger("width");
         height = json.getInteger("height");
-        audioSampleRate = json.getInteger("audio_sample_rate");
     }
 
     @Override
     public String type() {
-        return "audio/video";
+        return AUDIO_VIDEO;
     }
 
     public String qualityLabel() {
@@ -60,7 +57,4 @@ public class AudioVideoFormat extends Format {
         return itag.audioQuality();
     }
 
-    public Integer audioSampleRate() {
-        return audioSampleRate;
-    }
 }

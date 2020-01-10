@@ -20,25 +20,20 @@ package com.github.kiulian.downloader;
  * #
  */
 
-import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
+import com.github.kiulian.downloader.cipher.Cipher;
 import com.github.kiulian.downloader.model.*;
 import com.github.kiulian.downloader.model.formats.AudioFormat;
 import com.github.kiulian.downloader.model.formats.AudioVideoFormat;
 import com.github.kiulian.downloader.model.formats.Format;
 import com.github.kiulian.downloader.model.formats.VideoFormat;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.URL;
 import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.regex.Pattern;
 
 public class YoutubeDownloader {
 
@@ -53,134 +48,82 @@ public class YoutubeDownloader {
         void onError(Throwable throwable);
     }
 
-    private static final String AUDIO = "audio";
-    private static final String VIDEO = "video";
-    private static final String CONFIG_START = "ytplayer.config = ";
-    private static final String CONFIG_END = ";ytplayer.load";
-    private static final String ERROR = "\"status\":\"ERROR\",\"reason\":\"";
-
 
     public static YoutubeVideo getVideo(String videoId) throws YoutubeException, IOException {
-        String page = loadPage("https://www.youtube.com/watch?v=" + videoId);
+        String htmlUrl = "https://www.youtube.com/watch?v=" + videoId;
+        String html = Extractor.loadUrl(htmlUrl);
+        JSONObject ytPlayerConfig = Extractor.getYtPlayerConfig(html);
+
+        String jsUrl = Extractor.getJsUrl(ytPlayerConfig);
+        String js = Extractor.loadUrl(jsUrl);
+
+        JSONObject args = ytPlayerConfig.getJSONObject("args");
+        JSONObject playerResponse = args.getJSONObject("player_response");
 
         VideoDetails videoDetails = new VideoDetails(videoId);
-
-        int start = page.indexOf(CONFIG_START);
-        int end = page.indexOf(CONFIG_END);
-
-        if (start == -1 || end == -1) {
-            int errorIndex = page.indexOf(ERROR);
-            if (errorIndex != -1) {
-                String reason = page.substring(errorIndex + ERROR.length(), page.indexOf("\"", errorIndex + ERROR.length() + 1));
-                throw new YoutubeException.VideoUnavailableException(reason);
-            } else {
-                throw new YoutubeException.BadPageException("Could not parse web page");
-            }
-        }
-        String cfg = page.substring(start + CONFIG_START.length(), end);
-
-        JSONArray jsonAdaptiveFormats;
-
-        String adaptive_fmts;
-        String url_encoded_fmt_stream_map;
-        try {
-            JSONObject config = JSON.parseObject(cfg);
-            JSONObject args = config.getJSONObject("args");
-
-            url_encoded_fmt_stream_map = args.getString("url_encoded_fmt_stream_map");
-
-            adaptive_fmts = args.getString("adaptive_fmts");
-            jsonAdaptiveFormats = parseAdaptiveFormats(adaptive_fmts);
-            JSONObject player_response = JSON.parseObject(args.getString("player_response"));
-            if (player_response.containsKey("videoDetails"))
-                videoDetails.setDetails(player_response.getJSONObject("videoDetails"));
-        } catch (Exception e) {
-            throw new YoutubeException.BadPageException("Could not parse web page");
+        if (playerResponse.containsKey("videoDetails")) {
+            videoDetails.setDetails(playerResponse.getJSONObject("videoDetails"));
         }
 
-        List<Format> formats = new ArrayList<>(jsonAdaptiveFormats.size() + 1);
-
-        try {
-            formats.add(new AudioVideoFormat(splitQuery(url_encoded_fmt_stream_map)));
-        } catch (Exception e) {
-            e.printStackTrace();
+        if (!playerResponse.containsKey("streamingData")) {
+            throw new YoutubeException.BadPageException("Streaming data not found");
         }
 
-        for (int i = 0; i < jsonAdaptiveFormats.size(); i++) {
-            JSONObject json = jsonAdaptiveFormats.getJSONObject(i);
+        JSONObject streamingData = playerResponse.getJSONObject("streamingData");
+        JSONArray jsonFormats = new JSONArray();
+        if (streamingData.containsKey("formats")) {
+            jsonFormats.addAll(streamingData.getJSONArray("formats"));
+        }
+        if (streamingData.containsKey("adaptiveFormats")) {
+            jsonFormats.addAll(streamingData.getJSONArray("adaptiveFormats"));
+        }
+
+        List<Format> formats = new ArrayList<>(jsonFormats.size());
+        for (int i = 0; i < jsonFormats.size(); i++) {
+            JSONObject json = jsonFormats.getJSONObject(i);
             try {
-                Itag itag = Itag.valueOf("i" + json.getInteger("itag"));
-
-                if (itag.isVideo() && itag.isAudio())
-                    formats.add(new AudioVideoFormat(json));
-                else if (itag.isVideo())
-                    formats.add(new VideoFormat(json));
-                else if (itag.isAudio())
-                    formats.add(new AudioFormat(json));
+                Format format = parseFormat(json, js);
+                formats.add(format);
             } catch (IllegalArgumentException e) {
                 System.err.println("Unknown itag " + json.getInteger("itag"));
             } catch (Exception e) {
                 e.printStackTrace();
             }
         }
-
         return new YoutubeVideo(videoDetails, formats);
     }
 
-    private static String loadPage(String url) throws IOException {
-        HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
-        connection.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.121 Safari/537.36");
-        connection.setRequestProperty("Accept-Language", "en-US,en;");
-
-        BufferedReader in = new BufferedReader(new InputStreamReader(
-                connection.getInputStream()));
-
-        StringBuilder sb = new StringBuilder();
-        String inputLine;
-        while ((inputLine = in.readLine()) != null)
-            sb.append(inputLine);
-        in.close();
-
-        return sb.toString();
-    }
-
-    private static JSONArray parseAdaptiveFormats(String adaptive_fmts) {
-        JSONArray array = new JSONArray();
-
-        String splitBy = adaptive_fmts.substring(0, adaptive_fmts.indexOf("=") + 1);
-        Pattern pattern = Pattern.compile("&" + splitBy + "|^" + splitBy + "|," + splitBy);
-        for (String s : pattern.split(adaptive_fmts)) {
-            if (!s.isEmpty()) {
-                JSONObject params = splitQuery(splitBy + s);
-                if (params.containsKey("url"))
-                    array.add(params);
+    private static Format parseFormat(JSONObject json, String js) throws Exception {
+        if (json.containsKey("cipher")) {
+            JSONObject jsonCipher = new JSONObject();
+            String[] cipherData = json.getString("cipher").replace("\\u0026", "&").split("&");
+            for (String s : cipherData) {
+                String[] keyValue = s.split("=");
+                jsonCipher.put(keyValue[0], keyValue[1]);
             }
-
+            if (!jsonCipher.containsKey("url")) {
+                throw new YoutubeException.BadPageException("Could not found url in cipher data");
+            }
+            String urlWithSig = jsonCipher.getString("url");
+            String decodedUrl = URLDecoder.decode(urlWithSig, "UTF-8");
+            if (urlWithSig.contains("signature")
+                    || (!jsonCipher.containsKey("s") && (decodedUrl.contains("&sig=") || decodedUrl.contains("&lsig=")))) {
+                // do nothing, this is pre-signed videos with signature
+            } else {
+                String s = URLDecoder.decode(jsonCipher.getString("s"), "UTF-8");
+                String signature = Cipher.getSignature(js, s);
+                String decipheredUrl = decodedUrl + "&sig=" + signature;
+                json.put("url", decipheredUrl);
+            }
         }
 
-        return array;
-    }
+        Itag itag = Itag.valueOf("i" + json.getInteger("itag"));
+        if (itag.isVideo() && itag.isAudio())
+            return new AudioVideoFormat(json);
+        else if (itag.isVideo())
+            return new VideoFormat(json);
 
-    private static JSONObject splitQuery(String requestString) {
-        JSONObject query_pairs = new JSONObject();
-        try {
-            if (requestString != null) {
-                String[] pairs = requestString.split("&");
-
-                for (String pair : pairs) {
-                    String[] commaPairs = pair.split(",");
-                    for (String commaPair : commaPairs) {
-                        int idx = commaPair.indexOf("=");
-                        query_pairs.put(URLDecoder.decode(commaPair.substring(0, idx), "UTF-8"), URLDecoder.decode(commaPair.substring(idx + 1), "UTF-8"));
-
-                    }
-                }
-            }
-        } catch (Exception e) {
-            System.err.println(requestString);
-            e.printStackTrace();
-        }
-        return query_pairs;
+        return new AudioFormat(json);
     }
 
 }

@@ -25,20 +25,38 @@ import com.github.kiulian.downloader.model.quality.AudioQuality;
 
 public class AudioFormat extends Format {
 
+    private final Integer averageBitrate;
     private final Integer audioSampleRate;
+    private final AudioQuality audioQuality;
 
     public AudioFormat(JSONObject json) throws Exception {
         super(json);
-        audioSampleRate = json.getInteger("audio_sample_rate");
+        audioSampleRate = json.getInteger("audioSampleRate");
+        averageBitrate = json.getInteger("averageBitrate");
+
+        AudioQuality audioQuality = null;
+        if (json.containsKey("audioQuality")) {
+            String[] split = json.getString("audioQuality").split("_");
+            String quality = split[split.length - 1].toLowerCase();
+            try {
+                audioQuality = AudioQuality.valueOf(quality);
+            } catch (IllegalArgumentException ignore) {
+            }
+        }
+        this.audioQuality = audioQuality;
     }
 
     @Override
     public String type() {
-        return "audio";
+        return AUDIO;
+    }
+
+    public Integer averageBitrate() {
+        return averageBitrate;
     }
 
     public AudioQuality audioQuality() {
-        return itag.audioQuality();
+        return audioQuality != null ? audioQuality : itag.audioQuality();
     }
 
     public Integer audioSampleRate() {
