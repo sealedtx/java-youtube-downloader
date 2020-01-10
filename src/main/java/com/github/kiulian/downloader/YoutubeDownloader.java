@@ -4,7 +4,7 @@ package com.github.kiulian.downloader;
  * #
  * Java youtube video and audio downloader
  *
- * Copyright (C) 2019 Igor Kiulian
+ * Copyright (C) 2020 Igor Kiulian
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ package com.github.kiulian.downloader;
  * limitations under the License.
  * #
  */
+
 
 import com.alibaba.fastjson.JSONObject;
 import com.github.kiulian.downloader.cipher.CachedCipherFactory;
@@ -54,6 +55,7 @@ public class YoutubeDownloader {
         CipherFactory cipherFactory = new CachedCipherFactory(extractor);
         this.parser = new DefaultParser(extractor, cipherFactory);
     }
+
     public YoutubeDownloader(Parser parser) {
         this.parser = parser;
     }
