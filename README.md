@@ -13,10 +13,13 @@ Usage
 -------
 
 ```java
+// init downloader
+YoutubeDownloader downloader = new YoutubeDownloader();
+YoutubeDownloader downloader = new YoutubeDownloader(new Parser()); // you can easly implement or extend existing parsing logic 
 
 // parsing data
-String videoId = "YOUR_VIDEO_ID"; // https://www.youtube.com/watch?v=abc12345 <---- this is VIDEO_ID 
-YoutubeVideo video = YoutubeDownloader.getVideo(videoId);
+String videoId = "YOUR_VIDEO_ID"; // https://www.youtube.com/watch?v=abc12345 <---- this is VIDEO_ID
+YoutubeVideo video = downloader.getVideo(videoId);
 
 // video details
 VideoDetails details = video.details();
