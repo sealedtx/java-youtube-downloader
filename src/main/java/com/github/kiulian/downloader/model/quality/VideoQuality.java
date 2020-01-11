@@ -23,6 +23,7 @@ package com.github.kiulian.downloader.model.quality;
 public enum VideoQuality {
     unknown,
     highres, // 3072p
+    hd2880p,
     hd2160,
     hd1440,
     hd1080,

@@ -22,7 +22,7 @@ package com.github.kiulian.downloader;
 
 import java.io.File;
 
-public interface YoutubeDownloadCallback {
+public interface OnYoutubeDownloadListener {
 
     void onDownloading(int progress);
 

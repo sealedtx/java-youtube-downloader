@@ -20,7 +20,6 @@ package com.github.kiulian.downloader.extractor;
  * #
  */
 
-import com.alibaba.fastjson.JSONObject;
 import com.github.kiulian.downloader.YoutubeException;
 
 import java.io.BufferedReader;
@@ -38,20 +37,28 @@ public class DefaultExtractor implements Extractor {
 
     private static final String DEFAULT_USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.121 Safari/537.36";
     private static final String DEFAULT_ACCEPT_LANG = "en-US,en;";
+    private static final int DEFAULT_RETRY_ON_FAILURE = 3;
 
     private Map<String, String> requestProperties = new HashMap<>();
+    private int retryOnFailure;
 
     public DefaultExtractor() {
         setRequestProperty("User-Agent", DEFAULT_USER_AGENT);
         setRequestProperty("Accept_language", DEFAULT_ACCEPT_LANG);
+        retryOnFailure = DEFAULT_RETRY_ON_FAILURE;
     }
+
 
     public void setRequestProperty(String key, String value) {
         requestProperties.put(key, value);
     }
 
+    public void setRetryOnFailure(int retryOnFailure) {
+        this.retryOnFailure = retryOnFailure;
+    }
+
     @Override
-    public String extractYtPlayerConfig(String html) throws YoutubeException.BadPageException {
+    public String extractYtPlayerConfig(String html) throws YoutubeException {
         Matcher matcher = YT_PLAYER_CONFIG.matcher(html);
 
         if (matcher.find()) {
@@ -62,20 +69,26 @@ public class DefaultExtractor implements Extractor {
     }
 
     @Override
-    public String loadUrl(String url) throws IOException {
-        HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
-        requestProperties.forEach(connection::setRequestProperty);
+    public String loadUrl(String url) throws YoutubeException {
+        int retryCount = retryOnFailure;
+        while (retryCount > 0) {
+            try {
+                HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
+                requestProperties.forEach(connection::setRequestProperty);
 
-        BufferedReader in = new BufferedReader(new InputStreamReader(
-                connection.getInputStream()));
+                BufferedReader in = new BufferedReader(new InputStreamReader(
+                        connection.getInputStream()));
 
-        StringBuilder sb = new StringBuilder();
-        String inputLine;
-        while ((inputLine = in.readLine()) != null)
-            sb.append(inputLine).append('\n');
-        in.close();
-
-        return sb.toString();
+                StringBuilder sb = new StringBuilder();
+                String inputLine;
+                while ((inputLine = in.readLine()) != null)
+                    sb.append(inputLine).append('\n');
+                in.close();
+                return sb.toString();
+            } catch (IOException e) {
+                retryCount--;
+            }
+        }
+        throw new YoutubeException.VideoUnavailableException("Could not load url: " + url);
     }
-
 }

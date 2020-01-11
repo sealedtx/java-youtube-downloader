@@ -21,6 +21,7 @@ package com.github.kiulian.downloader.model;
  */
 
 
+import com.github.kiulian.downloader.OnYoutubeDownloadListener;
 import com.github.kiulian.downloader.YoutubeDownloader;
 import com.github.kiulian.downloader.YoutubeException;
 import com.github.kiulian.downloader.model.formats.AudioFormat;
@@ -30,9 +31,7 @@ import com.github.kiulian.downloader.model.quality.AudioQuality;
 import com.github.kiulian.downloader.model.quality.VideoQuality;
 
 import java.io.*;
-import java.net.HttpURLConnection;
 import java.net.URL;
-import java.net.URLConnection;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
@@ -156,7 +155,7 @@ public class YoutubeVideo {
         return outputFile;
     }
 
-    public void downloadAsync(Format format, File outDir, YoutubeDownloader.DownloadCallback callback) throws IOException, YoutubeException {
+    public void downloadAsync(Format format, File outDir, OnYoutubeDownloadListener listener) throws IOException, YoutubeException {
         if (videoDetails.isLive())
             throw new YoutubeException.LiveVideoException("Can not download live stream");
 
@@ -192,13 +191,13 @@ public class YoutubeVideo {
                         int newProgress = (int) ((total / format.contentLength()) * 100);
                         if (newProgress > progress) {
                             progress = newProgress;
-                            callback.onDownloading(progress);
+                            listener.onDownloading(progress);
                         }
                     }
 
-                    callback.onFinished(finalOutputFile);
+                    listener.onFinished(finalOutputFile);
                 } catch (IOException e) {
-                    callback.onError(e);
+                    listener.onError(e);
                 }
             } catch (IOException e) {
                 e.printStackTrace();

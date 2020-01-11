@@ -82,16 +82,11 @@ public class CachedCipherFactory implements CipherFactory {
     }
 
     @Override
-    public Cipher createCipher(String jsUrl) throws YoutubeException.CipherException {
+    public Cipher createCipher(String jsUrl) throws YoutubeException {
         Cipher cipher = ciphers.get(jsUrl);
 
         if (cipher == null) {
-            String js;
-            try {
-                js = extractor.loadUrl(jsUrl);
-            } catch (IOException e) {
-                throw new YoutubeException.CipherException("Could not load js file: " + jsUrl);
-            }
+            String js = extractor.loadUrl(jsUrl);
 
             List<JsFunction> transformFunctions = getTransformFunctions(js);
             String var = transformFunctions.get(0).getVar();
@@ -105,7 +100,7 @@ public class CachedCipherFactory implements CipherFactory {
         return cipher;
     }
 
-    private List<JsFunction> getTransformFunctions(String js) throws YoutubeException.CipherException {
+    private List<JsFunction> getTransformFunctions(String js) throws YoutubeException {
         String name = getInitialFunctionName(js).replaceAll("[^A-Za-z0-9_]", "");
 
         Pattern pattern = Pattern.compile(name + "=function\\(\\w\\)\\{[a-z=\\.\\(\\\"\\)]*;(.*);(?:.+)}");
@@ -129,7 +124,7 @@ public class CachedCipherFactory implements CipherFactory {
         throw new YoutubeException.CipherException("Transformation functions not found");
     }
 
-    private String getInitialFunctionName(String js) throws YoutubeException.CipherException {
+    private String getInitialFunctionName(String js) throws YoutubeException {
         for (Pattern pattern : knownInitialFunctionPatterns) {
             Matcher matcher = pattern.matcher(js);
             if (matcher.find()) {
@@ -140,7 +135,7 @@ public class CachedCipherFactory implements CipherFactory {
         throw new YoutubeException.CipherException("Initial function name not found");
     }
 
-    private Map<String, CipherFunction> getTransformFunctionsMap(String var, String js) throws YoutubeException.CipherException {
+    private Map<String, CipherFunction> getTransformFunctionsMap(String var, String js) throws YoutubeException {
         String[] transformObject = getTransformObject(var, js);
         Map<String, CipherFunction> mapper = new HashMap<>();
         for (String obj : transformObject) {
@@ -154,7 +149,7 @@ public class CachedCipherFactory implements CipherFactory {
         return mapper;
     }
 
-    private String[] getTransformObject(String var, String js) throws YoutubeException.CipherException {
+    private String[] getTransformObject(String var, String js) throws YoutubeException {
         var = var.replaceAll("[^A-Za-z0-9_]", "");
         Pattern pattern = Pattern.compile(String.format("var %s=\\{(.*?)};", var), Pattern.DOTALL);
         Matcher matcher = pattern.matcher(js);
@@ -166,7 +161,7 @@ public class CachedCipherFactory implements CipherFactory {
     }
 
 
-    private CipherFunction mapFunction(String jsFunction) throws YoutubeException.CipherException {
+    private CipherFunction mapFunction(String jsFunction) throws YoutubeException {
         for (Map.Entry<Pattern, CipherFunction> entry : functionsEquivalentMap.entrySet()) {
             Matcher matcher = entry.getKey().matcher(jsFunction);
             if (matcher.find()) {
@@ -177,7 +172,7 @@ public class CachedCipherFactory implements CipherFactory {
         throw new YoutubeException.CipherException("Map function not found");
     }
 
-    private String[] parseFunction(String jsFunction) throws YoutubeException.CipherException {
+    private String[] parseFunction(String jsFunction) throws YoutubeException {
         Matcher matcher = JS_FUNCTION_PATTERN.matcher(jsFunction);
 
         String[] nameAndArgument = new String[2];

@@ -37,7 +37,7 @@ public class VideoDetails {
     private String shortDescription;
     private List<String> thumbnails;
     private String author;
-    private int viewCount;
+    private long viewCount;
     private int averageRating;
     private boolean isLiveContent;
 
@@ -47,7 +47,7 @@ public class VideoDetails {
     public VideoDetails(JSONObject json) {
         videoId = json.getString("videoId");
         title = json.getString("title");
-        lengthSeconds = json.getInteger("lengthSeconds");
+        lengthSeconds = json.getIntValue("lengthSeconds");
         keywords = json.containsKey("keywords") ? json.getJSONArray("keywords").toJavaList(String.class) : Collections.emptyList();
         shortDescription = json.getString("shortDescription");
         JSONArray jsonThumbnails = json.getJSONObject("thumbnail").getJSONArray("thumbnails");
@@ -57,10 +57,10 @@ public class VideoDetails {
             if (jsonObject.containsKey("url"))
                 thumbnails.add(jsonObject.getString("url"));
         }
-        averageRating = json.getInteger("averageRating");
-        viewCount = json.getInteger("viewCount");
+        averageRating = json.getIntValue("averageRating");
+        viewCount = json.getLongValue("viewCount");
         author = json.getString("author");
-        isLiveContent = json.getBoolean("isLiveContent");
+        isLiveContent = json.getBooleanValue("isLiveContent");
     }
 
     public String videoId() {
@@ -91,7 +91,7 @@ public class VideoDetails {
         return author;
     }
 
-    public int viewCount() {
+    public long viewCount() {
         return viewCount;
     }
 

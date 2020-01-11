@@ -24,5 +24,5 @@ import com.github.kiulian.downloader.YoutubeException;
 
 public interface CipherFactory {
 
-    Cipher createCipher(String jsUrl) throws YoutubeException.CipherException;
+    Cipher createCipher(String jsUrl) throws YoutubeException;
 }

@@ -39,15 +39,6 @@ public class YoutubeDownloader {
 
     public static final char[] ILLEGAL_FILENAME_CHARACTERS = {'/', '\n', '\r', '\t', '\0', '\f', '`', '?', '*', '\\', '<', '>', '|', '\"', ':'};
 
-    public interface DownloadCallback {
-
-        void onDownloading(int progress);
-
-        void onFinished(File file);
-
-        void onError(Throwable throwable);
-    }
-
     private Parser parser;
 
     public YoutubeDownloader() {

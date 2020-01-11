@@ -52,12 +52,7 @@ public class DefaultParser implements Parser {
 
     @Override
     public JSONObject getPlayerConfig(String htmlUrl) throws YoutubeException {
-        String html;
-        try {
-            html = extractor.loadUrl(htmlUrl);
-        } catch (IOException e) {
-            throw new YoutubeException.NetworkException("Could not load page:" + htmlUrl);
-        }
+        String html = extractor.loadUrl(htmlUrl);
 
         String ytPlayerConfig = extractor.extractYtPlayerConfig(html);
         try {

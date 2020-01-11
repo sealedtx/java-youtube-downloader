@@ -54,8 +54,4 @@ public class AudioVideoFormat extends AudioFormat {
         return height;
     }
 
-    public AudioQuality audioQuality() {
-        return itag.audioQuality();
-    }
-
 }

@@ -32,16 +32,17 @@ public abstract class Format {
     public static final String AUDIO_VIDEO = "audio/video";
 
 
-    protected Itag itag;
-    private final String url;
-    private final String mimeType;
-    private final Extension extension;
-    private final Integer bitrate;
-    private final Long contentLength;
-    private final Long lastModified;
-    private final Long approxDurationMs;
+    protected final Itag itag;
+    protected final String url;
+    protected final String mimeType;
+    protected final Extension extension;
+    protected final Integer bitrate;
+    protected final Long contentLength;
+    protected final Long lastModified;
+    protected final Long approxDurationMs;
 
     protected Format(JSONObject json) {
+        Itag itag;
         try {
             itag = Itag.valueOf("i" + json.getInteger("itag"));
         } catch (ExceptionInInitializerError e) {
@@ -49,6 +50,8 @@ public abstract class Format {
             itag = Itag.unknown;
             itag.setId(json.getIntValue("itag"));
         }
+        this.itag = itag;
+
         url = json.getString("url").replace("\\u0026", "&");
         mimeType = json.getString("mimeType");
         bitrate = json.getInteger("bitrate");
