@@ -74,7 +74,9 @@ public class DefaultExtractor implements Extractor {
         while (retryCount > 0) {
             try {
                 HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
-                requestProperties.forEach(connection::setRequestProperty);
+                for (Map.Entry<String, String> entry : requestProperties.entrySet()) {
+                    connection.setRequestProperty(entry.getKey(), entry.getValue());
+                }
 
                 BufferedReader in = new BufferedReader(new InputStreamReader(
                         connection.getInputStream()));

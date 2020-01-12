@@ -33,10 +33,4 @@ class SpliceFunction implements CipherFunction {
         return spliced;
     }
 
-//    public static void main(String[] args) {
-//        String[] strings = {"1", "2", "3", "4", "5"};
-//        String[] apply = new SpliceFunction().apply(strings, "2");
-//
-//        System.out.println(Arrays.toString(apply));
-//    }
 }

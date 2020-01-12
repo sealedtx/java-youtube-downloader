@@ -31,7 +31,6 @@ import com.github.kiulian.downloader.model.formats.Format;
 import com.github.kiulian.downloader.parser.DefaultParser;
 import com.github.kiulian.downloader.parser.Parser;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.List;
 

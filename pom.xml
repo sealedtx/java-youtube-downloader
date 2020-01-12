@@ -50,7 +50,7 @@
                             <goal>remove-file-header</goal>
                             <goal>update-file-header</goal>
                         </goals>
-                        <phase>process-sources</phase>
+                        <phase>none</phase>
                         <configuration>
                             <processStartTag>----------------------- LICENSE_START -----------------------
                             </processStartTag>

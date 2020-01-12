@@ -24,7 +24,6 @@ package com.github.kiulian.downloader.cipher;
 import com.github.kiulian.downloader.YoutubeException;
 import com.github.kiulian.downloader.extractor.Extractor;
 
-import java.io.IOException;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -61,7 +60,9 @@ public class CachedCipherFactory implements CipherFactory {
     public CachedCipherFactory(Extractor extractor) {
         this.extractor = extractor;
 
-        Arrays.stream(INITIAL_FUNCTION_PATTERNS).forEach(this::addInitialFunctionPattern);
+        for (String pattern : INITIAL_FUNCTION_PATTERNS) {
+            addInitialFunctionPattern(pattern);
+        }
 
         addFunctionEquivalent(FUNCTION_REVERSE_PATTERN, new ReverseFunction());
         addFunctionEquivalent(FUNCTION_SPLICE_PATTERN, new SpliceFunction());
