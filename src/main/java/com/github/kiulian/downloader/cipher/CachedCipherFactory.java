@@ -45,10 +45,10 @@ public class CachedCipherFactory implements CipherFactory {
             "\\bc\\s*&&\\s*[a-zA-Z0-9]+\\.set\\([^,]+\\s*,\\s*\\([^)]*\\)\\s*\\(\\s*([a-zA-Z0-9$]+)\\("
     };
 
-    private static String FUNCTION_REVERSE_PATTERN = "\\{\\w\\.reverse\\(\\)}";
-    private static String FUNCTION_SPLICE_PATTERN = "\\{\\w\\.splice\\(0,\\w\\)}";
-    private static String FUNCTION_SWAP1_PATTERN = "\\{var\\s\\w=\\w\\[0];\\w\\[0]=\\w\\[\\w%\\w.length];\\w\\[\\w]=\\w}";
-    private static String FUNCTION_SWAP2_PATTERN = "\\{var\\s\\w=\\w\\[0];\\w\\[0]=\\w\\[\\w%\\w.length];\\w\\[\\w%\\w.length]=\\w}";
+    private static String FUNCTION_REVERSE_PATTERN = "\\{\\w\\.reverse\\(\\)\\}";
+    private static String FUNCTION_SPLICE_PATTERN = "\\{\\w\\.splice\\(0,\\w\\)\\}";
+    private static String FUNCTION_SWAP1_PATTERN = "\\{var\\s\\w=\\w\\[0];\\w\\[0]=\\w\\[\\w%\\w.length];\\w\\[\\w]=\\w\\}";
+    private static String FUNCTION_SWAP2_PATTERN = "\\{var\\s\\w=\\w\\[0];\\w\\[0]=\\w\\[\\w%\\w.length];\\w\\[\\w%\\w.length]=\\w\\}";
 
     private static Pattern JS_FUNCTION_PATTERN = Pattern.compile("\\w+\\.(\\w+)\\(\\w,(\\d+)\\)");
 
@@ -103,7 +103,7 @@ public class CachedCipherFactory implements CipherFactory {
     private List<JsFunction> getTransformFunctions(String js) throws YoutubeException {
         String name = getInitialFunctionName(js).replaceAll("[^A-Za-z0-9_]", "");
 
-        Pattern pattern = Pattern.compile(name + "=function\\(\\w\\)\\{[a-z=\\.\\(\\\"\\)]*;(.*);(?:.+)}");
+        Pattern pattern = Pattern.compile(name + "=function\\(\\w\\)\\{[a-z=\\.\\(\\\"\\)]*;(.*);(?:.+)\\}");
 
         Matcher matcher = pattern.matcher(js);
         if (matcher.find()) {
@@ -151,7 +151,7 @@ public class CachedCipherFactory implements CipherFactory {
 
     private String[] getTransformObject(String var, String js) throws YoutubeException {
         var = var.replaceAll("[^A-Za-z0-9_]", "");
-        Pattern pattern = Pattern.compile(String.format("var %s=\\{(.*?)};", var), Pattern.DOTALL);
+        Pattern pattern = Pattern.compile(String.format("var %s=\\{(.*?)\\};", var), Pattern.DOTALL);
         Matcher matcher = pattern.matcher(js);
         if (matcher.find()) {
             return matcher.group(1).replaceAll("\n", " ").split(", ");
