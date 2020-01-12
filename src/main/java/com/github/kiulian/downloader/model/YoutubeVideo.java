@@ -34,7 +34,6 @@ import java.io.*;
 import java.net.URL;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Optional;
 
 public class YoutubeVideo {
 
@@ -54,13 +53,13 @@ public class YoutubeVideo {
         return formats;
     }
 
-    public Optional<Format> findFormatByItag(int itag) {
+    public Format findFormatByItag(int itag) {
         for (int i = 0; i < formats.size(); i++) {
             Format format = formats.get(i);
             if (format.itag().id() == itag)
-                return Optional.of(format);
+                return format;
         }
-        return Optional.empty();
+        return null;
     }
 
     public List<VideoFormat> videoFormats() {

@@ -14,7 +14,6 @@ import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.List;
-import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -44,9 +43,8 @@ class YoutubeDownloader_Tests {
             assertFalse(formats.isEmpty(), "formats should not be empty");
 
             int itag = 43;
-            Optional<Format> formatByItag = video.findFormatByItag(itag);
-            assertTrue(formatByItag.isPresent(), "findFormatByItag should return format");
-            Format format = formatByItag.get();
+            Format format = video.findFormatByItag(itag);
+            assertNotNull(format, "findFormatByItag should return not null format");
             assertTrue(format instanceof AudioVideoFormat, "format with itag " + itag + " should be instance of AudioVideoFormat");
             assertEquals(itag, format.itag().id(), "itag should be " + itag);
 
@@ -92,9 +90,8 @@ class YoutubeDownloader_Tests {
             assertFalse(formats.isEmpty(), "formats should not be empty");
 
             int itag = 137;
-            Optional<Format> formatByItag = video.findFormatByItag(itag);
-            assertTrue(formatByItag.isPresent(), "findFormatByItag should return format");
-            Format format = formatByItag.get();
+            Format format = video.findFormatByItag(itag);
+            assertNotNull(format, "findFormatByItag should return not null format");
             assertTrue(format instanceof VideoFormat, "format with itag " + itag + " should be instance of AudioVideoFormat");
             assertEquals(itag, format.itag().id(), "itag should be " + itag);
 
