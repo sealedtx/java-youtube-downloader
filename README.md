@@ -37,8 +37,8 @@ videoFormats.forEach(it -> {
 });
 
 // itags can be found here - https://gist.github.com/sidneys/7095afe4da4ae58694d128b1034e01e2
-Optional<Format> formatByItag = video.findFormatByItag(136); 
-if (formatByItag.isPresent()) {
+Format formatByItag = video.findFormatByItag(136); 
+if (formatByItag != null) {
     Format it = formatByItag.get();
     System.out.println(it.url());
 }
@@ -49,7 +49,7 @@ video.download(videoFormats.get(0), outputDir);
 
 // async downloading
 
-video.downloadAsync(videoFormats.get(0), outputDir new YoutubeDownloader.DownloadCallback() {
+video.downloadAsync(videoFormats.get(0), outputDir new OnYoutubeDownloadListener() {
     @Override
     public void onDownloading(int progress) {
         System.out.printf("Downloaded %d%%\n", progress);
@@ -85,7 +85,7 @@ Include
 <dependency>
   <groupId>com.github.sealedtx</groupId>
   <artifactId>java-youtube-downloader</artifactId>
-  <version>2.0.0</version>
+  <version>2.0.1</version>
 </dependency>
 ```
 
@@ -100,6 +100,6 @@ allprojects {
 }
   
 dependencies {
-  implementation 'com.github.sealedtx:java-youtube-downloader:2.0.0'
+  implementation 'com.github.sealedtx:java-youtube-downloader:2.0.1'
 }
 ```
