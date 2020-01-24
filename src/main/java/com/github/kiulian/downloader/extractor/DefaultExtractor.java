@@ -9,9 +9,9 @@ package com.github.kiulian.downloader.extractor;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -40,20 +40,22 @@ public class DefaultExtractor implements Extractor {
     private static final int DEFAULT_RETRY_ON_FAILURE = 3;
 
     private Map<String, String> requestProperties = new HashMap<>();
-    private int retryOnFailure;
+    private int retryOnFailure = DEFAULT_RETRY_ON_FAILURE;
 
     public DefaultExtractor() {
         setRequestProperty("User-Agent", DEFAULT_USER_AGENT);
-        setRequestProperty("Accept_language", DEFAULT_ACCEPT_LANG);
-        retryOnFailure = DEFAULT_RETRY_ON_FAILURE;
+        setRequestProperty("Accept-language", DEFAULT_ACCEPT_LANG);
     }
 
-
+    @Override
     public void setRequestProperty(String key, String value) {
         requestProperties.put(key, value);
     }
 
+    @Override
     public void setRetryOnFailure(int retryOnFailure) {
+        if (retryOnFailure < 0)
+            throw new IllegalArgumentException("retry count should be > 0");
         this.retryOnFailure = retryOnFailure;
     }
 
@@ -71,7 +73,7 @@ public class DefaultExtractor implements Extractor {
     @Override
     public String loadUrl(String url) throws YoutubeException {
         int retryCount = retryOnFailure;
-        while (retryCount > 0) {
+        while (retryCount >= 0) {
             try {
                 HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
                 for (Map.Entry<String, String> entry : requestProperties.entrySet()) {

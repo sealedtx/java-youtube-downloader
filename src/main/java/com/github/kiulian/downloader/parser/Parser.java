@@ -22,6 +22,8 @@ package com.github.kiulian.downloader.parser;
 
 import com.alibaba.fastjson.JSONObject;
 import com.github.kiulian.downloader.YoutubeException;
+import com.github.kiulian.downloader.cipher.CipherFactory;
+import com.github.kiulian.downloader.extractor.Extractor;
 import com.github.kiulian.downloader.model.VideoDetails;
 import com.github.kiulian.downloader.model.formats.Format;
 
@@ -29,6 +31,10 @@ import java.io.IOException;
 import java.util.List;
 
 public interface Parser {
+
+    Extractor getExtractor();
+
+    CipherFactory getCipherFactory();
 
     JSONObject getPlayerConfig(String htmlUrl) throws IOException, YoutubeException;
 

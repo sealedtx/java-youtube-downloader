@@ -22,10 +22,7 @@ package com.github.kiulian.downloader;
 
 
 import com.alibaba.fastjson.JSONObject;
-import com.github.kiulian.downloader.cipher.CachedCipherFactory;
-import com.github.kiulian.downloader.cipher.CipherFactory;
-import com.github.kiulian.downloader.extractor.DefaultExtractor;
-import com.github.kiulian.downloader.extractor.Extractor;
+import com.github.kiulian.downloader.cipher.CipherFunction;
 import com.github.kiulian.downloader.model.*;
 import com.github.kiulian.downloader.model.formats.Format;
 import com.github.kiulian.downloader.parser.DefaultParser;
@@ -36,32 +33,40 @@ import java.util.List;
 
 public class YoutubeDownloader {
 
-    public static final char[] ILLEGAL_FILENAME_CHARACTERS = {'/', '\n', '\r', '\t', '\0', '\f', '`', '?', '*', '\\', '<', '>', '|', '\"', ':'};
-
     private Parser parser;
 
     public YoutubeDownloader() {
-        Extractor extractor = new DefaultExtractor();
-        CipherFactory cipherFactory = new CachedCipherFactory(extractor);
-        this.parser = new DefaultParser(extractor, cipherFactory);
+        this.parser = new DefaultParser();
     }
 
     public YoutubeDownloader(Parser parser) {
         this.parser = parser;
     }
 
+    public void setParserRequestProperty(String key, String value) {
+        parser.getExtractor().setRequestProperty(key, value);
+    }
+
+    public void setParserRetryOnFailure(int retryOnFailure) {
+        parser.getExtractor().setRetryOnFailure(retryOnFailure);
+    }
+
+    public void addCipherFunctionPattern(int priority, String regex) {
+        parser.getCipherFactory().addInitialFunctionPattern(priority, regex);
+    }
+
+    public void addCipherFunctionEquivalent(String regex, CipherFunction function) {
+        parser.getCipherFactory().addFunctionEquivalent(regex, function);
+    }
+
     public YoutubeVideo getVideo(String videoId) throws YoutubeException, IOException {
         String htmlUrl = "https://www.youtube.com/watch?v=" + videoId;
 
-        // get player config from web page
         JSONObject ytPlayerConfig = parser.getPlayerConfig(htmlUrl);
 
-        // get video details
         VideoDetails videoDetails = parser.getVideoDetails(ytPlayerConfig);
 
-        // parse formats;
         List<Format> formats = parser.parseFormats(ytPlayerConfig);
         return new YoutubeVideo(videoDetails, formats);
     }
-
 }

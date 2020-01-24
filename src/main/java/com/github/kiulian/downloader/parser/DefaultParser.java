@@ -24,8 +24,10 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.github.kiulian.downloader.YoutubeException;
+import com.github.kiulian.downloader.cipher.CachedCipherFactory;
 import com.github.kiulian.downloader.cipher.Cipher;
 import com.github.kiulian.downloader.cipher.CipherFactory;
+import com.github.kiulian.downloader.extractor.DefaultExtractor;
 import com.github.kiulian.downloader.extractor.Extractor;
 import com.github.kiulian.downloader.model.Itag;
 import com.github.kiulian.downloader.model.VideoDetails;
@@ -34,7 +36,6 @@ import com.github.kiulian.downloader.model.formats.AudioVideoFormat;
 import com.github.kiulian.downloader.model.formats.Format;
 import com.github.kiulian.downloader.model.formats.VideoFormat;
 
-import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.util.ArrayList;
@@ -45,9 +46,19 @@ public class DefaultParser implements Parser {
     private Extractor extractor;
     private CipherFactory cipherFactory;
 
-    public DefaultParser(Extractor extractor, CipherFactory cipherFactory) {
-        this.extractor = extractor;
-        this.cipherFactory = cipherFactory;
+    public DefaultParser() {
+        this.extractor = new DefaultExtractor();
+        this.cipherFactory = new CachedCipherFactory(extractor);
+    }
+
+    @Override
+    public Extractor getExtractor() {
+        return extractor;
+    }
+
+    @Override
+    public CipherFactory getCipherFactory() {
+        return cipherFactory;
     }
 
     @Override
@@ -104,6 +115,10 @@ public class DefaultParser implements Parser {
             try {
                 Format format = parseFormat(json, config);
                 formats.add(format);
+            } catch (YoutubeException.CipherException e) {
+                throw e;
+            } catch (YoutubeException e) {
+                System.err.println("Error parsing format: " + json);
             } catch (IllegalArgumentException e) {
                 System.err.println("Unknown itag " + json.getInteger("itag"));
             } catch (Exception e) {

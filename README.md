@@ -17,10 +17,19 @@ Usage
 ```java
 // init downloader
 YoutubeDownloader downloader = new YoutubeDownloader();
-YoutubeDownloader downloader = new YoutubeDownloader(new Parser()); // you can easly implement or extend existing parsing logic 
+
+// you can easly implement or extend default parsing logic 
+YoutubeDownloader downloader = new YoutubeDownloader(new Parser()); 
+// or just extend functionality via existing API
+// cipher features
+downloader.addCipherFunctionPattern(2, "\\b([a-zA-Z0-9$]{2})\\s*=\\s*function\\(\\s*a\\s*\\)\\s*\\{\\s*a\\s*=\\s*a\\.split\\(\\s*\"\"\\s*\\)");
+downloader.addCipherFunctionEquivalent("some regex for js function", new CustomJavaFunction());
+// extractor features
+downloader.setParserRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.121 Safari/537.36");
+downloader.setParserRetryOnFailure(1);
 
 // parsing data
-String videoId = "YOUR_VIDEO_ID"; // https://www.youtube.com/watch?v=abc12345 <---- this is VIDEO_ID
+String videoId = "abc12345"; // for url https://www.youtube.com/watch?v=abc12345
 YoutubeVideo video = downloader.getVideo(videoId);
 
 // video details
@@ -39,8 +48,7 @@ videoFormats.forEach(it -> {
 // itags can be found here - https://gist.github.com/sidneys/7095afe4da4ae58694d128b1034e01e2
 Format formatByItag = video.findFormatByItag(136); 
 if (formatByItag != null) {
-    Format it = formatByItag.get();
-    System.out.println(it.url());
+    System.out.println(formatByItag.url());
 }
 
 // downloading
@@ -85,7 +93,7 @@ Include
 <dependency>
   <groupId>com.github.sealedtx</groupId>
   <artifactId>java-youtube-downloader</artifactId>
-  <version>2.0.1</version>
+  <version>2.1.0</version>
 </dependency>
 ```
 
@@ -100,6 +108,6 @@ allprojects {
 }
   
 dependencies {
-  implementation 'com.github.sealedtx:java-youtube-downloader:2.0.1'
+  implementation 'com.github.sealedtx:java-youtube-downloader:2.1.0'
 }
 ```

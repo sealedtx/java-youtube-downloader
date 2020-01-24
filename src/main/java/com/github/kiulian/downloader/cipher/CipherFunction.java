@@ -20,8 +20,6 @@ package com.github.kiulian.downloader.cipher;
  * #
  */
 
-
-@FunctionalInterface
 public interface CipherFunction {
 
     char[] apply(char[] array, String argument);

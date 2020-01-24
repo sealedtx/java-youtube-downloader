@@ -25,7 +25,6 @@ import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 public class VideoDetails {
@@ -48,7 +47,7 @@ public class VideoDetails {
         videoId = json.getString("videoId");
         title = json.getString("title");
         lengthSeconds = json.getIntValue("lengthSeconds");
-        keywords = json.containsKey("keywords") ? json.getJSONArray("keywords").toJavaList(String.class) : Collections.emptyList();
+        keywords = json.containsKey("keywords") ? json.getJSONArray("keywords").toJavaList(String.class) : new ArrayList<String>();
         shortDescription = json.getString("shortDescription");
         JSONArray jsonThumbnails = json.getJSONObject("thumbnail").getJSONArray("thumbnails");
         thumbnails = new ArrayList<>(jsonThumbnails.size());

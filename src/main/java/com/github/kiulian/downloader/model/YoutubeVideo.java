@@ -22,7 +22,6 @@ package com.github.kiulian.downloader.model;
 
 
 import com.github.kiulian.downloader.OnYoutubeDownloadListener;
-import com.github.kiulian.downloader.YoutubeDownloader;
 import com.github.kiulian.downloader.YoutubeException;
 import com.github.kiulian.downloader.model.formats.AudioFormat;
 import com.github.kiulian.downloader.model.formats.Format;
@@ -36,6 +35,7 @@ import java.util.LinkedList;
 import java.util.List;
 
 public class YoutubeVideo {
+    private static final char[] ILLEGAL_FILENAME_CHARACTERS = {'/', '\n', '\r', '\t', '\0', '\f', '`', '?', '*', '\\', '<', '>', '|', '\"', ':'};
 
     private VideoDetails videoDetails;
     private List<Format> formats;
@@ -154,7 +154,7 @@ public class YoutubeVideo {
         return outputFile;
     }
 
-    public void downloadAsync(Format format, File outDir, OnYoutubeDownloadListener listener) throws IOException, YoutubeException {
+    public void downloadAsync(final Format format, File outDir, final OnYoutubeDownloadListener listener) throws IOException, YoutubeException {
         if (videoDetails.isLive())
             throw new YoutubeException.LiveVideoException("Can not download live stream");
 
@@ -164,7 +164,7 @@ public class YoutubeVideo {
                 throw new IOException("Could not create output directory: " + outDir);
         }
 
-        URL url = new URL(format.url());
+        final URL url = new URL(format.url());
 
         String fileName = videoDetails.title() + "." + format.extension().value();
         File outputFile = new File(outDir, cleanFilename(fileName));
@@ -175,38 +175,41 @@ public class YoutubeVideo {
             outputFile = new File(outDir, cleanFilename(fileName));
         }
 
-        File finalOutputFile = outputFile;
+        final File finalOutputFile = outputFile;
 
-        Thread thread = new Thread(() -> {
-            try (BufferedInputStream bis = new BufferedInputStream(url.openStream())) {
-                try (BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(finalOutputFile))) {
-                    double total = 0;
-                    byte[] buffer = new byte[4096];
-                    int count = 0;
-                    int progress = 0;
-                    while ((count = bis.read(buffer, 0, 4096)) != -1) {
-                        bos.write(buffer, 0, count);
-                        total += count;
-                        int newProgress = (int) ((total / format.contentLength()) * 100);
-                        if (newProgress > progress) {
-                            progress = newProgress;
-                            listener.onDownloading(progress);
+        final Thread thread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try (BufferedInputStream bis = new BufferedInputStream(url.openStream())) {
+                    try (BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(finalOutputFile))) {
+                        double total = 0;
+                        byte[] buffer = new byte[4096];
+                        int count = 0;
+                        int progress = 0;
+                        while ((count = bis.read(buffer, 0, 4096)) != -1) {
+                            bos.write(buffer, 0, count);
+                            total += count;
+                            int newProgress = (int) ((total / format.contentLength()) * 100);
+                            if (newProgress > progress) {
+                                progress = newProgress;
+                                listener.onDownloading(progress);
+                            }
                         }
-                    }
 
-                    listener.onFinished(finalOutputFile);
+                        listener.onFinished(finalOutputFile);
+                    } catch (IOException e) {
+                        listener.onError(e);
+                    }
                 } catch (IOException e) {
-                    listener.onError(e);
+                    e.printStackTrace();
                 }
-            } catch (IOException e) {
-                e.printStackTrace();
             }
         });
         thread.start();
     }
 
     private String cleanFilename(String filename) {
-        for (char c : YoutubeDownloader.ILLEGAL_FILENAME_CHARACTERS) {
+        for (char c : ILLEGAL_FILENAME_CHARACTERS) {
             filename = filename.replace(c, '_');
         }
         return filename;

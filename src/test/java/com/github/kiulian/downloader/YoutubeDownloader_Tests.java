@@ -116,6 +116,32 @@ class YoutubeDownloader_Tests {
 
     }
 
+    @Test
+    @DisplayName("addInitialFunctionPattern should add regex with priority to initialFunctionPatterns")
+    void addInitialFunctionPattern_Success() {
+        YoutubeDownloader downloader = new YoutubeDownloader();
+        downloader.addCipherFunctionPattern(0, "([a-zA-Z0-9$]+)\\s*=\\s*function\\(\\s*a\\s*\\)\\s*\\{\\s*a\\s*=\\s*a\\.split\\(\\s*\"\"\\s*\\)");
+        String videoId = "SmM0653YvXU";
+
+        assertThrows(YoutubeException.CipherException.class, () -> {
+            YoutubeVideo video = downloader.getVideo(videoId);
+        }, "getVideo should throw CipherException if initial function patterns has wrong priority");
+
+        downloader.addCipherFunctionPattern(0, "\\b([a-zA-Z0-9$]{2})\\s*=\\s*function\\(\\s*a\\s*\\)\\s*\\{\\s*a\\s*=\\s*a\\.split\\(\\s*\"\"\\s*\\)");
+        assertDoesNotThrow(() -> {
+            YoutubeVideo video = downloader.getVideo(videoId);
+        }, "getVideo should not throw exception if initial function patterns has correct priority");
+    }
+
+    @Test
+    @DisplayName("setRetryOnFailure should throw exception for invalid values")
+    void setRetryOnFailure_InvalidRetryCount_ThrowsException() {
+        YoutubeDownloader downloader = new YoutubeDownloader();
+        assertThrows(IllegalArgumentException.class, () -> {
+            downloader.setParserRetryOnFailure(-1);
+        });
+    }
+
 
     private static boolean isReachable(String url) {
         try {

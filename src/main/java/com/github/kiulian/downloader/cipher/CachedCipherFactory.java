@@ -41,7 +41,6 @@ public class CachedCipherFactory implements CipherFactory {
             "\\b[cs]\\s*&&\\s*[adf]\\.set\\([^,]+\\s*,\\s*([a-zA-Z0-9$]+)\\(",
             "\\b[a-zA-Z0-9]+\\s*&&\\s*[a-zA-Z0-9]+\\.set\\([^,]+\\s*,\\s*([a-zA-Z0-9$]+)\\(",
             "\\bc\\s*&&\\s*a\\.set\\([^,]+\\s*,\\s*\\([^)]*\\)\\s*\\(\\s*([a-zA-Z0-9$]+)\\(",
-            "\\bc\\s*&&\\s*[a-zA-Z0-9]+\\.set\\([^,]+\\s*,\\s*\\([^)]*\\)\\s*\\(\\s*([a-zA-Z0-9$]+)\\(",
             "\\bc\\s*&&\\s*[a-zA-Z0-9]+\\.set\\([^,]+\\s*,\\s*\\([^)]*\\)\\s*\\(\\s*([a-zA-Z0-9$]+)\\("
     };
 
@@ -62,7 +61,7 @@ public class CachedCipherFactory implements CipherFactory {
         this.extractor = extractor;
 
         for (String pattern : INITIAL_FUNCTION_PATTERNS) {
-            addInitialFunctionPattern(pattern);
+            addInitialFunctionPattern(knownInitialFunctionPatterns.size(), pattern);
         }
 
         addFunctionEquivalent(FUNCTION_REVERSE_PATTERN, new ReverseFunction());
@@ -71,16 +70,14 @@ public class CachedCipherFactory implements CipherFactory {
         addFunctionEquivalent(FUNCTION_SWAP2_PATTERN, new SwapFunctionV2());
     }
 
-    public void addInitialFunctionPattern(String regex) {
-        knownInitialFunctionPatterns.add(Pattern.compile(regex));
+    @Override
+    public void addInitialFunctionPattern(int priority, String regex) {
+        knownInitialFunctionPatterns.add(priority, Pattern.compile(regex));
     }
 
+    @Override
     public void addFunctionEquivalent(String regex, CipherFunction function) {
         functionsEquivalentMap.put(Pattern.compile(regex), function);
-    }
-
-    public void clearCache() {
-        ciphers.clear();
     }
 
     @Override
@@ -100,6 +97,10 @@ public class CachedCipherFactory implements CipherFactory {
         }
 
         return cipher;
+    }
+
+    public void clearCache() {
+        ciphers.clear();
     }
 
     private List<JsFunction> getTransformFunctions(String js) throws YoutubeException {
