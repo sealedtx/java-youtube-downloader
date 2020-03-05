@@ -57,11 +57,10 @@ if (formatByItag != null) {
     System.out.println(formatByItag.url());
 }
 
-// downloading
 File outputDir = new File("my_videos");
 
 // sync downloading
-video.download(videoFormats.get(0), outputDir);
+File file = video.download(videoFormats.get(0), outputDir);
 
 // async downloading with callback
 video.downloadAsync(videoFormats.get(0), outputDir, new OnYoutubeDownloadListener() {
@@ -119,6 +118,6 @@ allprojects {
 }
   
 dependencies {
-  implementation 'com.github.sealedtx:java-youtube-downloader:2.1.0'
+  implementation 'com.github.sealedtx:java-youtube-downloader:2.1.1'
 }
 ```
