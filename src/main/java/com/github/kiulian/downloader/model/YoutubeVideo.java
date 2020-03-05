@@ -24,6 +24,7 @@ package com.github.kiulian.downloader.model;
 import com.github.kiulian.downloader.OnYoutubeDownloadListener;
 import com.github.kiulian.downloader.YoutubeException;
 import com.github.kiulian.downloader.model.formats.AudioFormat;
+import com.github.kiulian.downloader.model.formats.AudioVideoFormat;
 import com.github.kiulian.downloader.model.formats.Format;
 import com.github.kiulian.downloader.model.formats.VideoFormat;
 import com.github.kiulian.downloader.model.quality.AudioQuality;
@@ -33,9 +34,13 @@ import java.io.*;
 import java.net.URL;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.Future;
+import java.util.concurrent.FutureTask;
+
+import static com.github.kiulian.downloader.model.Utils.getOutputFile;
 
 public class YoutubeVideo {
-    private static final char[] ILLEGAL_FILENAME_CHARACTERS = {'/', '\n', '\r', '\t', '\0', '\f', '`', '?', '*', '\\', '<', '>', '|', '\"', ':'};
 
     private VideoDetails videoDetails;
     private List<Format> formats;
@@ -60,6 +65,17 @@ public class YoutubeVideo {
                 return format;
         }
         return null;
+    }
+
+    public List<AudioVideoFormat> videoWithAudioFormats() {
+        List<AudioVideoFormat> find = new LinkedList<>();
+
+        for (int i = 0; i < formats.size(); i++) {
+            Format format = formats.get(i);
+            if (format instanceof AudioVideoFormat)
+                find.add((AudioVideoFormat) format);
+        }
+        return find;
     }
 
     public List<VideoFormat> videoFormats() {
@@ -132,14 +148,7 @@ public class YoutubeVideo {
         if (videoDetails.isLive())
             throw new YoutubeException.LiveVideoException("Can not download live stream");
 
-        if (!outDir.exists()) {
-            boolean mkdirs = outDir.mkdirs();
-            if (!mkdirs)
-                throw new IOException("Could not create output directory: " + outDir);
-        }
-
-        String fileName = videoDetails.title() + "." + format.extension().value();
-        File outputFile = new File(outDir, cleanFilename(fileName));
+        File outputFile = getOutputFile(videoDetails, format, outDir);
 
         URL url = new URL(format.url());
         BufferedInputStream bis = new BufferedInputStream(url.openStream());
@@ -154,34 +163,37 @@ public class YoutubeVideo {
         return outputFile;
     }
 
-    public void downloadAsync(final Format format, File outDir, final OnYoutubeDownloadListener listener) throws IOException, YoutubeException {
+    public Future<File> downloadAsync(Format format, File outDir) throws YoutubeException.LiveVideoException, IOException {
         if (videoDetails.isLive())
             throw new YoutubeException.LiveVideoException("Can not download live stream");
 
-        if (!outDir.exists()) {
-            boolean mkdirs = outDir.mkdirs();
-            if (!mkdirs)
-                throw new IOException("Could not create output directory: " + outDir);
-        }
+        getOutputFile(videoDetails, format, outDir);
+
+        FutureTask<File> future = new FutureTask<>(new Callable<File>() {
+            @Override
+            public File call() throws IOException, YoutubeException {
+                return download(format, outDir);
+            }
+        });
+
+        Thread thread = new Thread(future, "YtDownloader");
+        thread.setDaemon(true);
+        thread.start();
+        return future;
+    }
+
+    public void downloadAsync(Format format, File outDir, OnYoutubeDownloadListener listener) throws IOException, YoutubeException {
+        if (videoDetails.isLive())
+            throw new YoutubeException.LiveVideoException("Can not download live stream");
+
+        File outputFile = getOutputFile(videoDetails, format, outDir);
 
         final URL url = new URL(format.url());
-
-        String fileName = videoDetails.title() + "." + format.extension().value();
-        File outputFile = new File(outDir, cleanFilename(fileName));
-
-        int i = 1;
-        while (outputFile.exists()) {
-            fileName = videoDetails.title() + "(" + i++ + ")" + "." + format.extension().value();
-            outputFile = new File(outDir, cleanFilename(fileName));
-        }
-
-        final File finalOutputFile = outputFile;
-
-        final Thread thread = new Thread(new Runnable() {
+        Thread thread = new Thread(new Runnable() {
             @Override
             public void run() {
                 try (BufferedInputStream bis = new BufferedInputStream(url.openStream())) {
-                    try (BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(finalOutputFile))) {
+                    try (BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(outputFile))) {
                         double total = 0;
                         byte[] buffer = new byte[4096];
                         int count = 0;
@@ -196,7 +208,7 @@ public class YoutubeVideo {
                             }
                         }
 
-                        listener.onFinished(finalOutputFile);
+                        listener.onFinished(outputFile);
                     } catch (IOException e) {
                         listener.onError(e);
                     }
@@ -204,15 +216,9 @@ public class YoutubeVideo {
                     e.printStackTrace();
                 }
             }
-        });
+        }, "YtDownloader");
+        thread.setDaemon(true);
         thread.start();
-    }
-
-    private String cleanFilename(String filename) {
-        for (char c : ILLEGAL_FILENAME_CHARACTERS) {
-            filename = filename.replace(c, '_');
-        }
-        return filename;
     }
 
 }

@@ -39,7 +39,13 @@ System.out.println(details.title());
 System.out.println(details.viewCount());
 details.thumbnails().forEach(image -> System.out.println("Thumbnail: " + image));
 
-// filtering formats
+// get videos with audio
+List<AudioVideoFormat> videoWithAudioFormats = video.videoWithAudioFormats();
+videoWithAudioFormats.forEach(it -> {
+    System.out.println(it.videoQuality() + " : " + it.url());
+});
+
+// filtering only video formats
 List<VideoFormat> videoFormats = video.findVideoWithQuality(VideoQuality.hd720);
 videoFormats.forEach(it -> {
     System.out.println(it.videoQuality() + " : " + it.url());
@@ -53,11 +59,12 @@ if (formatByItag != null) {
 
 // downloading
 File outputDir = new File("my_videos");
+
+// sync downloading
 video.download(videoFormats.get(0), outputDir);
 
-// async downloading
-
-video.downloadAsync(videoFormats.get(0), outputDir new OnYoutubeDownloadListener() {
+// async downloading with callback
+video.downloadAsync(videoFormats.get(0), outputDir, new OnYoutubeDownloadListener() {
     @Override
     public void onDownloading(int progress) {
         System.out.printf("Downloaded %d%%\n", progress);
@@ -73,6 +80,10 @@ video.downloadAsync(videoFormats.get(0), outputDir new OnYoutubeDownloadListener
         System.out.println("Error: " + throwable.getLocalizedMessage());
     }
 });
+
+// async downloading with future
+Future<File> future = video.downloadAsync(format, outputDir);
+File file = future.get(5, TimeUnit.SECONDS);
 
 ```
 
@@ -93,7 +104,7 @@ Include
 <dependency>
   <groupId>com.github.sealedtx</groupId>
   <artifactId>java-youtube-downloader</artifactId>
-  <version>2.1.0</version>
+  <version>2.1.1</version>
 </dependency>
 ```
 

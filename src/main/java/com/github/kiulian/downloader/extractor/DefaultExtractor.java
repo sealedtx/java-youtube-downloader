@@ -27,6 +27,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -81,7 +82,7 @@ public class DefaultExtractor implements Extractor {
                 }
 
                 BufferedReader in = new BufferedReader(new InputStreamReader(
-                        connection.getInputStream()));
+                        connection.getInputStream(), StandardCharsets.UTF_8));
 
                 StringBuilder sb = new StringBuilder();
                 String inputLine;
