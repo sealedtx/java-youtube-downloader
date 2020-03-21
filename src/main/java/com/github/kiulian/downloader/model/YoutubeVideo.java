@@ -145,7 +145,7 @@ public class YoutubeVideo {
     }
 
     public File download(Format format, File outDir) throws IOException, YoutubeException {
-        if (videoDetails.isLive())
+        if (videoDetails.isLive() || (videoDetails.isLiveContent() && videoDetails.lengthSeconds() == 0))
             throw new YoutubeException.LiveVideoException("Can not download live stream");
 
         File outputFile = getOutputFile(videoDetails, format, outDir);
@@ -183,7 +183,7 @@ public class YoutubeVideo {
     }
 
     public void downloadAsync(Format format, File outDir, OnYoutubeDownloadListener listener) throws IOException, YoutubeException {
-        if (videoDetails.isLive())
+        if (videoDetails.isLive() || (videoDetails.isLiveContent() && videoDetails.lengthSeconds() == 0))
             throw new YoutubeException.LiveVideoException("Can not download live stream");
 
         File outputFile = getOutputFile(videoDetails, format, outDir);

@@ -39,6 +39,7 @@ public class VideoDetails {
     private long viewCount;
     private int averageRating;
     private boolean isLiveContent;
+    private boolean isLive;
 
     public VideoDetails() {
     }
@@ -60,6 +61,7 @@ public class VideoDetails {
         viewCount = json.getLongValue("viewCount");
         author = json.getString("author");
         isLiveContent = json.getBooleanValue("isLiveContent");
+        isLive = json.getBooleanValue("isLive");
     }
 
     public String videoId() {
@@ -99,6 +101,11 @@ public class VideoDetails {
     }
 
     public boolean isLive() {
+        return isLive;
+    }
+
+    public boolean isLiveContent() {
         return isLiveContent;
     }
+
 }

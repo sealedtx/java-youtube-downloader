@@ -84,7 +84,7 @@ class YoutubeDownloader_Tests {
 
 
     @Test
-    @DisplayName("getVideo should be successful for default videos without signature")
+    @DisplayName("getVideo should be successful for default videos with signature")
     void getVideo_WithSignature_Success() {
         YoutubeDownloader downloader = new YoutubeDownloader();
 
