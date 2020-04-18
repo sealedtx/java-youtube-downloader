@@ -9,9 +9,9 @@ package com.github.kiulian.downloader.model;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -32,6 +32,7 @@ import com.github.kiulian.downloader.model.quality.VideoQuality;
 
 import java.io.*;
 import java.net.URL;
+import java.net.URLConnection;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -188,32 +189,39 @@ public class YoutubeVideo {
 
         File outputFile = getOutputFile(videoDetails, format, outDir);
 
-        final URL url = new URL(format.url());
+        URL url = new URL(format.url());
         Thread thread = new Thread(new Runnable() {
             @Override
             public void run() {
-                try (BufferedInputStream bis = new BufferedInputStream(url.openStream())) {
-                    try (BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(outputFile))) {
-                        double total = 0;
-                        byte[] buffer = new byte[4096];
-                        int count = 0;
-                        int progress = 0;
-                        while ((count = bis.read(buffer, 0, 4096)) != -1) {
-                            bos.write(buffer, 0, count);
-                            total += count;
-                            int newProgress = (int) ((total / format.contentLength()) * 100);
-                            if (newProgress > progress) {
-                                progress = newProgress;
-                                listener.onDownloading(progress);
-                            }
-                        }
+                try {
+                    URLConnection urlConnection = url.openConnection();
+                    int contentLength = urlConnection.getContentLength();
 
-                        listener.onFinished(outputFile);
+                    try (BufferedInputStream bis = new BufferedInputStream(urlConnection.getInputStream())) {
+                        try (BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(outputFile))) {
+                            double total = 0;
+                            byte[] buffer = new byte[4096];
+                            int count = 0;
+                            int progress = 0;
+                            while ((count = bis.read(buffer, 0, 4096)) != -1) {
+                                bos.write(buffer, 0, count);
+                                total += count;
+                                int newProgress = (int) ((total / contentLength) * 100);
+                                if (newProgress > progress) {
+                                    progress = newProgress;
+                                    listener.onDownloading(progress);
+                                }
+                            }
+
+                            listener.onFinished(outputFile);
+                        } catch (IOException e) {
+                            listener.onError(e);
+                        }
                     } catch (IOException e) {
                         listener.onError(e);
                     }
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    listener.onError(e);
                 }
             }
         }, "YtDownloader");

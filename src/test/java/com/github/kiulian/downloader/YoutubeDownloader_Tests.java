@@ -218,15 +218,18 @@ class YoutubeDownloader_Tests {
             video.downloadAsync(format, outDir, new OnYoutubeDownloadListener() {
                 @Override
                 public void onDownloading(int progress) {
+                    System.out.printf("Downloading %d%%\n", progress);
                 }
 
                 @Override
                 public void onFinished(File file) {
                     System.arraycopy(file.getName().toCharArray(), 0, name, 0, file.getName().length());
+                    System.out.printf("Finished %s\n", file.getPath());
                 }
 
                 @Override
                 public void onError(Throwable throwable) {
+                    System.out.printf("Error %s\n", throwable.getMessage());
                 }
 
             });

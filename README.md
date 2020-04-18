@@ -103,7 +103,7 @@ Include
 <dependency>
   <groupId>com.github.sealedtx</groupId>
   <artifactId>java-youtube-downloader</artifactId>
-  <version>2.1.1</version>
+  <version>2.1.2</version>
 </dependency>
 ```
 

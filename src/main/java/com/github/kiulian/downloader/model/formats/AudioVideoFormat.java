@@ -22,10 +22,14 @@ package com.github.kiulian.downloader.model.formats;
 
 
 import com.alibaba.fastjson.JSONObject;
+import com.github.kiulian.downloader.model.quality.AudioQuality;
 import com.github.kiulian.downloader.model.quality.VideoQuality;
 
-public class AudioVideoFormat extends AudioFormat {
+public class AudioVideoFormat extends Format {
 
+    private final Integer averageBitrate;
+    private final Integer audioSampleRate;
+    private final AudioQuality audioQuality;
     private final String qualityLabel;
     private final Integer width;
     private final Integer height;
@@ -33,6 +37,8 @@ public class AudioVideoFormat extends AudioFormat {
 
     public AudioVideoFormat(JSONObject json) {
         super(json);
+        audioSampleRate = json.getInteger("audioSampleRate");
+        averageBitrate = json.getInteger("averageBitrate");
         qualityLabel = json.getString("qualityLabel");
         width = json.getInteger("width");
         height = json.getInteger("height");
@@ -45,6 +51,17 @@ public class AudioVideoFormat extends AudioFormat {
             }
         }
         this.videoQuality = videoQuality;
+
+        AudioQuality audioQuality = null;
+        if (json.containsKey("audioQuality")) {
+            String[] split = json.getString("audioQuality").split("_");
+            String quality = split[split.length - 1].toLowerCase();
+            try {
+                audioQuality = AudioQuality.valueOf(quality);
+            } catch (IllegalArgumentException ignore) {
+            }
+        }
+        this.audioQuality = audioQuality;
     }
 
     @Override
@@ -66,6 +83,18 @@ public class AudioVideoFormat extends AudioFormat {
 
     public Integer height() {
         return height;
+    }
+
+    public Integer averageBitrate() {
+        return averageBitrate;
+    }
+
+    public AudioQuality audioQuality() {
+        return audioQuality != null ? audioQuality : itag.audioQuality();
+    }
+
+    public Integer audioSampleRate() {
+        return audioSampleRate;
     }
 
 }
