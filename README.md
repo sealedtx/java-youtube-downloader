@@ -118,6 +118,6 @@ allprojects {
 }
   
 dependencies {
-  implementation 'com.github.sealedtx:java-youtube-downloader:2.1.1'
+  implementation 'com.github.sealedtx:java-youtube-downloader:2.1.2'
 }
 ```
