@@ -129,9 +129,9 @@ public class DefaultParser implements Parser {
     }
 
     private Format parseFormat(JSONObject json, JSONObject config) throws YoutubeException {
-        if (json.containsKey("cipher")) {
+        if (json.containsKey("signatureCipher")) {
             JSONObject jsonCipher = new JSONObject();
-            String[] cipherData = json.getString("cipher").replace("\\u0026", "&").split("&");
+            String[] cipherData = json.getString("signatureCipher").replace("\\u0026", "&").split("&");
             for (String s : cipherData) {
                 String[] keyValue = s.split("=");
                 jsonCipher.put(keyValue[0], keyValue[1]);
