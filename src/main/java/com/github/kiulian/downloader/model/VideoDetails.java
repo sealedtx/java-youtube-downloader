@@ -40,6 +40,7 @@ public class VideoDetails {
     private int averageRating;
     private boolean isLiveContent;
     private boolean isLive;
+    private String liveUrl;
 
     public VideoDetails() {
     }
@@ -108,4 +109,11 @@ public class VideoDetails {
         return isLiveContent;
     }
 
+    public String liveUrl() {
+        return liveUrl;
+    }
+
+    public void setLiveUrl(String url) {
+        liveUrl = url;
+    }
 }

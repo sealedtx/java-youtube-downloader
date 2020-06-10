@@ -67,6 +67,11 @@ public class YoutubeDownloader {
         VideoDetails videoDetails = parser.getVideoDetails(ytPlayerConfig);
 
         List<Format> formats = parser.parseFormats(ytPlayerConfig);
+
+        if (videoDetails.isLive()) {
+            videoDetails.setLiveUrl(parser.getLiveHLSUrl(ytPlayerConfig));
+        }
+
         return new YoutubeVideo(videoDetails, formats);
     }
 }
