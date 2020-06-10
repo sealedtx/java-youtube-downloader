@@ -26,8 +26,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class YoutubeLiveStream_Tests {
 
     private static final String LIVE_TEST_1 = "Zp9zBmwK4uQ";
-    private static final String WAS_LIVE_TEST_BUT_NOT_PUBLIC = "IsMZPeaD6k0";
-    private static final String WAS_LIVE_TEST_BUT_PUBLIC = "IsMZPeaD6k0"; //"Aymrnzianf0";
+    private static final String WAS_LIVE_TEST_BUT_PUBLIC = "IsMZPeaD6k0";
     @Test
     @DisplayName("We should be able to get the HLS Stream URL for a live stream")
     void getLiveStreamHLS_Success() {
@@ -81,6 +80,3 @@ class YoutubeLiveStream_Tests {
         }
     }
 }
-
-
-//https://manifest.googlevideo.com/api/manifest/hls_variant/expire/1591840371/ei/EjrhXtf6O8LK1wKVyoToDw/ip/188.192.58.15/id/IsMZPeaD6k0.1/source/yt_live_broadcast/requiressl/yes/hfr/1/playlist_duration/30/manifest_duration/30/maudio/1/gcr/de/vprv/1/go/1/keepalive/yes/dover/11/itag/0/playlist_type/DVR/sparams/expire%2Cei%2Cip%2Cid%2Csource%2Crequiressl%2Chfr%2Cplaylist_duration%2Cmanifest_duration%2Cmaudio%2Cgcr%2Cvprv%2Cgo%2Citag%2Cplaylist_type/sig/AOq0QJ8wRgIhAJNhfRbmfWN817cAC6Pe7BtGt5ROFXKA_6yyllMZIY56AiEAiNsrmugWn_IJTL07r_kI4vaZUCo9YjTjty8VkS8s-EE%3D/file/index.m3u8
