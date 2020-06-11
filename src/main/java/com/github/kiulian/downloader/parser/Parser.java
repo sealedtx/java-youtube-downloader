@@ -38,11 +38,10 @@ public interface Parser {
 
     JSONObject getPlayerConfig(String htmlUrl) throws IOException, YoutubeException;
 
-    VideoDetails getVideoDetails(JSONObject config);
+    VideoDetails getVideoDetails(JSONObject config) throws YoutubeException.BadPageException;
 
     String getJsUrl(JSONObject config) throws YoutubeException;
 
     List<Format> parseFormats(JSONObject json) throws YoutubeException;
 
-    String getLiveHLSUrl(JSONObject config) throws YoutubeException;
 }

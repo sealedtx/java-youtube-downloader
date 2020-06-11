@@ -25,8 +25,8 @@ import static org.junit.jupiter.api.Assertions.*;
 @DisplayName("Youtube downloader tests")
 class YoutubeLiveStream_Tests {
 
-    private static final String LIVE_TEST_1 = "Zp9zBmwK4uQ";
-    private static final String WAS_LIVE_TEST_BUT_PUBLIC = "IsMZPeaD6k0";
+    private static final String LIVE_TEST_1 = "5qap5aO4i9A";
+    private static final String WAS_LIVE_TEST_BUT_PUBLIC = "boSGRDYm92E";
     @Test
     @DisplayName("We should be able to get the HLS Stream URL for a live stream")
     void getLiveStreamHLS_Success() {

@@ -81,12 +81,22 @@ public class DefaultParser implements Parser {
     }
 
     @Override
-    public VideoDetails getVideoDetails(JSONObject config) {
+    public VideoDetails getVideoDetails(JSONObject config) throws YoutubeException.BadPageException {
         JSONObject args = config.getJSONObject("args");
         JSONObject playerResponse = args.getJSONObject("player_response");
 
-        if (playerResponse.containsKey("videoDetails"))
-            return new VideoDetails(playerResponse.getJSONObject("videoDetails"));
+        if (playerResponse.containsKey("videoDetails")) {
+            JSONObject videoDetails = playerResponse.getJSONObject("videoDetails");
+            String liveHLSUrl = null;
+            if(videoDetails.getBooleanValue("isLive")) {
+                if (playerResponse.containsKey("streamingData")) {
+                    liveHLSUrl = playerResponse.getJSONObject("streamingData").getString("hlsManifestUrl");
+                }
+            }
+            return new VideoDetails(videoDetails, liveHLSUrl);
+        }
+
+
 
         return new VideoDetails();
     }
@@ -172,25 +182,5 @@ public class DefaultParser implements Parser {
             return new VideoFormat(json);
 
         return new AudioFormat(json);
-    }
-
-    @Override
-    public String getLiveHLSUrl(JSONObject config) throws YoutubeException {
-        JSONObject args = config.getJSONObject("args");
-        JSONObject playerResponse = args.getJSONObject("player_response");
-
-        if (!playerResponse.containsKey("streamingData")) {
-            throw new YoutubeException.BadPageException("Streaming data not found");
-        }
-
-        JSONObject streamingData = playerResponse.getJSONObject("streamingData");
-
-        if (streamingData.containsKey("hlsManifestUrl")) {
-            return streamingData.getString("hlsManifestUrl");
-        } else {
-            System.out.println("NOT FOUND");
-        }
-
-        return null;
     }
 }
