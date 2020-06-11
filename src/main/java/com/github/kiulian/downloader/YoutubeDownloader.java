@@ -67,7 +67,6 @@ public class YoutubeDownloader {
         VideoDetails videoDetails = parser.getVideoDetails(ytPlayerConfig);
 
         List<Format> formats = parser.parseFormats(ytPlayerConfig);
-
         return new YoutubeVideo(videoDetails, formats);
     }
 }

@@ -81,7 +81,7 @@ public class DefaultParser implements Parser {
     }
 
     @Override
-    public VideoDetails getVideoDetails(JSONObject config) throws YoutubeException.BadPageException {
+    public VideoDetails getVideoDetails(JSONObject config) {
         JSONObject args = config.getJSONObject("args");
         JSONObject playerResponse = args.getJSONObject("player_response");
 
