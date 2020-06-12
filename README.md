@@ -6,6 +6,7 @@ java-youtube-downloader
 Simple java parser for receiving youtube video meta info and download videos and audio of all available formats.
 
 **Since 2.0.0** supports downloading videos with signature.
+<br>**Since 2.2.0** supports retrieving HLS url for live videos.
 
 **Notice**: Youtube API does not support video download. In faсt it is prohibited - [Terms of Service - II. Prohibitions](https://developers.google.com/youtube/terms/api-services-terms-of-service). 
 
@@ -108,7 +109,7 @@ Include
 <dependency>
   <groupId>com.github.sealedtx</groupId>
   <artifactId>java-youtube-downloader</artifactId>
-  <version>2.1.3</version>
+  <version>2.2.0</version>
 </dependency>
 ```
 
@@ -123,6 +124,6 @@ allprojects {
 }
   
 dependencies {
-  implementation 'com.github.sealedtx:java-youtube-downloader:2.1.3'
+  implementation 'com.github.sealedtx:java-youtube-downloader:2.2.0'
 }
 ```
