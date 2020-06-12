@@ -84,6 +84,11 @@ video.downloadAsync(videoFormats.get(0), outputDir, new OnYoutubeDownloadListene
 Future<File> future = video.downloadAsync(format, outputDir);
 File file = future.get(5, TimeUnit.SECONDS);
 
+// live videos and streams
+if (video.details().isLive()) {
+    System.out.println("Live Stream HLS URL: " + video.details().liveUrl());
+}
+
 ```
 
 Include

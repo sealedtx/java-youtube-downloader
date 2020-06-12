@@ -40,11 +40,12 @@ public class VideoDetails {
     private int averageRating;
     private boolean isLiveContent;
     private boolean isLive;
+    private String liveUrl;
 
     public VideoDetails() {
     }
 
-    public VideoDetails(JSONObject json) {
+    public VideoDetails(JSONObject json, String liveHLSUrl) {
         videoId = json.getString("videoId");
         title = json.getString("title");
         lengthSeconds = json.getIntValue("lengthSeconds");
@@ -62,6 +63,7 @@ public class VideoDetails {
         author = json.getString("author");
         isLiveContent = json.getBooleanValue("isLiveContent");
         isLive = json.getBooleanValue("isLive");
+        liveUrl = liveHLSUrl;
     }
 
     public String videoId() {
@@ -106,6 +108,10 @@ public class VideoDetails {
 
     public boolean isLiveContent() {
         return isLiveContent;
+    }
+
+    public String liveUrl() {
+        return liveUrl;
     }
 
 }

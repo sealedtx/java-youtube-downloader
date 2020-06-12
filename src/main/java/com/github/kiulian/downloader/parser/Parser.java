@@ -43,4 +43,5 @@ public interface Parser {
     String getJsUrl(JSONObject config) throws YoutubeException;
 
     List<Format> parseFormats(JSONObject json) throws YoutubeException;
+
 }
