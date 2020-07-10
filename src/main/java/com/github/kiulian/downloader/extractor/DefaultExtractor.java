@@ -27,7 +27,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.nio.charset.StandardCharsets;
+import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -40,7 +40,7 @@ public class DefaultExtractor implements Extractor {
     private static final String DEFAULT_ACCEPT_LANG = "en-US,en;";
     private static final int DEFAULT_RETRY_ON_FAILURE = 3;
 
-    private Map<String, String> requestProperties = new HashMap<>();
+    private Map<String, String> requestProperties = new HashMap<String, String>();
     private int retryOnFailure = DEFAULT_RETRY_ON_FAILURE;
 
     public DefaultExtractor() {
@@ -74,15 +74,21 @@ public class DefaultExtractor implements Extractor {
     @Override
     public String loadUrl(String url) throws YoutubeException {
         int retryCount = retryOnFailure;
-        while (retryCount >= 0) {
+        String errorMsg = "";
+        while (retryCount-- >= 0) {
             try {
                 HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
                 for (Map.Entry<String, String> entry : requestProperties.entrySet()) {
                     connection.setRequestProperty(entry.getKey(), entry.getValue());
                 }
+                int responseCode = connection.getResponseCode();
+                if (responseCode != 200) {
+                    errorMsg = String.format("Could not load url: %s, response code: %d", url, responseCode);
+                    continue;
+                }
 
                 BufferedReader in = new BufferedReader(new InputStreamReader(
-                        connection.getInputStream(), StandardCharsets.UTF_8));
+                        connection.getInputStream(), "UTF-8"));
 
                 StringBuilder sb = new StringBuilder();
                 String inputLine;
@@ -91,9 +97,9 @@ public class DefaultExtractor implements Extractor {
                 in.close();
                 return sb.toString();
             } catch (IOException e) {
-                retryCount--;
+                errorMsg = String.format("Could not load url: %s, exception: %s", url, e.getMessage());
             }
         }
-        throw new YoutubeException.VideoUnavailableException("Could not load url: " + url);
+        throw new YoutubeException.VideoUnavailableException(errorMsg);
     }
 }

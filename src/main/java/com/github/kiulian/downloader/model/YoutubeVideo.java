@@ -39,7 +39,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
 
-import static com.github.kiulian.downloader.model.Utils.getOutputFile;
+import static com.github.kiulian.downloader.model.Utils.*;
 
 public class YoutubeVideo {
 
@@ -146,34 +146,67 @@ public class YoutubeVideo {
     }
 
     public File download(Format format, File outDir) throws IOException, YoutubeException {
+        return download(format, outDir, videoDetails.title());
+    }
+
+    public File download(Format format, File outDir, String fileName) throws IOException, YoutubeException {
+        return download(format, outDir, fileName, false);
+    }
+
+    public File download(Format format, File outDir, String fileName, boolean overwrite) throws IOException, YoutubeException {
         if (videoDetails.isLive() || (videoDetails.isLiveContent() && videoDetails.lengthSeconds() == 0))
             throw new YoutubeException.LiveVideoException("Can not download live stream");
 
-        File outputFile = getOutputFile(videoDetails, format, outDir);
+        createOutDir(outDir);
+
+        File outputFile = getOutputFile(removeIllegalChars(fileName), format, outDir, overwrite);
 
         URL url = new URL(format.url());
-        BufferedInputStream bis = new BufferedInputStream(url.openStream());
-        FileOutputStream fis = new FileOutputStream(outputFile);
-        byte[] buffer = new byte[4096];
-        int count = 0;
-        while ((count = bis.read(buffer, 0, 4096)) != -1) {
-            fis.write(buffer, 0, count);
+        BufferedInputStream bis = null;
+        FileOutputStream fos = null;
+        try {
+            bis = new BufferedInputStream(url.openStream());
+            fos = new FileOutputStream(outputFile);
+            byte[] buffer = new byte[4096];
+            int count = 0;
+            while ((count = bis.read(buffer, 0, 4096)) != -1) {
+                fos.write(buffer, 0, count);
+            }
+        } finally {
+            if (bis != null) {
+                try {
+                    bis.close();
+                } catch (IOException ignored) {
+                }
+            }
+            if (fos != null) {
+                try {
+                    fos.close();
+                } catch (IOException ignored) {
+                }
+            }
         }
-        fis.close();
-        bis.close();
         return outputFile;
     }
 
     public Future<File> downloadAsync(Format format, File outDir) throws YoutubeException.LiveVideoException, IOException {
-        if (videoDetails.isLive())
+        return downloadAsync(format, outDir, videoDetails.title());
+    }
+
+    public Future<File> downloadAsync(Format format, File outDir, String fileName) throws YoutubeException.LiveVideoException, IOException {
+        return downloadAsync(format, outDir, fileName, false);
+    }
+
+    public Future<File> downloadAsync(final Format format, final File outDir, final String fileName, final boolean overwrite) throws YoutubeException.LiveVideoException, IOException {
+        if (videoDetails.isLive() || (videoDetails.isLiveContent() && videoDetails.lengthSeconds() == 0))
             throw new YoutubeException.LiveVideoException("Can not download live stream");
 
-        getOutputFile(videoDetails, format, outDir);
+        createOutDir(outDir);
 
         FutureTask<File> future = new FutureTask<>(new Callable<File>() {
             @Override
             public File call() throws IOException, YoutubeException {
-                return download(format, outDir);
+                return download(format, outDir, fileName, overwrite);
             }
         });
 
@@ -184,44 +217,64 @@ public class YoutubeVideo {
     }
 
     public void downloadAsync(Format format, File outDir, OnYoutubeDownloadListener listener) throws IOException, YoutubeException {
+        downloadAsync(format, outDir, videoDetails.title(), listener);
+    }
+
+    public void downloadAsync(Format format, File outDir, String fileName, OnYoutubeDownloadListener listener) throws IOException, YoutubeException {
+        downloadAsync(format, outDir, fileName, false, listener);
+    }
+
+    public void downloadAsync(Format format, File outDir, String fileName, boolean overwrite, final OnYoutubeDownloadListener listener) throws IOException, YoutubeException {
         if (videoDetails.isLive() || (videoDetails.isLiveContent() && videoDetails.lengthSeconds() == 0))
             throw new YoutubeException.LiveVideoException("Can not download live stream");
 
-        File outputFile = getOutputFile(videoDetails, format, outDir);
+        createOutDir(outDir);
 
-        URL url = new URL(format.url());
+        final File outputFile = getOutputFile(fileName, format, outDir, overwrite);
+
+        final URL url = new URL(format.url());
         Thread thread = new Thread(new Runnable() {
             @Override
             public void run() {
+                BufferedInputStream bis = null;
+                FileOutputStream fos = null;
                 try {
                     URLConnection urlConnection = url.openConnection();
                     int contentLength = urlConnection.getContentLength();
 
-                    try (BufferedInputStream bis = new BufferedInputStream(urlConnection.getInputStream())) {
-                        try (BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(outputFile))) {
-                            double total = 0;
-                            byte[] buffer = new byte[4096];
-                            int count = 0;
-                            int progress = 0;
-                            while ((count = bis.read(buffer, 0, 4096)) != -1) {
-                                bos.write(buffer, 0, count);
-                                total += count;
-                                int newProgress = (int) ((total / contentLength) * 100);
-                                if (newProgress > progress) {
-                                    progress = newProgress;
-                                    listener.onDownloading(progress);
-                                }
-                            }
+                    bis = new BufferedInputStream(urlConnection.getInputStream());
+                    fos = new FileOutputStream(outputFile);
 
-                            listener.onFinished(outputFile);
-                        } catch (IOException e) {
-                            listener.onError(e);
+                    double total = 0;
+                    byte[] buffer = new byte[4096];
+                    int count = 0;
+                    int progress = 0;
+                    while ((count = bis.read(buffer, 0, 4096)) != -1) {
+                        fos.write(buffer, 0, count);
+                        total += count;
+                        int newProgress = (int) ((total / contentLength) * 100);
+                        if (newProgress > progress) {
+                            progress = newProgress;
+                            listener.onDownloading(progress);
                         }
-                    } catch (IOException e) {
-                        listener.onError(e);
                     }
+
+                    listener.onFinished(outputFile);
                 } catch (IOException e) {
                     listener.onError(e);
+                } finally {
+                    if (bis != null) {
+                        try {
+                            bis.close();
+                        } catch (IOException ignored) {
+                        }
+                    }
+                    if (fos != null) {
+                        try {
+                            fos.close();
+                        } catch (IOException ignored) {
+                        }
+                    }
                 }
             }
         }, "YtDownloader");

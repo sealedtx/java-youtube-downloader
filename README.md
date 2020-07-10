@@ -59,9 +59,10 @@ if (formatByItag != null) {
 }
 
 File outputDir = new File("my_videos");
+Format format = videoFormats.get(0);
 
 // sync downloading
-File file = video.download(videoFormats.get(0), outputDir);
+File file = video.download(format, outputDir);
 
 // async downloading with callback
 video.downloadAsync(videoFormats.get(0), outputDir, new OnYoutubeDownloadListener() {
@@ -90,6 +91,16 @@ if (video.details().isLive()) {
     System.out.println("Live Stream HLS URL: " + video.details().liveUrl());
 }
 
+// naming
+// by default file name will be same as video title on youtube, 
+// but you can specify output file name
+File myAwesomeFile = video.download(format, outputDir, "myAwesomeName");
+System.out.println(file.getName()); // myAwesomeName.mp4
+// if file with such name already exits sufix will be added myAwesomeFile(1).mp4
+// you may disable this feature by passing overwrite flag
+File myAwesomeFile = video.download(format, outputDir, "myAwesomeName", true);
+
+
 ```
 
 Include
@@ -109,7 +120,7 @@ Include
 <dependency>
   <groupId>com.github.sealedtx</groupId>
   <artifactId>java-youtube-downloader</artifactId>
-  <version>2.2.0</version>
+  <version>2.2.1</version>
 </dependency>
 ```
 
@@ -124,6 +135,6 @@ allprojects {
 }
   
 dependencies {
-  implementation 'com.github.sealedtx:java-youtube-downloader:2.2.0'
+  implementation 'com.github.sealedtx:java-youtube-downloader:2.2.1'
 }
 ```
