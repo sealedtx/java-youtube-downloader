@@ -153,7 +153,8 @@ public class CachedCipherFactory implements CipherFactory {
     }
 
     private String[] getTransformObject(String var, String js) throws YoutubeException {
-        var = var.replaceAll("[^A-Za-z0-9_]", "");
+        var = var.replaceAll("[^$A-Za-z0-9_]", "");
+        var = Pattern.quote(var);
         Pattern pattern = Pattern.compile(String.format("var %s=\\{(.*?)\\};", var), Pattern.DOTALL);
         Matcher matcher = pattern.matcher(js);
         if (matcher.find()) {
