@@ -29,6 +29,7 @@ import com.github.kiulian.downloader.model.formats.Format;
 import com.github.kiulian.downloader.model.formats.VideoFormat;
 import com.github.kiulian.downloader.model.quality.AudioQuality;
 import com.github.kiulian.downloader.model.quality.VideoQuality;
+import com.github.kiulian.downloader.model.subtitles.SubtitlesInfo;
 
 import java.io.*;
 import java.net.URL;
@@ -45,10 +46,12 @@ public class YoutubeVideo {
 
     private VideoDetails videoDetails;
     private List<Format> formats;
+    private List<SubtitlesInfo> subtitlesInfo;
 
-    public YoutubeVideo(VideoDetails videoDetails, List<Format> formats) {
+    public YoutubeVideo(VideoDetails videoDetails, List<Format> formats, List<SubtitlesInfo> subtitlesInfo) {
         this.videoDetails = videoDetails;
         this.formats = formats;
+        this.subtitlesInfo = subtitlesInfo;
     }
 
     public VideoDetails details() {
@@ -57,6 +60,10 @@ public class YoutubeVideo {
 
     public List<Format> formats() {
         return formats;
+    }
+
+    public List<SubtitlesInfo> subtitles() {
+        return subtitlesInfo;
     }
 
     public Format findFormatByItag(int itag) {

@@ -26,8 +26,8 @@ import com.github.kiulian.downloader.cipher.CipherFactory;
 import com.github.kiulian.downloader.extractor.Extractor;
 import com.github.kiulian.downloader.model.VideoDetails;
 import com.github.kiulian.downloader.model.formats.Format;
+import com.github.kiulian.downloader.model.subtitles.SubtitlesInfo;
 
-import java.io.IOException;
 import java.util.List;
 
 public interface Parser {
@@ -36,12 +36,15 @@ public interface Parser {
 
     CipherFactory getCipherFactory();
 
-    JSONObject getPlayerConfig(String htmlUrl) throws IOException, YoutubeException;
+    JSONObject getPlayerConfig(String htmlUrl) throws YoutubeException;
 
     VideoDetails getVideoDetails(JSONObject config);
 
     String getJsUrl(JSONObject config) throws YoutubeException;
 
-    List<Format> parseFormats(JSONObject json) throws YoutubeException;
+    List<SubtitlesInfo> getSubtitlesInfoFromCaptions(JSONObject config);
 
+    List<SubtitlesInfo> getSubtitlesInfo(String videoId) throws YoutubeException;
+
+    List<Format> parseFormats(JSONObject json) throws YoutubeException;
 }
