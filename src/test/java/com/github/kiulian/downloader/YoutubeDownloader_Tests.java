@@ -332,8 +332,8 @@ class YoutubeDownloader_Tests {
             List<SubtitlesInfo> subtitlesInfo = downloader.getVideoSubtitles(DESPACITO_ID);
 
             for (SubtitlesInfo subtitleInfo : subtitlesInfo) {
-                String subtitle = subtitleInfo.downloader().execute();
-                assertFalse(subtitle.isEmpty(), "subtitle should not be empty");
+                String subtitles = subtitleInfo.getSubtitles().download();
+                assertFalse(subtitles.isEmpty(), "subtitles should not be empty");
             }
         });
     }
@@ -349,7 +349,7 @@ class YoutubeDownloader_Tests {
             for (SubtitlesInfo info : subtitlesInfo) {
                 SubtitlesInfo failedInfo = new SubtitlesInfo(info.getUrl().replace("lang=" + info.getLanguage(), "lang=not_a_code"), "not_a_code", false);
                 assertThrows(YoutubeException.class, () -> {
-                    failedInfo.downloader().execute();
+                    failedInfo.getSubtitles().download();
                 });
             }
         });
@@ -364,7 +364,7 @@ class YoutubeDownloader_Tests {
             List<SubtitlesInfo> subtitlesInfo = downloader.getVideoSubtitles(DESPACITO_ID);
 
             for (SubtitlesInfo info : subtitlesInfo) {
-                Future<String> subtitleFuture = info.downloader().executeAsync();
+                Future<String> subtitleFuture = info.getSubtitles().downloadAsync();
 
                 assertTimeout(Duration.ofSeconds(5), () -> {
                     String subtitles = subtitleFuture.get();
@@ -385,7 +385,7 @@ class YoutubeDownloader_Tests {
             List<SubtitlesInfo> subtitlesInfo = downloader.getVideoSubtitles(DESPACITO_ID);
 
             for (SubtitlesInfo info : subtitlesInfo) {
-                Future<String> subtitleFuture = info.downloader().executeAsync(callback);
+                Future<String> subtitleFuture = info.getSubtitles().downloadAsync(callback);
 
                 assertTimeout(Duration.ofSeconds(5), () -> {
                     String subtitles = subtitleFuture.get();
@@ -410,7 +410,7 @@ class YoutubeDownloader_Tests {
 
             for (SubtitlesInfo info : subtitlesInfo) {
                 info = new SubtitlesInfo(info.getUrl().replace("lang=" + info.getLanguage(), "lang=not_a_code"), "not_a_code", false);
-                Future<String> subtitleFuture = info.downloader().executeAsync(callback);
+                Future<String> subtitleFuture = info.getSubtitles().downloadAsync(callback);
 
                 assertTimeout(Duration.ofSeconds(5), () -> {
                     String subtitles = subtitleFuture.get();
@@ -431,9 +431,9 @@ class YoutubeDownloader_Tests {
             List<SubtitlesInfo> subtitlesInfo = downloader.getVideoSubtitles(DESPACITO_ID);
 
             for (SubtitlesInfo info : subtitlesInfo) {
-                String subtitles = info.downloader()
+                String subtitles = info.getSubtitles()
                         .formatTo(Extension.JSON3)
-                        .execute();
+                        .download();
                 assertFalse(subtitles.isEmpty(), "subtitles should not be empty");
                 assertDoesNotThrow(() -> {
                     JSONObject.parseObject(subtitles);
@@ -450,10 +450,10 @@ class YoutubeDownloader_Tests {
             List<SubtitlesInfo> subtitlesInfo = downloader.getVideoSubtitles(DESPACITO_ID);
 
             for (SubtitlesInfo subtitleInfo : subtitlesInfo) {
-                String subtitle = subtitleInfo.downloader()
+                String subtitle = subtitleInfo.getSubtitles()
                         .formatTo(Extension.JSON3)
                         .translateTo("uk")
-                        .execute();
+                        .download();
                 assertFalse(subtitle.isEmpty(), "subtitles should not be empty");
                 assertDoesNotThrow(() -> {
                     JSONObject.parseObject(subtitle);
