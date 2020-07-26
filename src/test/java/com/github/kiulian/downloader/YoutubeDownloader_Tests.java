@@ -376,7 +376,7 @@ class YoutubeDownloader_Tests {
 
     @Test
     @DisplayName("download subtitles async with callback should call onFinished")
-    void downloadSubtitle_AsyncWithCallback_Success() throws InterruptedException {
+    void downloadSubtitle_AsyncWithCallback_Success() {
         OnSubtitlesDownloadListener callback = Mockito.mock(OnSubtitlesDownloadListener.class);
 
         YoutubeDownloader downloader = new YoutubeDownloader();
@@ -391,10 +391,10 @@ class YoutubeDownloader_Tests {
                     String subtitles = subtitleFuture.get();
                     assertFalse(subtitles.isEmpty(), "subtitles should not be empty");
                 });
-
-                verify(callback, only()).onFinished(any());
-                verify(callback, never()).onError(any());
             }
+
+            verify(callback, times(subtitlesInfo.size())).onFinished(any());
+            verify(callback, never()).onError(any());
         });
     }
 
@@ -417,9 +417,9 @@ class YoutubeDownloader_Tests {
                     assertNull(subtitles, "subtitles should be null");
                 });
 
-                verify(callback, only()).onError(any());
-                verify(callback, never()).onFinished(any());
             }
+            verify(callback, times(subtitlesInfo.size())).onError(any());
+            verify(callback, never()).onFinished(any());
         });
     }
 

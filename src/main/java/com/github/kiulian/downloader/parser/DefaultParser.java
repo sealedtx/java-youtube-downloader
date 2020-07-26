@@ -9,9 +9,9 @@ package com.github.kiulian.downloader.parser;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -113,8 +113,13 @@ public class DefaultParser implements Parser {
         }
         JSONObject captions = playerResponse.getJSONObject("captions");
 
-        JSONArray captionsArray = captions.getJSONObject("playerCaptionsTracklistRenderer").getJSONArray("captionTracks");
-        if (captionsArray.isEmpty()) {
+        JSONObject playerCaptionsTracklistRenderer = captions.getJSONObject("playerCaptionsTracklistRenderer");
+        if (playerCaptionsTracklistRenderer == null || playerCaptionsTracklistRenderer.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        JSONArray captionsArray = playerCaptionsTracklistRenderer.getJSONArray("captionTracks");
+        if (captionsArray == null || captionsArray.isEmpty()) {
             return Collections.emptyList();
         }
 
@@ -139,30 +144,20 @@ public class DefaultParser implements Parser {
 
         String subtitlesXml = extractor.loadUrl(xmlUrl);
 
-        String regex = "<track(.*)/>";
-        Pattern pattern = Pattern.compile(regex);
+        Pattern pattern = Pattern.compile("lang_code=\"(.{2,3})\"");
         Matcher matcher = pattern.matcher(subtitlesXml);
 
-        List<SubtitlesInfo> subtitlesInfo = new ArrayList<>();
-        while (matcher.find()) {
-            for (int i = 1; i <= matcher.groupCount(); i++) {
-                String trackElement = matcher.group(i);
-                String[] trackElementAttributes = trackElement.trim().split(" ");
-                String language = null;
-                for (String trackElementAttributePair : trackElementAttributes) {
-                    if (trackElementAttributePair.startsWith("lang_code=")) {
-                        language = trackElementAttributePair.split("=")[1];
-                        language = language.replaceAll("\"", "");
-                    }
-                }
-                if (language != null) {
-                    String url = String.format("https://www.youtube.com/api/timedtext?lang=%s&v=%s",
-                            language, videoId);
-                    subtitlesInfo.add(new SubtitlesInfo(url, language, false));
-                }
-
-            }
+        if (!matcher.find()) {
+            return Collections.emptyList();
         }
+
+        List<SubtitlesInfo> subtitlesInfo = new ArrayList<>();
+        do {
+            String language = matcher.group(1);
+            String url = String.format("https://www.youtube.com/api/timedtext?lang=%s&v=%s",
+                    language, videoId);
+            subtitlesInfo.add(new SubtitlesInfo(url, language, false));
+        } while (matcher.find());
 
         return subtitlesInfo;
     }
