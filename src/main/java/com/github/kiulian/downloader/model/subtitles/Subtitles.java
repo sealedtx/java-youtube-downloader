@@ -69,7 +69,7 @@ public class Subtitles {
         try {
             url = new URL(getDownloadUrl());
         } catch (MalformedURLException e) {
-            throw new YoutubeException.SubtitlesException("Failed to download subtitle, invalid url: " + e.getMessage());
+            throw new YoutubeException.SubtitlesException("Failed to download subtitle: Invalid url: " + e.getMessage());
         }
 
         StringBuilder result = new StringBuilder();

@@ -46,6 +46,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class DefaultParser implements Parser {
+    private static final Pattern subtitleLangCodeRegex = Pattern.compile("lang_code=\"(.{2,3})\"");
 
     private Extractor extractor;
     private CipherFactory cipherFactory;
@@ -144,8 +145,7 @@ public class DefaultParser implements Parser {
 
         String subtitlesXml = extractor.loadUrl(xmlUrl);
 
-        Pattern pattern = Pattern.compile("lang_code=\"(.{2,3})\"");
-        Matcher matcher = pattern.matcher(subtitlesXml);
+        Matcher matcher = subtitleLangCodeRegex.matcher(subtitlesXml);
 
         if (!matcher.find()) {
             return Collections.emptyList();
