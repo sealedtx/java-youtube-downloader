@@ -33,7 +33,7 @@ public class CachedCipherFactory implements CipherFactory {
     private static String[] INITIAL_FUNCTION_PATTERNS = new String[]{
             "\\b[cs]\\s*&&\\s*[adf]\\.set\\([^,]+\\s*,\\s*encodeURIComponent\\s*\\(\\s*([a-zA-Z0-9$]+)\\(",
             "\\b[a-zA-Z0-9]+\\s*&&\\s*[a-zA-Z0-9]+\\.set\\([^,]+\\s*,\\s*encodeURIComponent\\s*\\(\\s*([a-zA-Z0-9$]+)\\(",
-            "\\b([a-zA-Z0-9$]{2})\\s*=\\s*function\\(\\s*a\\s*\\)\\s*\\{\\s*a\\s*=\\s*a\\.split\\(\\s*\"\"\\s*\\)", 
+            "(?:\\b|[^a-zA-Z0-9$])([a-zA-Z0-9$]{2})\\s*=\\s*function\\(\\s*a\\s*\\)\\s*\\{\\s*a\\s*=\\s*a\\.split\\(\\s*\"\"\\s*\\)",
             "([a-zA-Z0-9$]+)\\s*=\\s*function\\(\\s*a\\s*\\)\\s*\\{\\s*a\\s*=\\s*a\\.split\\(\\s*\"\"\\s*\\)",
             "([\"'])signature\\1\\s*,\\s*([a-zA-Z0-9$]+)\\(",
             "\\.sig\\|\\|([a-zA-Z0-9$]+)\\(",
@@ -104,9 +104,9 @@ public class CachedCipherFactory implements CipherFactory {
     }
 
     private List<JsFunction> getTransformFunctions(String js) throws YoutubeException {
-        String name = getInitialFunctionName(js).replaceAll("[^A-Za-z0-9_]", "");
+        String name = getInitialFunctionName(js).replaceAll("[^$A-Za-z0-9_]", "");
 
-        Pattern pattern = Pattern.compile(name + "=function\\(\\w\\)\\{[a-z=\\.\\(\\\"\\)]*;(.*);(?:.+)\\}");
+        Pattern pattern = Pattern.compile(Pattern.quote(name) + "=function\\(\\w\\)\\{[a-z=\\.\\(\\\"\\)]*;(.*);(?:.+)\\}");
 
         Matcher matcher = pattern.matcher(js);
         if (matcher.find()) {
