@@ -148,7 +148,7 @@ public class YoutubeVideoExtractor_Tests {
             YoutubeVideo video = downloader.getVideo(videoId);
         }, "getVideo should throw CipherException if initial function patterns has wrong priority");
 
-        downloader.addCipherFunctionPattern(0, "\\b([a-zA-Z0-9$]{2})\\s*=\\s*function\\(\\s*a\\s*\\)\\s*\\{\\s*a\\s*=\\s*a\\.split\\(\\s*\"\"\\s*\\)");
+        downloader.addCipherFunctionPattern(0, "(?:\\b|[^a-zA-Z0-9$])([a-zA-Z0-9$]{2})\\s*=\\s*function\\(\\s*a\\s*\\)\\s*\\{\\s*a\\s*=\\s*a\\.split\\(\\s*\"\"\\s*\\)");
         assertDoesNotThrow(() -> {
             YoutubeVideo video = downloader.getVideo(videoId);
         }, "getVideo should not throw exception if initial function patterns has correct priority");
