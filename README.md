@@ -120,7 +120,7 @@ Include
 <dependency>
   <groupId>com.github.sealedtx</groupId>
   <artifactId>java-youtube-downloader</artifactId>
-  <version>2.2.2</version>
+  <version>2.2.3</version>
 </dependency>
 ```
 
@@ -135,6 +135,6 @@ allprojects {
 }
   
 dependencies {
-  implementation 'com.github.sealedtx:java-youtube-downloader:2.2.2'
+  implementation 'com.github.sealedtx:java-youtube-downloader:2.2.3'
 }
 ```
