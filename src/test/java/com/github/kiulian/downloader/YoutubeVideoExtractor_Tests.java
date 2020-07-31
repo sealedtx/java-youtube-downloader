@@ -62,7 +62,7 @@ public class YoutubeVideoExtractor_Tests {
             String expectedMimeType = "video/mp4";
             assertTrue(format.mimeType().contains(expectedMimeType), "mimetype should be " + expectedMimeType);
 
-            Extension expectedExtension = Extension.MP4;
+            Extension expectedExtension = Extension.MPEG4;
             assertEquals(expectedExtension, format.extension(), "extension should be " + expectedExtension.value());
 
             String expectedLabel = "240p";
@@ -115,7 +115,7 @@ public class YoutubeVideoExtractor_Tests {
             String expectedMimeType = "video/mp4";
             assertTrue(format.mimeType().contains(expectedMimeType), "mimetype should be " + expectedMimeType);
 
-            Extension expectedExtension = Extension.MP4;
+            Extension expectedExtension = Extension.MPEG4;
             assertEquals(expectedExtension, format.extension(), "extension should be " + expectedExtension.value());
 
             String expectedLabel = "1080p";

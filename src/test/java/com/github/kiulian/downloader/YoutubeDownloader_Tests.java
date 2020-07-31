@@ -1,18 +1,25 @@
 package com.github.kiulian.downloader;
 
+import com.alibaba.fastjson.JSONObject;
 import com.github.kiulian.downloader.model.Extension;
 import com.github.kiulian.downloader.model.YoutubeVideo;
 import com.github.kiulian.downloader.model.formats.Format;
+import com.github.kiulian.downloader.model.subtitles.OnSubtitlesDownloadListener;
+import com.github.kiulian.downloader.model.subtitles.SubtitlesInfo;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 
 import java.io.File;
+import java.time.Duration;
+import java.util.List;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
-import static com.github.kiulian.downloader.TestUtils.ME_AT_THE_ZOO_ID;
-import static com.github.kiulian.downloader.TestUtils.isReachable;
+import static com.github.kiulian.downloader.TestUtils.*;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
 
 @DisplayName("Tests downloading youtube videos")
 class YoutubeDownloader_Tests {
@@ -314,6 +321,144 @@ class YoutubeDownloader_Tests {
             assertTrue(file.getName().endsWith(extension.value()), "file name should ends with: " + extension.value());
 
             assertTrue(file.length() > 0, "file should be not empty");
+        });
+    }
+
+    @Test
+    @DisplayName("download subtitle should be successful")
+    void downloadSubtitle_Sync_Success() {
+        YoutubeDownloader downloader = new YoutubeDownloader();
+        assertDoesNotThrow(() -> {
+            List<SubtitlesInfo> subtitlesInfo = downloader.getVideoSubtitles(DESPACITO_ID);
+
+            for (SubtitlesInfo subtitleInfo : subtitlesInfo) {
+                String subtitles = subtitleInfo.getSubtitles().download();
+                assertFalse(subtitles.isEmpty(), "subtitles should not be empty");
+            }
+        });
+    }
+
+    @Test
+    @DisplayName("download subtitles with wrong lang code should throw exception")
+    void downloadSubtitle_SyncWrongLangCode_Error() {
+        YoutubeDownloader downloader = new YoutubeDownloader();
+
+        assertDoesNotThrow(() -> {
+            List<SubtitlesInfo> subtitlesInfo = downloader.getVideoSubtitles(DESPACITO_ID);
+
+            for (SubtitlesInfo info : subtitlesInfo) {
+                SubtitlesInfo failedInfo = new SubtitlesInfo(info.getUrl().replace("lang=" + info.getLanguage(), "lang=not_a_code"), "not_a_code", false);
+                assertThrows(YoutubeException.class, () -> {
+                    failedInfo.getSubtitles().download();
+                });
+            }
+        });
+    }
+
+
+    @Test
+    @DisplayName("download subtitle async should be successful")
+    void downloadSubtitle_Async_Success() {
+        YoutubeDownloader downloader = new YoutubeDownloader();
+        assertDoesNotThrow(() -> {
+            List<SubtitlesInfo> subtitlesInfo = downloader.getVideoSubtitles(DESPACITO_ID);
+
+            for (SubtitlesInfo info : subtitlesInfo) {
+                Future<String> subtitleFuture = info.getSubtitles().downloadAsync();
+
+                assertTimeout(Duration.ofSeconds(5), () -> {
+                    String subtitles = subtitleFuture.get();
+                    assertFalse(subtitles.isEmpty(), "subtitles should not be empty");
+                });
+            }
+        });
+    }
+
+    @Test
+    @DisplayName("download subtitles async with callback should call onFinished")
+    void downloadSubtitle_AsyncWithCallback_Success() {
+        OnSubtitlesDownloadListener callback = Mockito.mock(OnSubtitlesDownloadListener.class);
+
+        YoutubeDownloader downloader = new YoutubeDownloader();
+
+        assertDoesNotThrow(() -> {
+            List<SubtitlesInfo> subtitlesInfo = downloader.getVideoSubtitles(DESPACITO_ID);
+
+            for (SubtitlesInfo info : subtitlesInfo) {
+                Future<String> subtitleFuture = info.getSubtitles().downloadAsync(callback);
+
+                assertTimeout(Duration.ofSeconds(5), () -> {
+                    String subtitles = subtitleFuture.get();
+                    assertFalse(subtitles.isEmpty(), "subtitles should not be empty");
+                });
+            }
+
+            verify(callback, times(subtitlesInfo.size())).onFinished(any());
+            verify(callback, never()).onError(any());
+        });
+    }
+
+    @Test
+    @DisplayName("download subtitles async with callback and wrong lang code should call onError")
+    void downloadSubtitle_AsyncWithCallbackWrongLangCode_Error() throws InterruptedException {
+        OnSubtitlesDownloadListener callback = Mockito.mock(OnSubtitlesDownloadListener.class);
+
+        YoutubeDownloader downloader = new YoutubeDownloader();
+
+        assertDoesNotThrow(() -> {
+            List<SubtitlesInfo> subtitlesInfo = downloader.getVideoSubtitles(DESPACITO_ID);
+
+            for (SubtitlesInfo info : subtitlesInfo) {
+                info = new SubtitlesInfo(info.getUrl().replace("lang=" + info.getLanguage(), "lang=not_a_code"), "not_a_code", false);
+                Future<String> subtitleFuture = info.getSubtitles().downloadAsync(callback);
+
+                assertTimeout(Duration.ofSeconds(5), () -> {
+                    String subtitles = subtitleFuture.get();
+                    assertNull(subtitles, "subtitles should be null");
+                });
+
+            }
+            verify(callback, times(subtitlesInfo.size())).onError(any());
+            verify(callback, never()).onFinished(any());
+        });
+    }
+
+    @Test
+    @DisplayName("download formatted subtitles should be successful")
+    void downloadSubtitles_Formatted_Success() {
+        YoutubeDownloader downloader = new YoutubeDownloader();
+        assertDoesNotThrow(() -> {
+            List<SubtitlesInfo> subtitlesInfo = downloader.getVideoSubtitles(DESPACITO_ID);
+
+            for (SubtitlesInfo info : subtitlesInfo) {
+                String subtitles = info.getSubtitles()
+                        .formatTo(Extension.JSON3)
+                        .download();
+                assertFalse(subtitles.isEmpty(), "subtitles should not be empty");
+                assertDoesNotThrow(() -> {
+                    JSONObject.parseObject(subtitles);
+                }, "subtitles should be formatted to json");
+            }
+        });
+    }
+
+    @Test
+    @DisplayName("download formatted and translated subtitles should be successful")
+    void downloadSubtitles_FormattedTranslated_Success() {
+        YoutubeDownloader downloader = new YoutubeDownloader();
+        assertDoesNotThrow(() -> {
+            List<SubtitlesInfo> subtitlesInfo = downloader.getVideoSubtitles(DESPACITO_ID);
+
+            for (SubtitlesInfo subtitleInfo : subtitlesInfo) {
+                String subtitle = subtitleInfo.getSubtitles()
+                        .formatTo(Extension.JSON3)
+                        .translateTo("uk")
+                        .download();
+                assertFalse(subtitle.isEmpty(), "subtitles should not be empty");
+                assertDoesNotThrow(() -> {
+                    JSONObject.parseObject(subtitle);
+                }, "subtitles should be formatted to json");
+            }
         });
     }
 

@@ -11,6 +11,8 @@ class TestUtils {
     static final String LIVE_ID = "5qap5aO4i9A";
     static final String WAS_LIVE_ID = "boSGRDYm92E";
 
+    static final String NO_SUBTITLES_ID = "y9pfCQ5qQYY";
+
     static boolean isReachable(String url) {
         try {
             HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();

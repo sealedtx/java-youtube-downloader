@@ -25,10 +25,10 @@ import com.alibaba.fastjson.JSONObject;
 import com.github.kiulian.downloader.cipher.CipherFunction;
 import com.github.kiulian.downloader.model.*;
 import com.github.kiulian.downloader.model.formats.Format;
+import com.github.kiulian.downloader.model.subtitles.SubtitlesInfo;
 import com.github.kiulian.downloader.parser.DefaultParser;
 import com.github.kiulian.downloader.parser.Parser;
 
-import java.io.IOException;
 import java.util.List;
 
 public class YoutubeDownloader {
@@ -59,7 +59,7 @@ public class YoutubeDownloader {
         parser.getCipherFactory().addFunctionEquivalent(regex, function);
     }
 
-    public YoutubeVideo getVideo(String videoId) throws YoutubeException, IOException {
+    public YoutubeVideo getVideo(String videoId) throws YoutubeException {
         String htmlUrl = "https://www.youtube.com/watch?v=" + videoId;
 
         JSONObject ytPlayerConfig = parser.getPlayerConfig(htmlUrl);
@@ -67,6 +67,12 @@ public class YoutubeDownloader {
         VideoDetails videoDetails = parser.getVideoDetails(ytPlayerConfig);
 
         List<Format> formats = parser.parseFormats(ytPlayerConfig);
-        return new YoutubeVideo(videoDetails, formats);
+
+        List<SubtitlesInfo> subtitlesInfo = parser.getSubtitlesInfoFromCaptions(ytPlayerConfig);
+        return new YoutubeVideo(videoDetails, formats, subtitlesInfo);
+    }
+
+    public List<SubtitlesInfo> getVideoSubtitles(String videoId) throws YoutubeException {
+        return parser.getSubtitlesInfo(videoId);
     }
 }
