@@ -7,7 +7,7 @@ Simple java parser for receiving youtube video meta info and download videos and
 
 **Since 2.0.0** supports downloading videos with signature.
 <br>**Since 2.2.0** supports retrieving HLS url for live videos.
-<br>**Since 2.3.4** supports retrieving video subtitles. 
+<br>**Since 2.2.4** supports retrieving video subtitles. 
 
 **Notice**: Youtube API does not support video download. In faсt it is prohibited - [Terms of Service - II. Prohibitions](https://developers.google.com/youtube/terms/api-services-terms-of-service). 
 
