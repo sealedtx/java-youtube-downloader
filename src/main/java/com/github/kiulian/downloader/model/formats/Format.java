@@ -59,23 +59,25 @@ public abstract class Format {
         lastModified = json.getLong("lastModified");
         approxDurationMs = json.getLong("approxDurationMs");
 
-        if (mimeType == null || mimeType.isEmpty())
+        if (mimeType == null || mimeType.isEmpty()) {
             extension = Extension.UNKNOWN;
-        else if (mimeType.contains(Extension.MP4.value()))
-            extension = Extension.MP4;
-        else if (mimeType.contains(Extension.WEBM.value()))
-            extension = Extension.WEBM;
-        else if (mimeType.contains(Extension.FLV.value()))
+        } else if (mimeType.contains(Extension.MPEG4.value())) {
+            if (this instanceof AudioFormat)
+                extension = Extension.M4A;
+            else
+                extension = Extension.MPEG4;
+        } else if (mimeType.contains(Extension.WEBM.value())) {
+            if (this instanceof AudioFormat)
+                extension = Extension.WEBA;
+            else
+                extension = Extension.WEBM;
+        } else if (mimeType.contains(Extension.FLV.value())) {
             extension = Extension.FLV;
-        else if (mimeType.contains(Extension.HLS.value()))
-            extension = Extension.HLS;
-        else if (mimeType.contains(Extension.THREEGP.value()))
-            extension = Extension.THREEGP;
-        else if (mimeType.contains(Extension.M4A.value()))
-            extension = Extension.MP4;
-        else
+        } else if (mimeType.contains(Extension._3GP.value())) {
+            extension = Extension._3GP;
+        } else {
             extension = Extension.UNKNOWN;
-
+        }
     }
 
     public abstract String type();

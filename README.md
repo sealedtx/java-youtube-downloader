@@ -100,6 +100,23 @@ System.out.println(file.getName()); // myAwesomeName.mp4
 // you may disable this feature by passing overwrite flag
 File myAwesomeFile = video.download(format, outputDir, "myAwesomeName", true);
 
+// subtitles
+// you can get subtitles from video captions if you have already parsed video meta
+List<SubtitlesInfo> subtitles = video.subtitles(); // NOTE: includes auto-generated
+// if you don't need video meta, but just subtitles use this instead
+List<SubtitlesInfo> subtitles = downloader.getViodeSubtitles(videoId); // NOTE: does not include auto-generated
+
+for (SubtitlesInfo info : subtitles) {
+    Subtitles subtitles = info.getSubtitles()
+             .formatTo(Extension.JSON3)
+             .translateTo("uk");
+    // sync download
+    String subtitlesData = subtitles.download();
+    // async download
+    Future<String> subtitlesFuture = subtitles.downloadAsync(callback/*optional*/);
+    // to download using external download manager
+    String downloadUrl = subtitles.getDownloadUrl(); 
+}
 
 ```
 

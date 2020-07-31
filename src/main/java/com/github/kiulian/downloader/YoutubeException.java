@@ -69,4 +69,11 @@ public class YoutubeException extends Exception {
             super(message);
         }
     }
+
+    public static class SubtitlesException extends YoutubeException {
+
+        public SubtitlesException(String message) {
+            super(message);
+        }
+    }
 }
