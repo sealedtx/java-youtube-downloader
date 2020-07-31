@@ -107,13 +107,15 @@ List<SubtitlesInfo> subtitles = video.subtitles(); // NOTE: includes auto-genera
 List<SubtitlesInfo> subtitles = downloader.getViodeSubtitles(videoId); // NOTE: does not include auto-generated
 
 for (SubtitlesInfo info : subtitles) {
+    Subtitles subtitles = info.getSubtitles()
+             .formatTo(Extension.JSON3)
+             .translateTo("uk");
     // sync download
-    String subtitle = info.downloader()
-            .formatTo(Extension.JSON3)
-            .translateTo("en")
-            .execute();
+    String subtitlesData = subtitles.download();
     // async download
-    Future<String> future = info.downloader().executeAsync(callback/*optional*/);
+    Future<String> subtitlesFuture = subtitles.downloadAsync(callback/*optional*/);
+    // to download using external download manager
+    String downloadUrl = subtitles.getDownloadUrl(); 
 }
 
 ```
