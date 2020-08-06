@@ -183,6 +183,8 @@ public class DefaultParser implements Parser {
         List<Format> formats = new ArrayList<>(jsonFormats.size());
         for (int i = 0; i < jsonFormats.size(); i++) {
             JSONObject json = jsonFormats.getJSONObject(i);
+            if ("FORMAT_STREAM_TYPE_OTF".equals(json.getString("type")))
+                continue; // unsupported otf formats which cause 404 not found
             try {
                 Format format = parseFormat(json, config);
                 formats.add(format);
@@ -190,8 +192,6 @@ public class DefaultParser implements Parser {
                 throw e;
             } catch (YoutubeException e) {
                 System.err.println("Error parsing format: " + json);
-            } catch (IllegalArgumentException e) {
-                System.err.println("Unknown itag " + json.getInteger("itag"));
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -236,12 +236,25 @@ public class DefaultParser implements Parser {
             }
         }
 
-        Itag itag = Itag.valueOf("i" + json.getInteger("itag"));
-        if (itag.isVideo() && itag.isAudio())
-            return new AudioVideoFormat(json);
-        else if (itag.isVideo())
-            return new VideoFormat(json);
+        Itag itag;
+        try {
+            itag = Itag.valueOf("i" + json.getInteger("itag"));
+        } catch (IllegalArgumentException e) {
+            e.printStackTrace();
+            itag = Itag.unknown;
+            itag.setId(json.getIntValue("itag"));
+        }
 
-        return new AudioFormat(json);
+        boolean hasVideo = itag.isVideo() || json.containsKey("quality");
+        boolean hasAudio = itag.isAudio() || json.containsKey("audioQuality");
+
+        if (hasVideo && hasAudio)
+            return new AudioVideoFormat(json);
+        else if (hasVideo)
+            return new VideoFormat(json);
+        else if (hasAudio)
+            return new AudioFormat(json);
+
+        throw new YoutubeException.UnknownFormatException("unknown format with itag " + itag.id());
     }
 }

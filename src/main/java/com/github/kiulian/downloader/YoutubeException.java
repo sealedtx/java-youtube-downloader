@@ -40,9 +40,9 @@ public class YoutubeException extends Exception {
         }
     }
 
-    public static class FormatNotFoundException extends YoutubeException {
+    public static class UnknownFormatException extends YoutubeException {
 
-        public FormatNotFoundException(String message) {
+        public UnknownFormatException(String message) {
             super(message);
         }
 
