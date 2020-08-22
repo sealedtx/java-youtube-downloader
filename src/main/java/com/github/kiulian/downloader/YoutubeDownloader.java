@@ -25,6 +25,9 @@ import com.alibaba.fastjson.JSONObject;
 import com.github.kiulian.downloader.cipher.CipherFunction;
 import com.github.kiulian.downloader.model.*;
 import com.github.kiulian.downloader.model.formats.Format;
+import com.github.kiulian.downloader.model.playlist.PlaylistDetails;
+import com.github.kiulian.downloader.model.playlist.PlaylistVideo;
+import com.github.kiulian.downloader.model.playlist.YoutubePlaylist;
 import com.github.kiulian.downloader.model.subtitles.SubtitlesInfo;
 import com.github.kiulian.downloader.parser.DefaultParser;
 import com.github.kiulian.downloader.parser.Parser;
@@ -70,6 +73,18 @@ public class YoutubeDownloader {
 
         List<SubtitlesInfo> subtitlesInfo = parser.getSubtitlesInfoFromCaptions(ytPlayerConfig);
         return new YoutubeVideo(videoDetails, formats, subtitlesInfo);
+    }
+    
+    public YoutubePlaylist getPlaylist(String playlistId) throws YoutubeException {
+        String htmlUrl = "https://www.youtube.com/playlist?list=" + playlistId;
+
+        JSONObject ytInitialData = parser.getInitialData(htmlUrl);
+
+        PlaylistDetails playlistDetails = parser.getPlaylistDetails(playlistId, ytInitialData);
+
+        List<PlaylistVideo> videos = parser.getPlaylistVideos(ytInitialData, playlistDetails.videoCount());
+
+        return new YoutubePlaylist(playlistDetails, videos);
     }
 
     public List<SubtitlesInfo> getVideoSubtitles(String videoId) throws YoutubeException {

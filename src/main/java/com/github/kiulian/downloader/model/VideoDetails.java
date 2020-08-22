@@ -21,21 +21,15 @@ package com.github.kiulian.downloader.model;
  */
 
 
-import com.alibaba.fastjson.JSONArray;
-import com.alibaba.fastjson.JSONObject;
-
 import java.util.ArrayList;
 import java.util.List;
 
-public class VideoDetails {
+import com.alibaba.fastjson.JSONObject;
 
-    private String videoId;
-    private String title;
-    private int lengthSeconds;
+public class VideoDetails extends AbstractVideoDetails {
+
     private List<String> keywords;
     private String shortDescription;
-    private List<String> thumbnails;
-    private String author;
     private long viewCount;
     private int averageRating;
     private boolean isLiveContent;
@@ -46,36 +40,24 @@ public class VideoDetails {
     }
 
     public VideoDetails(JSONObject json, String liveHLSUrl) {
-        videoId = json.getString("videoId");
-        title = json.getString("title");
-        lengthSeconds = json.getIntValue("lengthSeconds");
+        super(json);
         keywords = json.containsKey("keywords") ? json.getJSONArray("keywords").toJavaList(String.class) : new ArrayList<String>();
         shortDescription = json.getString("shortDescription");
-        JSONArray jsonThumbnails = json.getJSONObject("thumbnail").getJSONArray("thumbnails");
-        thumbnails = new ArrayList<>(jsonThumbnails.size());
-        for (int i = 0; i < jsonThumbnails.size(); i++) {
-            JSONObject jsonObject = jsonThumbnails.getJSONObject(i);
-            if (jsonObject.containsKey("url"))
-                thumbnails.add(jsonObject.getString("url"));
-        }
         averageRating = json.getIntValue("averageRating");
         viewCount = json.getLongValue("viewCount");
-        author = json.getString("author");
         isLiveContent = json.getBooleanValue("isLiveContent");
         isLive = json.getBooleanValue("isLive");
         liveUrl = liveHLSUrl;
     }
-
-    public String videoId() {
-        return videoId;
+    
+    @Override
+    protected String extractAuthor(JSONObject json) {
+        return json.getString("author");
     }
 
-    public String title() {
-        return title;
-    }
-
-    public int lengthSeconds() {
-        return lengthSeconds;
+    @Override
+    protected String extractTitle(JSONObject json) {
+        return json.getString("title");
     }
 
     public List<String> keywords() {
@@ -84,14 +66,6 @@ public class VideoDetails {
 
     public String description() {
         return shortDescription;
-    }
-
-    public List<String> thumbnails() {
-        return thumbnails;
-    }
-
-    public String author() {
-        return author;
     }
 
     public long viewCount() {
@@ -113,5 +87,4 @@ public class VideoDetails {
     public String liveUrl() {
         return liveUrl;
     }
-
 }
