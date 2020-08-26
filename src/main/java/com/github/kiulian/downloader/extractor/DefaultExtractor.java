@@ -35,7 +35,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class DefaultExtractor implements Extractor {
-	private static final List<Pattern> YT_PLAYER_CONFIG_PATTERNS = Arrays.asList(
+    private static final List<Pattern> YT_PLAYER_CONFIG_PATTERNS = Arrays.asList(
             Pattern.compile(";ytplayer\\.config = (\\{.*?\\})\\;ytplayer"),
             Pattern.compile(";ytplayer\\.config = (\\{.*?\\})\\;")
     );
@@ -67,7 +67,7 @@ public class DefaultExtractor implements Extractor {
 
     @Override
     public String extractYtPlayerConfig(String html) throws YoutubeException {
-    	for (Pattern pattern : YT_PLAYER_CONFIG_PATTERNS) {
+        for (Pattern pattern : YT_PLAYER_CONFIG_PATTERNS) {
             Matcher matcher = pattern.matcher(html);
 
             if (matcher.find()) {
