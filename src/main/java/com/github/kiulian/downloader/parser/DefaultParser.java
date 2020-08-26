@@ -46,6 +46,7 @@ import com.github.kiulian.downloader.model.formats.Format;
 import com.github.kiulian.downloader.model.formats.VideoFormat;
 import com.github.kiulian.downloader.model.playlist.PlaylistDetails;
 import com.github.kiulian.downloader.model.playlist.PlaylistVideo;
+import com.github.kiulian.downloader.model.playlist.PlaylistVideoDetails;
 import com.github.kiulian.downloader.model.subtitles.SubtitlesInfo;
 
 public class DefaultParser implements Parser {
@@ -202,7 +203,7 @@ public class DefaultParser implements Parser {
         }
         return formats;
     }
-    
+
     @Override
     public JSONObject getInitialData(String htmlUrl) throws YoutubeException {
         String html = extractor.loadUrl(htmlUrl);
@@ -214,18 +215,14 @@ public class DefaultParser implements Parser {
             throw new YoutubeException.BadPageException("Could not parse initial data json");
         }
     }
-    
+
     @Override
     public PlaylistDetails getPlaylistDetails(String playlistId, JSONObject initialData) {
-        String title, author;
-        JSONArray sideBarItems, stats;
-        int videoCount, views;
-        
-        title = initialData.getJSONObject("metadata")
+        String title = initialData.getJSONObject("metadata")
                 .getJSONObject("playlistMetadataRenderer")
                 .getString("title");
-        sideBarItems = initialData.getJSONObject("sidebar").getJSONObject("playlistSidebarRenderer").getJSONArray("items");
-        author = sideBarItems.getJSONObject(1)
+        JSONArray sideBarItems = initialData.getJSONObject("sidebar").getJSONObject("playlistSidebarRenderer").getJSONArray("items");
+        String author = sideBarItems.getJSONObject(1)
                 .getJSONObject("playlistSidebarSecondaryInfoRenderer")
                 .getJSONObject("videoOwner")
                 .getJSONObject("videoOwnerRenderer")
@@ -233,20 +230,19 @@ public class DefaultParser implements Parser {
                 .getJSONArray("runs")
                 .getJSONObject(0)
                 .getString("text");
-        stats = sideBarItems.getJSONObject(0)
+        JSONArray stats = sideBarItems.getJSONObject(0)
                 .getJSONObject("playlistSidebarPrimaryInfoRenderer")
                 .getJSONArray("stats");
-        videoCount = extractNumber(stats.getJSONObject(0).getJSONArray("runs").getJSONObject(0).getString("text"));
-        views = extractNumber(stats.getJSONObject(1).getString("simpleText"));
-        
-        return new PlaylistDetails(playlistId, title, author, videoCount, views);
+        int videoCount = extractNumber(stats.getJSONObject(0).getJSONArray("runs").getJSONObject(0).getString("text"));
+        int viewCount = extractNumber(stats.getJSONObject(1).getString("simpleText"));
+
+        return new PlaylistDetails(playlistId, title, author, videoCount, viewCount);
     }
 
     @Override
     public List<PlaylistVideo> getPlaylistVideos(JSONObject initialData, int count) throws YoutubeException {
         JSONObject content;
-        List<PlaylistVideo> videos;
-        
+
         try {
             content = initialData.getJSONObject("contents")
                     .getJSONObject("twoColumnBrowseResultsRenderer")
@@ -261,15 +257,17 @@ public class DefaultParser implements Parser {
         } catch (NullPointerException e) {
             throw new YoutubeException.BadPageException("Playlist initial data not found");
         }
+
+        List<PlaylistVideo> videos;
         if (count > 0) {
             videos = new ArrayList<>(count);
         } else {
             videos = new LinkedList<>();
         }
-        populatePlaylist(content, videos);
+        populatePlaylist(content, videos, getClientVersion(initialData));
         return videos;
     }
-    
+
     private Format parseFormat(JSONObject json, JSONObject config) throws YoutubeException {
         if (json.containsKey("signatureCipher")) {
             JSONObject jsonCipher = new JSONObject();
@@ -328,12 +326,10 @@ public class DefaultParser implements Parser {
 
         throw new YoutubeException.UnknownFormatException("unknown format with itag " + itag.id());
     }
-    
-    private void populatePlaylist(JSONObject content, List<PlaylistVideo> videos) throws YoutubeException {
+
+    private void populatePlaylist(JSONObject content, List<PlaylistVideo> videos, String clientVersion) throws YoutubeException {
         String continuation;
-        JSONArray contents;
-        
-        contents = content.getJSONArray("contents");
+        JSONArray contents = content.getJSONArray("contents");
         if (content.containsKey("continuations")) {
             continuation = content.getJSONArray("continuations")
                     .getJSONObject(0)
@@ -343,37 +339,57 @@ public class DefaultParser implements Parser {
             continuation = null;
         }
         for (int i = 0; i < contents.size(); i++) {
-            videos.add(new PlaylistVideo(contents.getJSONObject(i).getJSONObject("playlistVideoRenderer")));
+            videos.add(new PlaylistVideo(
+                    new PlaylistVideoDetails(contents.getJSONObject(i).getJSONObject("playlistVideoRenderer")),
+                    this
+            ));
         }
         if (continuation != null) {
-            loadPlaylistContinuation(continuation, videos);
+            loadPlaylistContinuation(continuation, videos, clientVersion);
         }
     }
-    
-    private void loadPlaylistContinuation(String continuation, List<PlaylistVideo> videos) throws YoutubeException {
-        String url, html;
-        JSONArray response;
+
+    private void loadPlaylistContinuation(String continuation, List<PlaylistVideo> videos, String clientVersion) throws YoutubeException {
         JSONObject content;
-        
-        url = "https://www.youtube.com/browse_ajax?ctoken=" + continuation
+
+        String url = "https://www.youtube.com/browse_ajax?ctoken=" + continuation
                 + "&continuation=" + continuation;
-        
+
         getExtractor().setRequestProperty("X-YouTube-Client-Name", "1");
-        getExtractor().setRequestProperty("X-YouTube-Client-Version", "2.20200720.00.02");
-        html = getExtractor().loadUrl(url);
-        
+        getExtractor().setRequestProperty("X-YouTube-Client-Version", clientVersion);
+        String html = getExtractor().loadUrl(url);
+
         try {
-            response = JSON.parseArray(html);
+        	JSONArray response = JSON.parseArray(html);
+        	content = response.getJSONObject(1)
+        			.getJSONObject("response")
+        			.getJSONObject("continuationContents")
+        			.getJSONObject("playlistVideoListContinuation");
+        	populatePlaylist(content, videos, clientVersion);
+        } catch (YoutubeException e) {
+        	throw e;
         } catch (Exception e) {
             throw new YoutubeException.BadPageException("Could not parse playlist continuation json");
         }
-        content = response.getJSONObject(1)
-                .getJSONObject("response")
-                .getJSONObject("continuationContents")
-                .getJSONObject("playlistVideoListContinuation");
-        populatePlaylist(content, videos);
     }
-    
+
+    private String getClientVersion(JSONObject json) {
+        JSONArray trackingParams = json.getJSONObject("responseContext")
+                .getJSONArray("serviceTrackingParams");
+        if (trackingParams == null) {
+            return "2.20200720.00.02";
+        }
+        for (int ti = 0; ti < trackingParams.size(); ti++) {
+        	JSONArray params = trackingParams.getJSONObject(ti).getJSONArray("params");
+            for (int pi = 0; pi < params.size(); pi ++) {
+                if (params.getJSONObject(pi).getString("key").equals("cver")) {
+                    return params.getJSONObject(pi).getString("value");
+                }
+            }
+        }
+        return null;
+    }
+
     private static int extractNumber(String text) {
         Matcher matcher = textNumberRegex.matcher(text);
         if (matcher.find()) {

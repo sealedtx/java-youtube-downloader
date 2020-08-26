@@ -20,49 +20,79 @@ package com.github.kiulian.downloader.model.playlist;
  * #
  */
 
+import java.util.Collections;
+import java.util.List;
 
 import com.alibaba.fastjson.JSONObject;
-import com.github.kiulian.downloader.model.AbstractVideoDetails;
+import com.github.kiulian.downloader.YoutubeException;
+import com.github.kiulian.downloader.model.AbstractVideo;
+import com.github.kiulian.downloader.model.formats.Format;
+import com.github.kiulian.downloader.model.subtitles.SubtitlesInfo;
+import com.github.kiulian.downloader.parser.Parser;
 
-public class PlaylistVideo extends AbstractVideoDetails {
-    
-    private int index;
-    private boolean playable;
+public class PlaylistVideo extends AbstractVideo<PlaylistVideoDetails> {
 
-    public PlaylistVideo() {
-    }
+    private Parser parser;
+    private boolean fetched = false;
+    private YoutubeException fetchError;
 
-    public PlaylistVideo(JSONObject json) {
-        super(json);
-        if (json.containsKey("index")) {
-            index = json.getJSONObject("index").getIntValue("simpleText");
-        }
-        playable = json.getBooleanValue("isPlayable");
-    }
-    
-    @Override
-    protected String extractAuthor(JSONObject json) {
-        if (!json.containsKey("shortBylineText")) {
-            return null;
-        }
-        return json.getJSONObject("shortBylineText").getJSONArray("runs").getJSONObject(0).getString("text");
+    public PlaylistVideo(PlaylistVideoDetails details, Parser parser) {
+        super(details);
+        this.parser = parser;
     }
 
     @Override
-    protected String extractTitle(JSONObject json) {
-        JSONObject jsonTitle = json.getJSONObject("title");
-        String title = jsonTitle.getString("simpleText");
-        if (title == null) {
-            title = jsonTitle.getJSONArray("runs").getJSONObject(0).getString("text");
+    public List<Format> formats() {
+        if (!fetched && fetchError == null) {
+            try {
+                basicFetch();
+            } catch (YoutubeException e) {}
         }
-        return title;
+        return super.formats();
     }
-    
-    public int index() {
-        return index;
+
+    @Override
+    public List<SubtitlesInfo> subtitles() {
+        if (!fetched && fetchError == null) {
+            try {
+                basicFetch();
+            } catch (YoutubeException e) {}
+        }
+        return super.subtitles();
     }
-    
-    public boolean playable() {
-        return playable;
+
+    public void fetch() throws YoutubeException {
+        if (!fetched) {
+            basicFetch();
+        }
+    }
+
+    public boolean isFetched() {
+        return fetched;
+    }
+
+    public boolean hasError() {
+        return fetchError != null;
+    }
+
+    public YoutubeException getFetchError() {
+        return fetchError;
+    }
+
+    @SuppressWarnings("unchecked")
+    private void basicFetch() throws YoutubeException {
+        try {
+            String htmlUrl = "https://www.youtube.com/watch?v=" + details().videoId();
+            JSONObject ytPlayerConfig = parser.getPlayerConfig(htmlUrl);
+            formats = parser.parseFormats(ytPlayerConfig);
+            subtitlesInfo = parser.getSubtitlesInfoFromCaptions(ytPlayerConfig);
+            fetched = true;
+            fetchError = null;
+        } catch (YoutubeException e) {
+            formats = Collections.EMPTY_LIST;
+            subtitlesInfo = Collections.EMPTY_LIST;
+            fetchError = e;
+            throw e;
+        }
     }
 }

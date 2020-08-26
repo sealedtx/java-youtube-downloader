@@ -21,25 +21,27 @@ package com.github.kiulian.downloader.model;
  */
 
 
-import com.alibaba.fastjson.JSONArray;
-import com.alibaba.fastjson.JSONObject;
-
 import java.util.ArrayList;
 import java.util.List;
+
+import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.JSONObject;
+import com.github.kiulian.downloader.YoutubeException.DownloadUnavailableException;
 
 public abstract class AbstractVideoDetails {
 
     private String videoId;
-    private String title;
     private int lengthSeconds;
     private List<String> thumbnails;
-    private String author;
-    
-    protected abstract String extractAuthor(JSONObject json);
-    protected abstract String extractTitle(JSONObject json);
 
-    public AbstractVideoDetails() {
-    }
+    // Subclass specific extraction
+    protected String title;
+    protected String author;
+    protected boolean isLive;
+
+    protected abstract void checkDownload() throws DownloadUnavailableException;
+
+    public AbstractVideoDetails() {}
 
     public AbstractVideoDetails(JSONObject json) {
         videoId = json.getString("videoId");
@@ -51,8 +53,6 @@ public abstract class AbstractVideoDetails {
             if (jsonObject.containsKey("url"))
                 thumbnails.add(jsonObject.getString("url"));
         }
-        title = extractTitle(json);
-        author = extractAuthor(json);
     }
 
     public String videoId() {
@@ -73,5 +73,9 @@ public abstract class AbstractVideoDetails {
 
     public String author() {
         return author;
+    }
+
+    public boolean isLive() {
+        return isLive;
     }
 }

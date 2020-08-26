@@ -27,18 +27,15 @@ public class PlaylistDetails {
     private String title;
     private String author;
     private int videoCount;
-    private int views;
+    private int viewCount;
 
-    public PlaylistDetails() {
-    }
-
-    public PlaylistDetails(String playlistId, String title, String author, int videoCount, int views) {
+    public PlaylistDetails(String playlistId, String title, String author, int videoCount, int viewCount) {
         super();
         this.playlistId = playlistId;
         this.title = title;
         this.author = author;
         this.videoCount = videoCount;
-        this.views = views;
+        this.viewCount = viewCount;
     }
 
     public String playlistId() {
@@ -52,12 +49,12 @@ public class PlaylistDetails {
     public String author() {
         return author;
     }
-    
+
     public int videoCount() {
         return videoCount;
     }
-    
-    public int views() {
-        return views;
+
+    public int viewCount() {
+        return viewCount;
     }
 }

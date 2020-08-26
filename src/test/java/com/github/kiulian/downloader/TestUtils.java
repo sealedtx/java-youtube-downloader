@@ -1,5 +1,6 @@
 package com.github.kiulian.downloader;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -12,11 +13,6 @@ class TestUtils {
     static final String WAS_LIVE_ID = "boSGRDYm92E";
 
     static final String NO_SUBTITLES_ID = "y9pfCQ5qQYY";
-    
-    // Electronic Music - > 2000 videos - unstable
-    static final String ELECTRO_PLAYLIST_ID = "PLr0CT5anc-eu8rS9n93DcmIA9Ms0gfZEe";
-    // Lord Of The Rings Complete - 210 videos - stable
-    static final String LOTR_PLAYLIST_ID = "PL924DFB59EB36FA1A";
 
     static boolean isReachable(String url) {
         try {
@@ -28,6 +24,15 @@ class TestUtils {
             return (200 <= responseCode && responseCode <= 399);
         } catch (IOException exception) {
             return false;
+        }
+    }
+
+    static void clean(File directory) {
+        for (File file : directory.listFiles()) {
+            if (file.isDirectory()) {
+                clean(file);
+            }
+            file.delete();
         }
     }
 }

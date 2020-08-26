@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.alibaba.fastjson.JSONObject;
+import com.github.kiulian.downloader.YoutubeException;
 
 public class VideoDetails extends AbstractVideoDetails {
 
@@ -33,7 +34,6 @@ public class VideoDetails extends AbstractVideoDetails {
     private long viewCount;
     private int averageRating;
     private boolean isLiveContent;
-    private boolean isLive;
     private String liveUrl;
 
     public VideoDetails() {
@@ -41,23 +41,22 @@ public class VideoDetails extends AbstractVideoDetails {
 
     public VideoDetails(JSONObject json, String liveHLSUrl) {
         super(json);
+        title = json.getString("title");
+        author = json.getString("author");
+        isLive = json.getBooleanValue("isLive");
+        
         keywords = json.containsKey("keywords") ? json.getJSONArray("keywords").toJavaList(String.class) : new ArrayList<String>();
         shortDescription = json.getString("shortDescription");
         averageRating = json.getIntValue("averageRating");
         viewCount = json.getLongValue("viewCount");
         isLiveContent = json.getBooleanValue("isLiveContent");
-        isLive = json.getBooleanValue("isLive");
         liveUrl = liveHLSUrl;
-    }
-    
-    @Override
-    protected String extractAuthor(JSONObject json) {
-        return json.getString("author");
     }
 
     @Override
-    protected String extractTitle(JSONObject json) {
-        return json.getString("title");
+    public void checkDownload() throws YoutubeException.LiveVideoException {
+        if (isLive || (isLiveContent && lengthSeconds() == 0))
+            throw new YoutubeException.LiveVideoException("Can not download live stream");
     }
 
     public List<String> keywords() {
@@ -74,10 +73,6 @@ public class VideoDetails extends AbstractVideoDetails {
 
     public int averageRating() {
         return averageRating;
-    }
-
-    public boolean isLive() {
-        return isLive;
     }
 
     public boolean isLiveContent() {
