@@ -5,16 +5,13 @@ import static org.junit.jupiter.api.Assertions.*;
 import org.junit.jupiter.api.BeforeEach;
 
 import com.github.kiulian.downloader.model.playlist.PlaylistDetails;
-import com.github.kiulian.downloader.model.playlist.PlaylistVideo;
+import com.github.kiulian.downloader.model.playlist.PlaylistVideoDetails;
 import com.github.kiulian.downloader.model.playlist.YoutubePlaylist;
 
 public abstract class YoutubePlaylistTest extends TestUtils {
 
     // Bruce Lee - 10 videos - stable
     protected static final String BRUCE_PLAYLIST_ID = "PLC3w7RzH8Yf9Zhgk43XX2w_HEDNptS-Ca";
-
-    // Chuck Norris - 10 videos - stable
-    protected static final String CHUCK_PLAYLIST_ID = "PLllnWjUgIDSOANnVoE8QTnKmTxYA0R4Ro";
 
     // Lord Of The Rings Complete - 210 videos - stable
     protected static final String LOTR_PLAYLIST_ID = "PL924DFB59EB36FA1A";
@@ -42,10 +39,15 @@ public abstract class YoutubePlaylistTest extends TestUtils {
         return playlist;
     }
 
-    protected static PlaylistVideo getVideo(YoutubePlaylist playlist, int index) {
-        PlaylistVideo video = playlist.findVideoByIndex(index);
-        assertNotNull(video, "findVideoByIndex: " + index + " should return not null video");
-        assertEquals(index, video.details().index(), "index should be " + index);
-        return video;
+    protected static PlaylistVideoDetails getVideo(YoutubePlaylist playlist, int index) {
+        try {
+            PlaylistVideoDetails videoDetails = playlist.videos().get(index - 1);
+            assertNotNull(videoDetails, "video at index " + index + " should not be null video");
+            assertEquals(index, videoDetails.index(), "index should be " + index);
+            return videoDetails;
+        } catch (IndexOutOfBoundsException e) {
+            fail("video at index " + index + " should exist", e);
+            throw e;
+        }
     }
 }

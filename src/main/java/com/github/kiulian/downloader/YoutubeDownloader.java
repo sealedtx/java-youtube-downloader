@@ -23,10 +23,11 @@ package com.github.kiulian.downloader;
 
 import com.alibaba.fastjson.JSONObject;
 import com.github.kiulian.downloader.cipher.CipherFunction;
-import com.github.kiulian.downloader.model.*;
+import com.github.kiulian.downloader.model.VideoDetails;
+import com.github.kiulian.downloader.model.YoutubeVideo;
 import com.github.kiulian.downloader.model.formats.Format;
 import com.github.kiulian.downloader.model.playlist.PlaylistDetails;
-import com.github.kiulian.downloader.model.playlist.PlaylistVideo;
+import com.github.kiulian.downloader.model.playlist.PlaylistVideoDetails;
 import com.github.kiulian.downloader.model.playlist.YoutubePlaylist;
 import com.github.kiulian.downloader.model.subtitles.SubtitlesInfo;
 import com.github.kiulian.downloader.parser.DefaultParser;
@@ -82,7 +83,7 @@ public class YoutubeDownloader {
         
         PlaylistDetails playlistDetails = parser.getPlaylistDetails(playlistId, ytInitialData);
 
-        List<PlaylistVideo> videos = parser.getPlaylistVideos(ytInitialData, playlistDetails.videoCount());
+        List<PlaylistVideoDetails> videos = parser.getPlaylistVideos(ytInitialData, playlistDetails.videoCount());
         
         return new YoutubePlaylist(playlistDetails, videos);
     }

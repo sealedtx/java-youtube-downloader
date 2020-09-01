@@ -20,15 +20,6 @@ package com.github.kiulian.downloader.parser;
  * #
  */
 
-import java.io.UnsupportedEncodingException;
-import java.net.URLDecoder;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
@@ -45,9 +36,17 @@ import com.github.kiulian.downloader.model.formats.AudioVideoFormat;
 import com.github.kiulian.downloader.model.formats.Format;
 import com.github.kiulian.downloader.model.formats.VideoFormat;
 import com.github.kiulian.downloader.model.playlist.PlaylistDetails;
-import com.github.kiulian.downloader.model.playlist.PlaylistVideo;
 import com.github.kiulian.downloader.model.playlist.PlaylistVideoDetails;
 import com.github.kiulian.downloader.model.subtitles.SubtitlesInfo;
+
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class DefaultParser implements Parser {
     private static final Pattern subtitleLangCodeRegex = Pattern.compile("lang_code=\"(.{2,3})\"");
@@ -240,7 +239,7 @@ public class DefaultParser implements Parser {
     }
 
     @Override
-    public List<PlaylistVideo> getPlaylistVideos(JSONObject initialData, int count) throws YoutubeException {
+    public List<PlaylistVideoDetails> getPlaylistVideos(JSONObject initialData, int videoCount) throws YoutubeException {
         JSONObject content;
 
         try {
@@ -258,9 +257,9 @@ public class DefaultParser implements Parser {
             throw new YoutubeException.BadPageException("Playlist initial data not found");
         }
 
-        List<PlaylistVideo> videos;
-        if (count > 0) {
-            videos = new ArrayList<>(count);
+        List<PlaylistVideoDetails> videos;
+        if (videoCount > 0) {
+            videos = new ArrayList<>(videoCount);
         } else {
             videos = new LinkedList<>();
         }
@@ -327,29 +326,21 @@ public class DefaultParser implements Parser {
         throw new YoutubeException.UnknownFormatException("unknown format with itag " + itag.id());
     }
 
-    private void populatePlaylist(JSONObject content, List<PlaylistVideo> videos, String clientVersion) throws YoutubeException {
-        String continuation;
+    private void populatePlaylist(JSONObject content, List<PlaylistVideoDetails> videos, String clientVersion) throws YoutubeException {
         JSONArray contents = content.getJSONArray("contents");
+        for (int i = 0; i < contents.size(); i++) {
+            videos.add(new PlaylistVideoDetails(contents.getJSONObject(i).getJSONObject("playlistVideoRenderer")));
+        }
         if (content.containsKey("continuations")) {
-            continuation = content.getJSONArray("continuations")
+        	String continuation = content.getJSONArray("continuations")
                     .getJSONObject(0)
                     .getJSONObject("nextContinuationData")
                     .getString("continuation");
-        } else {
-            continuation = null;
-        }
-        for (int i = 0; i < contents.size(); i++) {
-            videos.add(new PlaylistVideo(
-                    new PlaylistVideoDetails(contents.getJSONObject(i).getJSONObject("playlistVideoRenderer")),
-                    this
-            ));
-        }
-        if (continuation != null) {
             loadPlaylistContinuation(continuation, videos, clientVersion);
         }
     }
 
-    private void loadPlaylistContinuation(String continuation, List<PlaylistVideo> videos, String clientVersion) throws YoutubeException {
+    private void loadPlaylistContinuation(String continuation, List<PlaylistVideoDetails> videos, String clientVersion) throws YoutubeException {
         JSONObject content;
 
         String url = "https://www.youtube.com/browse_ajax?ctoken=" + continuation
@@ -360,14 +351,14 @@ public class DefaultParser implements Parser {
         String html = getExtractor().loadUrl(url);
 
         try {
-        	JSONArray response = JSON.parseArray(html);
-        	content = response.getJSONObject(1)
-        			.getJSONObject("response")
-        			.getJSONObject("continuationContents")
-        			.getJSONObject("playlistVideoListContinuation");
-        	populatePlaylist(content, videos, clientVersion);
+            JSONArray response = JSON.parseArray(html);
+            content = response.getJSONObject(1)
+                    .getJSONObject("response")
+                    .getJSONObject("continuationContents")
+                    .getJSONObject("playlistVideoListContinuation");
+            populatePlaylist(content, videos, clientVersion);
         } catch (YoutubeException e) {
-        	throw e;
+            throw e;
         } catch (Exception e) {
             throw new YoutubeException.BadPageException("Could not parse playlist continuation json");
         }
@@ -380,7 +371,7 @@ public class DefaultParser implements Parser {
             return "2.20200720.00.02";
         }
         for (int ti = 0; ti < trackingParams.size(); ti++) {
-        	JSONArray params = trackingParams.getJSONObject(ti).getJSONArray("params");
+            JSONArray params = trackingParams.getJSONObject(ti).getJSONArray("params");
             for (int pi = 0; pi < params.size(); pi ++) {
                 if (params.getJSONObject(pi).getString("key").equals("cver")) {
                     return params.getJSONObject(pi).getString("value");

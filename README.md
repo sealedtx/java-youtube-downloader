@@ -119,6 +119,26 @@ for (SubtitlesInfo info : subtitles) {
     String downloadUrl = subtitles.getDownloadUrl(); 
 }
 
+// playlists
+
+// parsing data
+String playlistId = "abc12345"; // for url https://www.youtube.com/playlist?list=abc12345
+YoutubePlaylist playlist = downloader.getPlaylist(playlistId);
+
+// playlist details
+PlaylistDetails details = playlist.details();
+System.out.println(details.title());
+...
+System.out.println(details.videoCount());
+
+// get video details
+PlaylistVideoDetails videoDetails = playlist.videos().get(0);
+System.out.println(videoDetails.title());
+...
+System.out.println(videoDetails.index());
+
+// get video
+YoutubeVideo video = downloader.getVideo(videoDetails.videoId());
 ```
 
 Include

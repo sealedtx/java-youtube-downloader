@@ -5,10 +5,10 @@ import com.github.kiulian.downloader.model.formats.Format;
 import java.io.File;
 import java.io.IOException;
 
-public class Utils {
+class Utils {
     private static final char[] ILLEGAL_FILENAME_CHARACTERS = {'/', '\n', '\r', '\t', '\0', '\f', '`', '?', '*', '\\', '<', '>', '|', '\"', ':'};
 
-    public static String removeIllegalChars(String fileName) {
+    static String removeIllegalChars(String fileName) {
         for (char c : ILLEGAL_FILENAME_CHARACTERS) {
             fileName = fileName.replace(c, '_');
         }

@@ -2,17 +2,12 @@ package com.github.kiulian.downloader;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import com.github.kiulian.downloader.model.Itag;
-import com.github.kiulian.downloader.model.formats.Format;
 import com.github.kiulian.downloader.model.playlist.PlaylistDetails;
-import com.github.kiulian.downloader.model.playlist.PlaylistVideo;
 import com.github.kiulian.downloader.model.playlist.PlaylistVideoDetails;
 import com.github.kiulian.downloader.model.playlist.YoutubePlaylist;
 
@@ -67,11 +62,11 @@ public class YoutubePlaylistExtractor_Tests extends YoutubePlaylistTest {
             YoutubePlaylist playlist = getPlaylist(LIVE_PLAYLIST_ID);
             testPlaylist(playlist, LIVE_PLAYLIST_ID, "Live", "Live", 100);
             int liveCount = 0;
-            for (PlaylistVideo video : playlist.videos()) {
-            	if (video.details().isLive()) {
-            		liveCount ++;
-            	}
-                assertTrue(video.details().isPlayable(), "live playlist video should be playable");
+            for (PlaylistVideoDetails video : playlist.videos()) {
+                if (video.isLive()) {
+                    liveCount ++;
+                }
+                assertTrue(video.isPlayable(), "live playlist video should be playable");
             }
             int minLiveCount = 90;
             assertTrue(liveCount > minLiveCount, "live playlist should contain at least " + minLiveCount + " live videos");
@@ -86,30 +81,12 @@ public class YoutubePlaylistExtractor_Tests extends YoutubePlaylistTest {
         });
     }
 
-    @Test
-    @DisplayName("available formats should be successful")
-    void playlistAvailableItags_Success() {
-        assertDoesNotThrow(() -> {
-            YoutubePlaylist playlist = getPlaylist(BRUCE_PLAYLIST_ID);
-            Set<Itag> availableItags = getAvailableItags(playlist);
-            // Results can vary, no count test can be done
-            // assertFalse(availableItags.isEmpty(), "no avilable itags for Bruce");
-            System.out.println("Available itags for Bruce: " + availableItags.size());
-            
-            playlist = getPlaylist(CHUCK_PLAYLIST_ID);
-            availableItags = getAvailableItags(playlist);
-            // Results can vary, no count test can be done
-            // assertFalse(availableItags.isEmpty(), "no avilable itags for Bruce");
-            System.out.println("Available itags for Chuck: " + availableItags.size());
-        });
-    }
-
     private static void testPlaylist(YoutubePlaylist playlist, String playlistId, String title, String author, int size) {
         PlaylistDetails details = playlist.details();
         assertEquals(title, details.title(), "title should be " + title);
         assertEquals(author, details.author(), "author should be " + author);
         
-        List<PlaylistVideo> videos = playlist.videos();
+        List<PlaylistVideoDetails> videos = playlist.videos();
         int videoCount;
         if (size < 0) {
             videoCount = details.videoCount();
@@ -121,62 +98,32 @@ public class YoutubePlaylistExtractor_Tests extends YoutubePlaylistTest {
         assertNotNull(videos, "playlist videos should not be null: " + playlistId);
         assertEquals(videoCount, videos.size(), "size should be " + videoCount);
         
-        for (PlaylistVideo video : videos) {
-            if (video.details().lengthSeconds() > 0 && !video.details().isPlayable()) {
-                assertNull(video.details().author(), "Not playable video should not have an author");
-                assertTrue(video.details().title().equals("[Private video]") || video.details().title().equals("[Deleted video]"),
-                        "Not playable video has a wrong title: " + video.details().title());
+        for (PlaylistVideoDetails video : videos) {
+            if (video.lengthSeconds() > 0 && !video.isPlayable()) {
+                assertNull(video.author(), "Not playable video should not have an author");
+                assertTrue(video.title().equals("[Private video]") || video.title().equals("[Deleted video]"),
+                        "Not playable video has a wrong title: " + video.title());
             }
         }
     }
 
-    private static void testVideo(PlaylistVideo video, String title, String author, boolean isPlayable) {
-        PlaylistVideoDetails details = video.details();
-        assertEquals(title, details.title(), "title should be " + title);
-        assertEquals(author, details.author(), "author should be " + author);
+    private static void testVideo(PlaylistVideoDetails video, String title, String author, boolean isPlayable) {
+        assertEquals(title, video.title(), "title should be " + title);
+        assertEquals(author, video.author(), "author should be " + author);
         if (isPlayable) {
-            assertTrue(details.isPlayable(), "video should be playable");
+            assertTrue(video.isPlayable(), "video should be playable");
         } else {
-            assertFalse(details.isPlayable(), "video should not be playable");
+            assertFalse(video.isPlayable(), "video should not be playable");
         }
     }
 
-    private static PlaylistVideo getVideo(YoutubePlaylist playlist, String videoId, int index) {
-        PlaylistVideo video = playlist.findVideoById(videoId);
+    private static PlaylistVideoDetails getVideo(YoutubePlaylist playlist, String videoId, int index) {
+        PlaylistVideoDetails video = playlist.findVideoById(videoId);
         assertNotNull(video, "findVideoById: " + videoId + " should return not null video");
-        PlaylistVideoDetails details = video.details();
-        assertEquals(videoId, details.videoId(), "video id should be " + videoId);
+        assertEquals(videoId, video.videoId(), "video id should be " + videoId);
         if (index > 0) {
-            assertEquals(index, details.index(), "video index should be " + index);
+            assertEquals(index, video.index(), "video index should be " + index);
         }
         return video;
-    }
-
-    // Gets itags available for all videos
-    private static Set<Itag> getAvailableItags(YoutubePlaylist playlist) throws YoutubeException {
-        Set<Itag> authorized = new HashSet<>();
-        boolean first = true;
-        
-        for (PlaylistVideo video : playlist.videos()) {
-            if (first) {
-                for (Format format : video.formats()) {
-                    authorized.add(format.itag());
-                }
-                first = false;
-            } else {
-                authorized.removeIf(itag -> {
-                    for (Format format : video.formats()) {
-                        if (format.itag() == itag) {
-                            return false;
-                        }
-                    };
-                    return true;
-                });
-                if (authorized.isEmpty()) {
-                    break;
-                }
-            }
-        }
-        return authorized;
     }
 }

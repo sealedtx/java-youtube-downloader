@@ -77,7 +77,7 @@ public class DefaultExtractor implements Extractor {
 
         throw new YoutubeException.BadPageException("Could not parse web page");
     }
-    
+
     @Override
     public String extractYtInitialData(String html) throws YoutubeException {
         Matcher matcher = YT_INITIAL_DATA.matcher(html);

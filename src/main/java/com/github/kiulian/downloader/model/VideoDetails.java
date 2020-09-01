@@ -54,7 +54,7 @@ public class VideoDetails extends AbstractVideoDetails {
     }
 
     @Override
-    public void checkDownload() throws YoutubeException.LiveVideoException {
+    protected void checkDownload() throws YoutubeException.LiveVideoException {
         if (isLive || (isLiveContent && lengthSeconds() == 0))
             throw new YoutubeException.LiveVideoException("Can not download live stream");
     }
