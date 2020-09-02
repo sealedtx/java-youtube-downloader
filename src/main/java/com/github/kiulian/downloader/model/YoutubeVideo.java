@@ -236,8 +236,7 @@ public class YoutubeVideo {
     }
 
     public void downloadAsync(Format format, File outDir, String fileName, boolean overwrite, final OnYoutubeDownloadListener listener) throws IOException, YoutubeException {
-        if (videoDetails.isLive() || (videoDetails.isLiveContent() && videoDetails.lengthSeconds() == 0))
-            throw new YoutubeException.LiveVideoException("Can not download live stream");
+        videoDetails.checkDownload();
 
         createOutDir(outDir);
 
