@@ -39,6 +39,7 @@ public class DefaultExtractor implements Extractor {
             Pattern.compile(";ytplayer\\.config = (\\{.*?\\})\\;ytplayer"),
             Pattern.compile(";ytplayer\\.config = (\\{.*?\\})\\;")
     );
+    private static final Pattern YT_INITIAL_DATA = Pattern.compile("window\\[\"ytInitialData\"\\] = (\\{.*?\\});");
 
     private static final String DEFAULT_USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.121 Safari/537.36";
     private static final String DEFAULT_ACCEPT_LANG = "en-US,en;";
@@ -72,6 +73,17 @@ public class DefaultExtractor implements Extractor {
             if (matcher.find()) {
                 return matcher.group(1);
             }
+        }
+
+        throw new YoutubeException.BadPageException("Could not parse web page");
+    }
+
+    @Override
+    public String extractYtInitialData(String html) throws YoutubeException {
+        Matcher matcher = YT_INITIAL_DATA.matcher(html);
+
+        if (matcher.find()) {
+            return matcher.group(1);
         }
 
         throw new YoutubeException.BadPageException("Could not parse web page");

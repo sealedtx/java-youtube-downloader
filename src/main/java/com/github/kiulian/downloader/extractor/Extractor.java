@@ -32,6 +32,8 @@ public interface Extractor {
 
     String extractYtPlayerConfig(String html) throws YoutubeException;
 
+    String extractYtInitialData(String html) throws YoutubeException;
+
     String loadUrl(String url) throws YoutubeException;
 
 }

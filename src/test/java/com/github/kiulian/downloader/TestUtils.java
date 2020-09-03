@@ -1,5 +1,6 @@
 package com.github.kiulian.downloader;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -23,6 +24,15 @@ class TestUtils {
             return (200 <= responseCode && responseCode <= 399);
         } catch (IOException exception) {
             return false;
+        }
+    }
+
+    static void clean(File directory) {
+        for (File file : directory.listFiles()) {
+            if (file.isDirectory()) {
+                clean(file);
+            }
+            file.delete();
         }
     }
 }

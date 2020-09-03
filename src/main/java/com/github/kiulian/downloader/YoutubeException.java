@@ -21,7 +21,8 @@ package com.github.kiulian.downloader;
  */
 
 
-public class YoutubeException extends Exception {
+@SuppressWarnings("serial")
+public abstract class YoutubeException extends Exception {
     private YoutubeException(String message) {
         super(message);
     }
@@ -48,12 +49,25 @@ public class YoutubeException extends Exception {
 
     }
 
-    public static class LiveVideoException extends YoutubeException {
+    public static abstract class DownloadUnavailableException extends YoutubeException {
+        
+        private DownloadUnavailableException(String message) {
+            super(message);
+        }
+    }
+
+    public static class LiveVideoException extends DownloadUnavailableException {
 
         public LiveVideoException(String message) {
             super(message);
         }
+    }
 
+    public static class RestrictedVideoException extends DownloadUnavailableException {
+
+        public RestrictedVideoException(String message) {
+            super(message);
+        }
     }
 
     public static class CipherException extends YoutubeException {
