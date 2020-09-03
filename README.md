@@ -44,7 +44,7 @@ details.thumbnails().forEach(image -> System.out.println("Thumbnail: " + image))
 // get videos with audio
 List<AudioVideoFormat> videoWithAudioFormats = video.videoWithAudioFormats();
 videoWithAudioFormats.forEach(it -> {
-    System.out.println(it.videoQuality() + " : " + it.url());
+    System.out.println(it.audioQuality() + " : " + it.url());
 });
 
 // filtering only video formats
@@ -105,7 +105,7 @@ File myAwesomeFile = video.download(format, outputDir, "myAwesomeName", true);
 // you can get subtitles from video captions if you have already parsed video meta
 List<SubtitlesInfo> subtitles = video.subtitles(); // NOTE: includes auto-generated
 // if you don't need video meta, but just subtitles use this instead
-List<SubtitlesInfo> subtitles = downloader.getViodeSubtitles(videoId); // NOTE: does not include auto-generated
+List<SubtitlesInfo> subtitles = downloader.getVideoSubtitles(videoId); // NOTE: does not include auto-generated
 
 for (SubtitlesInfo info : subtitles) {
     Subtitles subtitles = info.getSubtitles()
@@ -119,6 +119,26 @@ for (SubtitlesInfo info : subtitles) {
     String downloadUrl = subtitles.getDownloadUrl(); 
 }
 
+// playlists
+
+// parsing data
+String playlistId = "abc12345"; // for url https://www.youtube.com/playlist?list=abc12345
+YoutubePlaylist playlist = downloader.getPlaylist(playlistId);
+
+// playlist details
+PlaylistDetails details = playlist.details();
+System.out.println(details.title());
+...
+System.out.println(details.videoCount());
+
+// get video details
+PlaylistVideoDetails videoDetails = playlist.videos().get(0);
+System.out.println(videoDetails.title());
+...
+System.out.println(videoDetails.index());
+
+// get video
+YoutubeVideo video = downloader.getVideo(videoDetails.videoId());
 ```
 
 Include

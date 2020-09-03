@@ -39,6 +39,8 @@ import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import static com.github.kiulian.downloader.model.Utils.*;
 
@@ -64,6 +66,10 @@ public class YoutubeVideo {
 
     public List<SubtitlesInfo> subtitles() {
         return subtitlesInfo;
+    }
+
+    public List<Format> findFormats(Predicate<Format> filter) {
+        return formats.stream().filter(filter).collect(Collectors.toList());
     }
 
     public Format findFormatByItag(int itag) {
@@ -161,8 +167,7 @@ public class YoutubeVideo {
     }
 
     public File download(Format format, File outDir, String fileName, boolean overwrite) throws IOException, YoutubeException {
-        if (videoDetails.isLive() || (videoDetails.isLiveContent() && videoDetails.lengthSeconds() == 0))
-            throw new YoutubeException.LiveVideoException("Can not download live stream");
+        videoDetails.checkDownload();
 
         createOutDir(outDir);
 
@@ -205,8 +210,7 @@ public class YoutubeVideo {
     }
 
     public Future<File> downloadAsync(final Format format, final File outDir, final String fileName, final boolean overwrite) throws YoutubeException.LiveVideoException, IOException {
-        if (videoDetails.isLive() || (videoDetails.isLiveContent() && videoDetails.lengthSeconds() == 0))
-            throw new YoutubeException.LiveVideoException("Can not download live stream");
+        videoDetails.checkDownload();
 
         createOutDir(outDir);
 
@@ -232,8 +236,7 @@ public class YoutubeVideo {
     }
 
     public void downloadAsync(Format format, File outDir, String fileName, boolean overwrite, final OnYoutubeDownloadListener listener) throws IOException, YoutubeException {
-        if (videoDetails.isLive() || (videoDetails.isLiveContent() && videoDetails.lengthSeconds() == 0))
-            throw new YoutubeException.LiveVideoException("Can not download live stream");
+        videoDetails.checkDownload();
 
         createOutDir(outDir);
 
