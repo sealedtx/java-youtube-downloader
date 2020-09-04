@@ -35,8 +35,8 @@ public class AudioVideoFormat extends Format {
     private final Integer height;
     private final VideoQuality videoQuality;
 
-    public AudioVideoFormat(JSONObject json) {
-        super(json);
+    public AudioVideoFormat(JSONObject json, boolean isAdaptive) {
+        super(json, isAdaptive);
         audioSampleRate = json.getInteger("audioSampleRate");
         averageBitrate = json.getInteger("averageBitrate");
         qualityLabel = json.getString("qualityLabel");

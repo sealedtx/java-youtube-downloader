@@ -22,6 +22,7 @@ package com.github.kiulian.downloader.model.subtitles;
 
 import com.github.kiulian.downloader.YoutubeException;
 import com.github.kiulian.downloader.model.Extension;
+import com.github.kiulian.downloader.model.Utils;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -91,12 +92,7 @@ public class Subtitles {
         } catch (IOException e) {
             throw new YoutubeException.SubtitlesException("Failed to download subtitle: " + e.getMessage());
         } finally {
-            if (br != null) {
-                try {
-                    br.close();
-                } catch (IOException ignored) {
-                }
-            }
+            Utils.closeSilently(br);
         }
 
         return result.toString();

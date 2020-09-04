@@ -30,8 +30,8 @@ public class AudioFormat extends Format {
     private final Integer audioSampleRate;
     private final AudioQuality audioQuality;
 
-    public AudioFormat(JSONObject json) {
-        super(json);
+    public AudioFormat(JSONObject json, boolean isAdaptive) {
+        super(json, isAdaptive);
         audioSampleRate = json.getInteger("audioSampleRate");
         averageBitrate = json.getInteger("averageBitrate");
 
