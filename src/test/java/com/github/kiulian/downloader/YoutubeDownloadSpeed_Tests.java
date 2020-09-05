@@ -105,7 +105,6 @@ public class YoutubeDownloadSpeed_Tests extends TestUtils {
         File outputFile = new File(outDir, video.details().title() + "_" + (isByPart ? "bypart" : "straight") + format.itag().id() + "." + format.extension().value());
         try (OutputStream os = new FileOutputStream(outputFile)) {
             Method method = isByPart ? byPartMethod : straightMethod;
-            method.setAccessible(true);
             method.invoke(video, format, os, listener);
             listener.onFinished(outputFile);
             return outputFile;

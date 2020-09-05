@@ -324,7 +324,7 @@ public class DefaultParser implements Parser {
             itag.setId(json.getIntValue("itag"));
         }
 
-        boolean hasVideo = itag.isVideo() || json.containsKey("quality");
+        boolean hasVideo = itag.isVideo() || json.containsKey("size") || json.containsKey("width");
         boolean hasAudio = itag.isAudio() || json.containsKey("audioQuality");
 
         if (hasVideo && hasAudio)

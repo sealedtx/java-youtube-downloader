@@ -38,8 +38,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 import static com.github.kiulian.downloader.model.Utils.*;
 
@@ -72,8 +70,8 @@ public class YoutubeVideo {
         return subtitlesInfo;
     }
 
-    public List<Format> findFormats(Predicate<Format> filter) {
-        return formats.stream().filter(filter).collect(Collectors.toList());
+    public List<Format> findFormats(Filter<Format> filter) {
+        return filter.select(formats);
     }
 
     public Format findFormatByItag(int itag) {
