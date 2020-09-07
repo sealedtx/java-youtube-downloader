@@ -32,8 +32,8 @@ public class VideoFormat extends Format {
     private final Integer height;
     private final VideoQuality videoQuality;
 
-    public VideoFormat(JSONObject json) {
-        super(json);
+    public VideoFormat(JSONObject json, boolean isAdaptive) {
+        super(json, isAdaptive);
         fps = json.getInteger("fps");
         qualityLabel = json.getString("qualityLabel");
         if (json.containsKey("size")) {

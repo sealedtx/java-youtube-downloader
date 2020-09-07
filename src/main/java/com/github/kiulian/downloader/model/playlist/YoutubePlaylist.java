@@ -22,8 +22,8 @@ package com.github.kiulian.downloader.model.playlist;
 
 
 import java.util.List;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
+
+import com.github.kiulian.downloader.model.Filter;
 
 public class YoutubePlaylist {
 
@@ -51,7 +51,7 @@ public class YoutubePlaylist {
         return null;
     }
 
-    public List<PlaylistVideoDetails> findVideos(Predicate<PlaylistVideoDetails> filter) {
-        return videos.stream().filter(filter).collect(Collectors.toList());
+    public List<PlaylistVideoDetails> findVideos(Filter<PlaylistVideoDetails> filter) {
+        return filter.select(videos);
     }
 }

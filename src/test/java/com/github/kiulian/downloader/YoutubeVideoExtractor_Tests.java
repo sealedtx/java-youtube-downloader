@@ -3,9 +3,7 @@ package com.github.kiulian.downloader;
 import com.github.kiulian.downloader.model.Extension;
 import com.github.kiulian.downloader.model.VideoDetails;
 import com.github.kiulian.downloader.model.YoutubeVideo;
-import com.github.kiulian.downloader.model.formats.AudioVideoFormat;
-import com.github.kiulian.downloader.model.formats.Format;
-import com.github.kiulian.downloader.model.formats.VideoFormat;
+import com.github.kiulian.downloader.model.formats.*;
 import com.github.kiulian.downloader.model.quality.AudioQuality;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -124,11 +122,19 @@ public class YoutubeVideoExtractor_Tests {
             assertNotNull(format.url(), "url should not be null");
 
             assertTrue(isReachable(format.url()), "url should be reachable");
+            
+            int maxBitrate = 100_000; 
+            formats = video.findFormats(f -> f instanceof AudioFormat && f.bitrate() < maxBitrate);
+            assertFalse(formats.isEmpty(), "filtered formats should not be empty");
+            formats.forEach(f -> {
+                assertTrue(f instanceof AudioFormat, "format should be audio");
+                assertTrue(f.bitrate() < maxBitrate, "format bitrate should be < " + maxBitrate);
+            });
         });
     }
 
     @Test
-    @DisplayName("getVideo should throws exception for unavailable video")
+    @DisplayName("getVideo should throw exception for unavailable video")
     void getVideo_Unavailable_ThrowsException() {
         YoutubeDownloader downloader = new YoutubeDownloader();
         String unavailableVideoId = "12345678901";
@@ -145,12 +151,12 @@ public class YoutubeVideoExtractor_Tests {
         String videoId = "SmM0653YvXU";
 
         assertThrows(YoutubeException.CipherException.class, () -> {
-            YoutubeVideo video = downloader.getVideo(videoId);
+            downloader.getVideo(videoId);
         }, "getVideo should throw CipherException if initial function patterns has wrong priority");
 
         downloader.addCipherFunctionPattern(0, "(?:\\b|[^a-zA-Z0-9$])([a-zA-Z0-9$]{2})\\s*=\\s*function\\(\\s*a\\s*\\)\\s*\\{\\s*a\\s*=\\s*a\\.split\\(\\s*\"\"\\s*\\)");
         assertDoesNotThrow(() -> {
-            YoutubeVideo video = downloader.getVideo(videoId);
+            downloader.getVideo(videoId);
         }, "getVideo should not throw exception if initial function patterns has correct priority");
     }
 

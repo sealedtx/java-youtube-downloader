@@ -40,6 +40,13 @@ public class YoutubePlaylistExtractor_Tests extends YoutubePlaylistTest {
                     "Howard Shore-The Ruins of Dale", "willburowgh", true);
             testVideo(getVideo(playlist, 207),
                     "Dragon-sickness", "Howard Shore - Topic", true);
+            
+            String author = "willburowgh";
+            List<PlaylistVideoDetails> videos = playlist.findVideos(video -> video.author().equals(author));
+            assertFalse(videos.isEmpty(), "filtered videos shoud not be empty");
+            videos.forEach(video -> {
+                assertEquals(author, video.author(), "author should be " + author);
+            });
         });
     }
 
@@ -74,7 +81,7 @@ public class YoutubePlaylistExtractor_Tests extends YoutubePlaylistTest {
     }
 
     @Test
-    @DisplayName("getPlaylist should throws exception for unavailable video")
+    @DisplayName("getPlaylist should throw exception for unavailable playlist")
     void getPlaylist_Unavailable_ThrowsException() {
         assertThrows(YoutubeException.BadPageException.class, () -> {
             getPlaylist("12345678901");

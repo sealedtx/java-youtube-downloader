@@ -73,7 +73,10 @@ public class YoutubeDownloader {
         List<Format> formats = parser.parseFormats(ytPlayerConfig);
 
         List<SubtitlesInfo> subtitlesInfo = parser.getSubtitlesInfoFromCaptions(ytPlayerConfig);
-        return new YoutubeVideo(videoDetails, formats, subtitlesInfo);
+        
+        String clientVersion = parser.getClientVersion(ytPlayerConfig);
+        
+        return new YoutubeVideo(videoDetails, formats, subtitlesInfo, clientVersion);
     }
 
     public YoutubePlaylist getPlaylist(String playlistId) throws YoutubeException {
