@@ -168,12 +168,28 @@ Include
 ```gradle
 allprojects {
   repositories {
-  ...
-  maven { url 'https://jitpack.io' }
+    ...
+    maven { url 'https://jitpack.io' }
   }
 }
-  
+```
+```gradle 
 dependencies {
   implementation 'com.github.sealedtx:java-youtube-downloader:2.3.0'
+}
+```
+### Android
+
+```gradle
+android {
+  ...
+  compileOptions {
+    sourceCompatibility JavaVersion.VERSION_1_8
+    targetCompatibility JavaVersion.VERSION_1_8
+  }
+  // For Kotlin projects
+  kotlinOptions {
+    jvmTarget = "1.8"
+  }
 }
 ```
