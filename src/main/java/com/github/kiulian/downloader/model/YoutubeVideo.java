@@ -36,24 +36,26 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 import static com.github.kiulian.downloader.model.Utils.*;
 
 public class YoutubeVideo {
 
+    private static final int BUFFER_SIZE = 4096;
+    private static final int PART_LENGTH = 2 * 1024 * 1024;
+
     private VideoDetails videoDetails;
     private List<Format> formats;
     private List<SubtitlesInfo> subtitlesInfo;
+    private final String clientVersion;
 
-    public YoutubeVideo(VideoDetails videoDetails, List<Format> formats, List<SubtitlesInfo> subtitlesInfo) {
+    public YoutubeVideo(VideoDetails videoDetails, List<Format> formats, List<SubtitlesInfo> subtitlesInfo, String clientVersion) {
         this.videoDetails = videoDetails;
         this.formats = formats;
         this.subtitlesInfo = subtitlesInfo;
+        this.clientVersion = clientVersion;
     }
 
     public VideoDetails details() {
@@ -68,8 +70,8 @@ public class YoutubeVideo {
         return subtitlesInfo;
     }
 
-    public List<Format> findFormats(Predicate<Format> filter) {
-        return formats.stream().filter(filter).collect(Collectors.toList());
+    public List<Format> findFormats(Filter<Format> filter) {
+        return filter.select(formats);
     }
 
     public Format findFormatByItag(int itag) {
@@ -167,38 +169,9 @@ public class YoutubeVideo {
     }
 
     public File download(Format format, File outDir, String fileName, boolean overwrite) throws IOException, YoutubeException {
-        videoDetails.checkDownload();
+        File outputFile = initDownload(format, outDir, fileName, overwrite);
 
-        createOutDir(outDir);
-
-        File outputFile = getOutputFile(removeIllegalChars(fileName), format, outDir, overwrite);
-
-        URL url = new URL(format.url());
-        BufferedInputStream bis = null;
-        FileOutputStream fos = null;
-        try {
-            bis = new BufferedInputStream(url.openStream());
-            fos = new FileOutputStream(outputFile);
-            byte[] buffer = new byte[4096];
-            int count = 0;
-            while ((count = bis.read(buffer, 0, 4096)) != -1) {
-                fos.write(buffer, 0, count);
-            }
-        } finally {
-            if (bis != null) {
-                try {
-                    bis.close();
-                } catch (IOException ignored) {
-                }
-            }
-            if (fos != null) {
-                try {
-                    fos.close();
-                } catch (IOException ignored) {
-                }
-            }
-        }
-        return outputFile;
+        return basicDownload(format, outputFile, null);
     }
 
     public Future<File> downloadAsync(Format format, File outDir) throws YoutubeException.LiveVideoException, IOException {
@@ -210,16 +183,9 @@ public class YoutubeVideo {
     }
 
     public Future<File> downloadAsync(final Format format, final File outDir, final String fileName, final boolean overwrite) throws YoutubeException.LiveVideoException, IOException {
-        videoDetails.checkDownload();
+        File outputFile = initDownload(format, outDir, fileName, overwrite);
 
-        createOutDir(outDir);
-
-        FutureTask<File> future = new FutureTask<>(new Callable<File>() {
-            @Override
-            public File call() throws IOException, YoutubeException {
-                return download(format, outDir, fileName, overwrite);
-            }
-        });
+        FutureTask<File> future = new FutureTask<>(() -> basicDownload(format, outputFile, null));
 
         Thread thread = new Thread(future, "YtDownloader");
         thread.setDaemon(true);
@@ -236,60 +202,128 @@ public class YoutubeVideo {
     }
 
     public void downloadAsync(Format format, File outDir, String fileName, boolean overwrite, final OnYoutubeDownloadListener listener) throws IOException, YoutubeException {
+        File outputFile = initDownload(format, outDir, fileName, overwrite);
+
+        Thread thread = new Thread(() -> {
+            try {
+                basicDownload(format, outputFile, listener);
+            } catch (IOException ignored) {}
+        }, "YtDownloader");
+        thread.setDaemon(true);
+        thread.start();
+    }
+
+    private File initDownload(Format format, File outDir, String fileName, boolean overwrite) throws IOException, YoutubeException.LiveVideoException {
         videoDetails.checkDownload();
 
         createOutDir(outDir);
 
-        final File outputFile = getOutputFile(fileName, format, outDir, overwrite);
+        return getOutputFile(fileName, format, outDir, overwrite);
+    }
 
-        final URL url = new URL(format.url());
-        Thread thread = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                BufferedInputStream bis = null;
-                FileOutputStream fos = null;
-                try {
-                    URLConnection urlConnection = url.openConnection();
-                    int contentLength = urlConnection.getContentLength();
+    private File basicDownload(Format format, File outputFile, OnYoutubeDownloadListener listener) throws IOException {
+        OutputStream os = null;
+        try {
+            os = new FileOutputStream(outputFile);
+            if (format.isAdaptive() && format.contentLength() != null) {
+                downloadByPart(format, os, listener);
+            } else {
+                downloadStraight(format, os, listener);
+            }
+            if (listener != null) {
+                listener.onFinished(outputFile);
+            }
+        } catch (IOException e) {
+            if (listener != null) {
+                listener.onError(e);
+            }
+            throw e;
+        } finally {
+            closeSilently(os);
+        }
+        return outputFile;
+    }
 
-                    bis = new BufferedInputStream(urlConnection.getInputStream());
-                    fos = new FileOutputStream(outputFile);
+    // Downloads the format in one single request
+    private void downloadStraight(Format format, OutputStream os, final OnYoutubeDownloadListener listener) throws IOException {
+        URLConnection urlConnection = new URL(format.url()).openConnection();
+        int contentLength = urlConnection.getContentLength();
+        
+        InputStream is = urlConnection.getInputStream();
+        
+        byte[] buffer = new byte[BUFFER_SIZE];
+        if (listener == null) {
+            copyAndCloseInput(is, os, buffer);
+        } else {
+            copyAndCloseInput(is, os, buffer, 0, contentLength, listener);
+        }
+    }
 
-                    double total = 0;
-                    byte[] buffer = new byte[4096];
-                    int count = 0;
-                    int progress = 0;
-                    while ((count = bis.read(buffer, 0, 4096)) != -1) {
-                        fos.write(buffer, 0, count);
-                        total += count;
-                        int newProgress = (int) ((total / contentLength) * 100);
-                        if (newProgress > progress) {
-                            progress = newProgress;
-                            listener.onDownloading(progress);
-                        }
-                    }
+    // Downloads the format part by part, with as many requests as needed
+    private void downloadByPart(Format format, OutputStream os, final OnYoutubeDownloadListener listener) throws IOException {
+        long done = 0;
+        int partNumber = 0;
 
-                    listener.onFinished(outputFile);
-                } catch (IOException e) {
-                    listener.onError(e);
-                } finally {
-                    if (bis != null) {
-                        try {
-                            bis.close();
-                        } catch (IOException ignored) {
-                        }
-                    }
-                    if (fos != null) {
-                        try {
-                            fos.close();
-                        } catch (IOException ignored) {
-                        }
-                    }
+        final String pathPrefix = "&cver=" + clientVersion + "&range=";
+        final long contentLength = format.contentLength();
+        byte[] buffer = new byte[BUFFER_SIZE];
+        
+        while (done < contentLength) {
+            long toRead = PART_LENGTH;
+            if (done + toRead > contentLength) {
+                toRead = (int) (contentLength - done);
+            }
+            
+            partNumber++;
+            String partUrl = format.url() + pathPrefix
+                    + done + "-" + (done + toRead - 1)    // range first-last byte positions
+                    + "&rn=" + partNumber;                // part number
+            URL url = new URL(partUrl);
+            InputStream is = url.openStream();
+            if (listener == null) {
+                done += copyAndCloseInput(is, os, buffer);
+            } else {
+                done += copyAndCloseInput(is, os, buffer, done, contentLength, listener);
+            }
+        }
+    }
+
+    // Copies as many bytes as possible then closes input stream
+    private static long copyAndCloseInput(InputStream is, OutputStream os, byte[] buffer, long offset, long totalLength, OnYoutubeDownloadListener listener) throws IOException {
+        long done = 0;
+        
+        try {
+            int read = 0;
+            long lastProgress = offset == 0 ? 0 : (offset * 100) / totalLength;
+            
+            while ((read = is.read(buffer)) != -1) {
+                os.write(buffer, 0, read);
+                done += read;
+                long progress = ((offset + done) * 100) / totalLength;
+                if (progress > lastProgress) {
+                    listener.onDownloading((int) progress);
+                    lastProgress = progress;
                 }
             }
-        }, "YtDownloader");
-        thread.setDaemon(true);
-        thread.start();
+        } finally {
+            closeSilently(is);
+        }
+        return done;
+    }
+
+    private static long copyAndCloseInput(InputStream is, OutputStream os, byte[] buffer) throws IOException {
+        long done = 0;
+        
+        try {
+            int count = 0;
+            while ((count = is.read(buffer)) != -1) {
+                os.write(buffer, 0, count);
+                done += count;
+            }
+        } finally {
+            closeSilently(is);
+        }
+        return done;
     }
 
 }

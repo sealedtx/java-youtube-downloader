@@ -31,6 +31,7 @@ public abstract class Format {
     public static final String VIDEO = "video";
     public static final String AUDIO_VIDEO = "audio/video";
 
+    private final boolean isAdaptive;
 
     protected final Itag itag;
     protected final String url;
@@ -41,7 +42,9 @@ public abstract class Format {
     protected final Long lastModified;
     protected final Long approxDurationMs;
 
-    protected Format(JSONObject json) {
+    protected Format(JSONObject json, boolean isAdaptive) {
+        this.isAdaptive = isAdaptive;
+        
         Itag itag;
         try {
             itag = Itag.valueOf("i" + json.getInteger("itag"));
@@ -81,6 +84,10 @@ public abstract class Format {
     }
 
     public abstract String type();
+
+    public boolean isAdaptive() {
+        return isAdaptive;
+    }
 
     public Itag itag() {
         return itag;

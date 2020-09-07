@@ -42,6 +42,8 @@ public interface Parser {
 
     JSONObject getPlayerConfig(String htmlUrl) throws YoutubeException;
 
+    String getClientVersion(JSONObject config);
+
     VideoDetails getVideoDetails(JSONObject config);
 
     String getJsUrl(JSONObject config) throws YoutubeException;

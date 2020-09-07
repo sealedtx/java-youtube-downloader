@@ -83,6 +83,11 @@ public class DefaultParser implements Parser {
     }
 
     @Override
+    public String getClientVersion(JSONObject config) {
+        return getClientVersionFromContext(config.getJSONObject("args").getJSONObject("player_response").getJSONObject("responseContext"));
+    }
+
+    @Override
     public String getJsUrl(JSONObject config) throws YoutubeException {
         if (!config.containsKey("assets"))
             throw new YoutubeException.BadPageException("Could not extract js url: assets not found");
@@ -180,26 +185,14 @@ public class DefaultParser implements Parser {
         if (streamingData.containsKey("formats")) {
             jsonFormats.addAll(streamingData.getJSONArray("formats"));
         }
+        JSONArray jsonAdaptiveFormats = new JSONArray();
         if (streamingData.containsKey("adaptiveFormats")) {
-            jsonFormats.addAll(streamingData.getJSONArray("adaptiveFormats"));
+            jsonAdaptiveFormats.addAll(streamingData.getJSONArray("adaptiveFormats"));
         }
 
-        List<Format> formats = new ArrayList<>(jsonFormats.size());
-        for (int i = 0; i < jsonFormats.size(); i++) {
-            JSONObject json = jsonFormats.getJSONObject(i);
-            if ("FORMAT_STREAM_TYPE_OTF".equals(json.getString("type")))
-                continue; // unsupported otf formats which cause 404 not found
-            try {
-                Format format = parseFormat(json, config);
-                formats.add(format);
-            } catch (YoutubeException.CipherException e) {
-                throw e;
-            } catch (YoutubeException e) {
-                System.err.println("Error parsing format: " + json);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
+        List<Format> formats = new ArrayList<>(jsonFormats.size() + jsonAdaptiveFormats.size());
+        populateFormats(formats, jsonFormats, config, false);
+        populateFormats(formats, jsonAdaptiveFormats, config, true);
         return formats;
     }
 
@@ -263,11 +256,29 @@ public class DefaultParser implements Parser {
         } else {
             videos = new LinkedList<>();
         }
-        populatePlaylist(content, videos, getClientVersion(initialData));
+        populatePlaylist(content, videos, getClientVersionFromContext(initialData.getJSONObject("responseContext")));
         return videos;
     }
 
-    private Format parseFormat(JSONObject json, JSONObject config) throws YoutubeException {
+    private void populateFormats(List<Format> formats, JSONArray jsonFormats, JSONObject config, boolean isAdaptive) throws YoutubeException.CipherException {
+        for (int i = 0; i < jsonFormats.size(); i++) {
+            JSONObject json = jsonFormats.getJSONObject(i);
+            if ("FORMAT_STREAM_TYPE_OTF".equals(json.getString("type")))
+                continue; // unsupported otf formats which cause 404 not found
+            try {
+                Format format = parseFormat(json, config, isAdaptive);
+                formats.add(format);
+            } catch (YoutubeException.CipherException e) {
+                throw e;
+            } catch (YoutubeException e) {
+                System.err.println("Error parsing format: " + json);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    private Format parseFormat(JSONObject json, JSONObject config, boolean isAdaptive) throws YoutubeException {
         if (json.containsKey("signatureCipher")) {
             JSONObject jsonCipher = new JSONObject();
             String[] cipherData = json.getString("signatureCipher").replace("\\u0026", "&").split("&");
@@ -313,15 +324,15 @@ public class DefaultParser implements Parser {
             itag.setId(json.getIntValue("itag"));
         }
 
-        boolean hasVideo = itag.isVideo() || json.containsKey("quality");
+        boolean hasVideo = itag.isVideo() || json.containsKey("size") || json.containsKey("width");
         boolean hasAudio = itag.isAudio() || json.containsKey("audioQuality");
 
         if (hasVideo && hasAudio)
-            return new AudioVideoFormat(json);
+            return new AudioVideoFormat(json, isAdaptive);
         else if (hasVideo)
-            return new VideoFormat(json);
+            return new VideoFormat(json, isAdaptive);
         else if (hasAudio)
-            return new AudioFormat(json);
+            return new AudioFormat(json, isAdaptive);
 
         throw new YoutubeException.UnknownFormatException("unknown format with itag " + itag.id());
     }
@@ -332,7 +343,7 @@ public class DefaultParser implements Parser {
             videos.add(new PlaylistVideoDetails(contents.getJSONObject(i).getJSONObject("playlistVideoRenderer")));
         }
         if (content.containsKey("continuations")) {
-        	String continuation = content.getJSONArray("continuations")
+            String continuation = content.getJSONArray("continuations")
                     .getJSONObject(0)
                     .getJSONObject("nextContinuationData")
                     .getString("continuation");
@@ -364,9 +375,8 @@ public class DefaultParser implements Parser {
         }
     }
 
-    private String getClientVersion(JSONObject json) {
-        JSONArray trackingParams = json.getJSONObject("responseContext")
-                .getJSONArray("serviceTrackingParams");
+    private String getClientVersionFromContext(JSONObject context) {
+        JSONArray trackingParams = context.getJSONArray("serviceTrackingParams");
         if (trackingParams == null) {
             return "2.20200720.00.02";
         }
