@@ -9,6 +9,7 @@ Simple java parser for receiving youtube video meta info and download videos and
 <br>**Since 2.2.0** supports retrieving HLS url for live videos.
 <br>**Since 2.2.4** supports retrieving video subtitles.
 <br>**Since 2.3.0** supports retrieving playlists.
+<br>**Since 2.4.0** supports cancellation for async downloading.
 
 **Notice**: Youtube API does not support a video download. In fact, it is prohibited - [Terms of Service - II. Prohibitions](https://developers.google.com/youtube/terms/api-services-terms-of-service). 
 
@@ -67,7 +68,7 @@ Format format = videoFormats.get(0);
 File file = video.download(format, outputDir);
 
 // async downloading with callback
-video.downloadAsync(videoFormats.get(0), outputDir, new OnYoutubeDownloadListener() {
+Future<File> future = video.downloadAsync(videoFormats.get(0), outputDir, new OnYoutubeDownloadListener() {
     @Override
     public void onDownloading(int progress) {
         System.out.printf("Downloaded %d%%\n", progress);
@@ -84,9 +85,12 @@ video.downloadAsync(videoFormats.get(0), outputDir, new OnYoutubeDownloadListene
     }
 });
 
-// async downloading with future
+// async downloading without callback
 Future<File> future = video.downloadAsync(format, outputDir);
 File file = future.get(5, TimeUnit.SECONDS);
+
+// cancel downloading
+future.cancel(true); // true is required to interrupt downloading thread
 
 // live videos and streams
 if (video.details().isLive()) {
@@ -159,7 +163,7 @@ Include
 <dependency>
   <groupId>com.github.sealedtx</groupId>
   <artifactId>java-youtube-downloader</artifactId>
-  <version>2.3.1</version>
+  <version>2.4.0</version>
 </dependency>
 ```
 
@@ -175,7 +179,7 @@ allprojects {
 ```
 ```gradle 
 dependencies {
-  implementation 'com.github.sealedtx:java-youtube-downloader:2.3.1'
+  implementation 'com.github.sealedtx:java-youtube-downloader:2.4.0'
 }
 ```
 ### Android
