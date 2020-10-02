@@ -13,6 +13,7 @@ import org.mockito.Mockito;
 import java.io.File;
 import java.time.Duration;
 import java.util.List;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
@@ -49,6 +50,40 @@ class YoutubeDownloader_Tests {
                 assertTrue(file.getName().endsWith(extension.value()), "file name should ends with: " + extension.value());
 
                 assertTrue(file.length() > 0, "file should be not empty");
+            });
+
+        });
+    }
+
+    @Test
+    @DisplayName("download video async should be cancelable")
+    void downloadVideo_AsyncCancel_Canceled() {
+        YoutubeDownloader downloader = new YoutubeDownloader();
+
+        assertDoesNotThrow(() -> {
+            YoutubeVideo video = downloader.getVideo(ME_AT_THE_ZOO_ID);
+
+            int itag = 18;
+            Format format = video.findFormatByItag(itag);
+            assertNotNull(format, "findFormatByItag should return not null format");
+
+            assertTrue(isReachable(format.url()), "url should be reachable");
+
+            File outDir = new File("videos");
+            assertDoesNotThrow(() -> {
+                OnYoutubeDownloadListener callback = Mockito.mock(OnYoutubeDownloadListener.class);
+
+                Future<File> future = video.downloadAsync(format, outDir, callback);
+                assertTrue(outDir.exists(), "output directory should be created");
+
+                Thread.sleep(10);
+                boolean canceled = future.cancel(true);
+                assertTrue(canceled, "future task should be canceled");
+
+                assertThrows(CancellationException.class, future::get);
+
+                Thread.sleep(100);
+                verify(callback, times(1)).onError(any(CancellationException.class));
             });
 
         });
