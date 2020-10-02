@@ -7,6 +7,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
 import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.Test;
 
 import com.github.kiulian.downloader.model.YoutubeVideo;
 import com.github.kiulian.downloader.model.formats.Format;

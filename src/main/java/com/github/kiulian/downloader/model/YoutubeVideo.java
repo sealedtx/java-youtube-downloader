@@ -36,6 +36,7 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
 
@@ -179,38 +180,26 @@ public class YoutubeVideo {
     }
 
     public Future<File> downloadAsync(Format format, File outDir, String fileName) throws YoutubeException.LiveVideoException, IOException {
-        return downloadAsync(format, outDir, fileName, false);
+        return downloadAsync(format, outDir, fileName, false, null);
     }
 
-    public Future<File> downloadAsync(final Format format, final File outDir, final String fileName, final boolean overwrite) throws YoutubeException.LiveVideoException, IOException {
+    public Future<File> downloadAsync(Format format, File outDir, OnYoutubeDownloadListener listener) throws IOException, YoutubeException {
+        return downloadAsync(format, outDir, videoDetails.title(), listener);
+    }
+
+    public Future<File> downloadAsync(Format format, File outDir, String fileName, OnYoutubeDownloadListener listener) throws IOException, YoutubeException {
+        return downloadAsync(format, outDir, fileName, false, listener);
+    }
+
+    public Future<File> downloadAsync(final Format format, final File outDir, final String fileName, final boolean overwrite, final OnYoutubeDownloadListener listener) throws YoutubeException.LiveVideoException, IOException {
         File outputFile = initDownload(format, outDir, fileName, overwrite);
 
-        FutureTask<File> future = new FutureTask<>(() -> basicDownload(format, outputFile, null));
+        FutureTask<File> future = new FutureTask<>(() -> basicDownload(format, outputFile, listener));
 
         Thread thread = new Thread(future, "YtDownloader");
         thread.setDaemon(true);
         thread.start();
         return future;
-    }
-
-    public void downloadAsync(Format format, File outDir, OnYoutubeDownloadListener listener) throws IOException, YoutubeException {
-        downloadAsync(format, outDir, videoDetails.title(), listener);
-    }
-
-    public void downloadAsync(Format format, File outDir, String fileName, OnYoutubeDownloadListener listener) throws IOException, YoutubeException {
-        downloadAsync(format, outDir, fileName, false, listener);
-    }
-
-    public void downloadAsync(Format format, File outDir, String fileName, boolean overwrite, final OnYoutubeDownloadListener listener) throws IOException, YoutubeException {
-        File outputFile = initDownload(format, outDir, fileName, overwrite);
-
-        Thread thread = new Thread(() -> {
-            try {
-                basicDownload(format, outputFile, listener);
-            } catch (IOException ignored) {}
-        }, "YtDownloader");
-        thread.setDaemon(true);
-        thread.start();
     }
 
     private File initDownload(Format format, File outDir, String fileName, boolean overwrite) throws IOException, YoutubeException.LiveVideoException {
@@ -222,6 +211,7 @@ public class YoutubeVideo {
     }
 
     private File basicDownload(Format format, File outputFile, OnYoutubeDownloadListener listener) throws IOException {
+        boolean exception = false;
         OutputStream os = null;
         try {
             os = new FileOutputStream(outputFile);
@@ -233,13 +223,18 @@ public class YoutubeVideo {
             if (listener != null) {
                 listener.onFinished(outputFile);
             }
-        } catch (IOException e) {
+        } catch (IOException | CancellationException e) {
+            exception = true;
             if (listener != null) {
                 listener.onError(e);
             }
             throw e;
         } finally {
             closeSilently(os);
+            // try to delete file if exception occurred
+            if (exception) {
+                outputFile.delete();
+            }
         }
         return outputFile;
     }
@@ -297,6 +292,9 @@ public class YoutubeVideo {
             long lastProgress = offset == 0 ? 0 : (offset * 100) / totalLength;
             
             while ((read = is.read(buffer)) != -1) {
+                if (Thread.interrupted()) {
+                    throw new CancellationException("Downloading is canceled");
+                }
                 os.write(buffer, 0, read);
                 done += read;
                 long progress = ((offset + done) * 100) / totalLength;
@@ -317,6 +315,9 @@ public class YoutubeVideo {
         try {
             int count = 0;
             while ((count = is.read(buffer)) != -1) {
+                if (Thread.interrupted()) {
+                    throw new CancellationException("Downloading is canceled");
+                }
                 os.write(buffer, 0, count);
                 done += count;
             }
