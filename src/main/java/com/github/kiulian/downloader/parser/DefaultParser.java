@@ -214,14 +214,19 @@ public class DefaultParser implements Parser {
                 .getJSONObject("playlistMetadataRenderer")
                 .getString("title");
         JSONArray sideBarItems = initialData.getJSONObject("sidebar").getJSONObject("playlistSidebarRenderer").getJSONArray("items");
-        String author = sideBarItems.getJSONObject(1)
-                .getJSONObject("playlistSidebarSecondaryInfoRenderer")
-                .getJSONObject("videoOwner")
-                .getJSONObject("videoOwnerRenderer")
-                .getJSONObject("title")
-                .getJSONArray("runs")
-                .getJSONObject(0)
-                .getString("text");
+        String author = null;
+        try {
+            // try to retrieve author, some playlists may have no author
+            author = sideBarItems.getJSONObject(1)
+                    .getJSONObject("playlistSidebarSecondaryInfoRenderer")
+                    .getJSONObject("videoOwner")
+                    .getJSONObject("videoOwnerRenderer")
+                    .getJSONObject("title")
+                    .getJSONArray("runs")
+                    .getJSONObject(0)
+                    .getString("text");
+        } catch (Exception ignored) {
+        }
         JSONArray stats = sideBarItems.getJSONObject(0)
                 .getJSONObject("playlistSidebarPrimaryInfoRenderer")
                 .getJSONArray("stats");
