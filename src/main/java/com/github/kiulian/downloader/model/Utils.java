@@ -53,7 +53,7 @@ public class Utils {
         if (!overwrite) {
             int i = 1;
             while (outputFile.exists()) {
-                fileName = name + "(" + i++ + ")" + "." + format.extension().value();
+                fileName = removeIllegalChars(name) + "(" + i++ + ")" + "." + format.extension().value();
                 outputFile = new File(outDir, fileName);
             }
         }
