@@ -20,8 +20,10 @@ package com.github.kiulian.downloader.model.subtitles;
  * #
  */
 
+import com.github.kiulian.downloader.YoutubeDownloader;
 import com.github.kiulian.downloader.YoutubeException;
 import com.github.kiulian.downloader.model.Extension;
+import com.github.kiulian.downloader.model.ProxyWrapper;
 import com.github.kiulian.downloader.model.Utils;
 
 import java.io.BufferedReader;
@@ -40,7 +42,10 @@ public class Subtitles {
     private Extension format;
     private String translationLanguage;
 
-    Subtitles(String url) {
+    public YoutubeDownloader ytd;
+
+    Subtitles(YoutubeDownloader ytd, String url) {
+        this.ytd = ytd;
         this.url = url;
     }
 
@@ -76,7 +81,7 @@ public class Subtitles {
         StringBuilder result = new StringBuilder();
         BufferedReader br = null;
         try {
-            HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
+            HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection(ytd.proxyWrapper.toProxy());
             int responseCode = urlConnection.getResponseCode();
             if (responseCode != 200) {
                 throw new YoutubeException.SubtitlesException("Failed to download subtitle: HTTP " + responseCode);

@@ -20,7 +20,9 @@ package com.github.kiulian.downloader.extractor;
  * #
  */
 
+import com.github.kiulian.downloader.YoutubeDownloader;
 import com.github.kiulian.downloader.YoutubeException;
+import com.github.kiulian.downloader.model.ProxyWrapper;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -48,7 +50,10 @@ public class DefaultExtractor implements Extractor {
     private Map<String, String> requestProperties = new HashMap<String, String>();
     private int retryOnFailure = DEFAULT_RETRY_ON_FAILURE;
 
-    public DefaultExtractor() {
+    public YoutubeDownloader ytd;
+
+    public DefaultExtractor(YoutubeDownloader ytd) {
+        this.ytd = ytd;
         setRequestProperty("User-Agent", DEFAULT_USER_AGENT);
         setRequestProperty("Accept-language", DEFAULT_ACCEPT_LANG);
     }
@@ -95,7 +100,10 @@ public class DefaultExtractor implements Extractor {
         String errorMsg = "";
         while (retryCount-- >= 0) {
             try {
-                HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
+                HttpURLConnection connection = ytd.proxyWrapper == null ?
+                        (HttpURLConnection) new URL(url).openConnection() :
+                        (HttpURLConnection) new URL(url).openConnection(ytd.proxyWrapper.toProxy());
+
                 for (Map.Entry<String, String> entry : requestProperties.entrySet()) {
                     connection.setRequestProperty(entry.getKey(), entry.getValue());
                 }

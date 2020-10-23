@@ -47,6 +47,8 @@ public class YoutubeVideo {
     private static final int BUFFER_SIZE = 4096;
     private static final int PART_LENGTH = 2 * 1024 * 1024;
 
+    public ProxyWrapper proxyWrapper;
+
     private VideoDetails videoDetails;
     private List<Format> formats;
     private List<SubtitlesInfo> subtitlesInfo;
@@ -241,7 +243,16 @@ public class YoutubeVideo {
 
     // Downloads the format in one single request
     private void downloadStraight(Format format, OutputStream os, final OnYoutubeDownloadListener listener) throws IOException {
-        URLConnection urlConnection = new URL(format.url()).openConnection();
+        URLConnection urlConnection;
+
+        if(proxyWrapper == null) {
+            urlConnection = new URL(format.url()).openConnection();
+        }
+        else {
+            urlConnection = new URL(format.url()).openConnection(proxyWrapper.toProxy());
+            proxyWrapper.setConn(urlConnection);
+        }
+
         int contentLength = urlConnection.getContentLength();
         
         InputStream is = urlConnection.getInputStream();
@@ -273,8 +284,19 @@ public class YoutubeVideo {
             String partUrl = format.url() + pathPrefix
                     + done + "-" + (done + toRead - 1)    // range first-last byte positions
                     + "&rn=" + partNumber;                // part number
+
             URL url = new URL(partUrl);
-            InputStream is = url.openStream();
+            URLConnection urlConnection;
+
+            if(proxyWrapper == null) {
+                urlConnection = url.openConnection();
+            }
+            else {
+                urlConnection = url.openConnection(proxyWrapper.toProxy());
+                proxyWrapper.setConn(urlConnection);
+            }
+
+            InputStream is = urlConnection.getInputStream();
             if (listener == null) {
                 done += copyAndCloseInput(is, os, buffer);
             } else {

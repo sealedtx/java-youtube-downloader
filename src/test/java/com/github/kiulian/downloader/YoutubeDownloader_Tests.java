@@ -2,6 +2,7 @@ package com.github.kiulian.downloader;
 
 import com.alibaba.fastjson.JSONObject;
 import com.github.kiulian.downloader.model.Extension;
+import com.github.kiulian.downloader.model.ProxyWrapper;
 import com.github.kiulian.downloader.model.YoutubeVideo;
 import com.github.kiulian.downloader.model.formats.Format;
 import com.github.kiulian.downloader.model.subtitles.OnSubtitlesDownloadListener;
@@ -28,6 +29,7 @@ class YoutubeDownloader_Tests {
     @Test
     @DisplayName("download video sync should be successful")
     void downloadVideo_Sync_Success() {
+
         YoutubeDownloader downloader = new YoutubeDownloader();
 
         assertDoesNotThrow(() -> {
@@ -37,7 +39,45 @@ class YoutubeDownloader_Tests {
             Format format = video.findFormatByItag(itag);
             assertNotNull(format, "findFormatByItag should return not null format");
 
-            assertTrue(isReachable(format.url()), "url should be reachable");
+            assertTrue(isReachable(format.url(), downloader.proxyWrapper), "url should be reachable");
+
+            File outDir = new File("videos");
+            assertDoesNotThrow(() -> {
+                File file = video.download(format, outDir);
+                assertTrue(outDir.exists(), "output directory should be created");
+
+                assertTrue(file.exists(), "file should be downloaded");
+
+                Extension extension = format.extension();
+                assertTrue(file.getName().endsWith(extension.value()), "file name should ends with: " + extension.value());
+
+                assertTrue(file.length() > 0, "file should be not empty");
+            });
+
+        });
+    }
+
+    @Test
+    @DisplayName("download video sync should be successful")
+    void downloadVideo_Sync_With_Proxy() {
+
+        YoutubeDownloader downloader = new YoutubeDownloader(new ProxyWrapper("10.0.0.1", 0));
+
+        assertDoesNotThrow(() -> {
+
+            YoutubeVideo video = downloader.getVideo("aircAruvnKk");
+
+            video.formats().forEach(f -> {
+                System.out.println(String.format("%s\t%s\t%s\t%s", f.itag().videoQuality(), f.itag().id(), f.url(), f.contentLength()));
+            });
+
+            int itag = 248;
+
+            Format format = video.findFormatByItag(itag);
+
+            assertNotNull(format, "findFormatByItag should return not null format");
+
+            assertTrue(isReachable(format.url(), downloader.proxyWrapper), "url should be reachable");
 
             File outDir = new File("videos");
             assertDoesNotThrow(() -> {
@@ -67,7 +107,7 @@ class YoutubeDownloader_Tests {
             Format format = video.findFormatByItag(itag);
             assertNotNull(format, "findFormatByItag should return not null format");
 
-            assertTrue(isReachable(format.url()), "url should be reachable");
+            assertTrue(isReachable(format.url(), downloader.proxyWrapper), "url should be reachable");
 
             File outDir = new File("videos");
             assertDoesNotThrow(() -> {
@@ -101,7 +141,7 @@ class YoutubeDownloader_Tests {
             Format format = video.findFormatByItag(itag);
             assertNotNull(format, "findFormatByItag should return not null format");
 
-            assertTrue(isReachable(format.url()), "url should be reachable");
+            assertTrue(isReachable(format.url(), downloader.proxyWrapper), "url should be reachable");
 
             File outDir = new File("videos");
             assertDoesNotThrow(() -> {
@@ -133,7 +173,7 @@ class YoutubeDownloader_Tests {
             Format format = video.findFormatByItag(itag);
             assertNotNull(format, "findFormatByItag should return not null format");
 
-            assertTrue(isReachable(format.url()), "url should be reachable");
+            assertTrue(isReachable(format.url(), downloader.proxyWrapper), "url should be reachable");
 
             File outDir = new File("videos");
 
@@ -189,7 +229,7 @@ class YoutubeDownloader_Tests {
             Format format = video.findFormatByItag(itag);
             assertNotNull(format, "findFormatByItag should return not null format");
 
-            assertTrue(isReachable(format.url()), "url should be reachable");
+            assertTrue(isReachable(format.url(), downloader.proxyWrapper), "url should be reachable");
 
             File outDir = new File("videos");
             assertDoesNotThrow(() -> {
@@ -220,7 +260,7 @@ class YoutubeDownloader_Tests {
             Format format = video.findFormatByItag(itag);
             assertNotNull(format, "findFormatByItag should return not null format");
 
-            assertTrue(isReachable(format.url()), "url should be reachable");
+            assertTrue(isReachable(format.url(), downloader.proxyWrapper), "url should be reachable");
 
             File outDir = new File("videos");
             assertDoesNotThrow(() -> {
@@ -253,7 +293,7 @@ class YoutubeDownloader_Tests {
             Format format = video.findFormatByItag(itag);
             assertNotNull(format, "findFormatByItag should return not null format");
 
-            assertTrue(isReachable(format.url()), "url should be reachable");
+            assertTrue(isReachable(format.url(), downloader.proxyWrapper), "url should be reachable");
 
             File outDir = new File("videos");
 
@@ -312,7 +352,7 @@ class YoutubeDownloader_Tests {
             Format format = video.findFormatByItag(itag);
             assertNotNull(format, "findFormatByItag should return not null format");
 
-            assertTrue(isReachable(format.url()), "url should be reachable");
+            assertTrue(isReachable(format.url(), downloader.proxyWrapper), "url should be reachable");
 
             File outDir = new File("videos");
 
@@ -382,7 +422,7 @@ class YoutubeDownloader_Tests {
             List<SubtitlesInfo> subtitlesInfo = downloader.getVideoSubtitles(DESPACITO_ID);
 
             for (SubtitlesInfo info : subtitlesInfo) {
-                SubtitlesInfo failedInfo = new SubtitlesInfo(info.getUrl().replace("lang=" + info.getLanguage(), "lang=not_a_code"), "not_a_code", false);
+                SubtitlesInfo failedInfo = new SubtitlesInfo(downloader, info.getUrl().replace("lang=" + info.getLanguage(), "lang=not_a_code"), "not_a_code", false);
                 assertThrows(YoutubeException.class, () -> {
                     failedInfo.getSubtitles().download();
                 });
@@ -444,7 +484,7 @@ class YoutubeDownloader_Tests {
             List<SubtitlesInfo> subtitlesInfo = downloader.getVideoSubtitles(DESPACITO_ID);
 
             for (SubtitlesInfo info : subtitlesInfo) {
-                info = new SubtitlesInfo(info.getUrl().replace("lang=" + info.getLanguage(), "lang=not_a_code"), "not_a_code", false);
+                info = new SubtitlesInfo(downloader, info.getUrl().replace("lang=" + info.getLanguage(), "lang=not_a_code"), "not_a_code", false);
                 Future<String> subtitleFuture = info.getSubtitles().downloadAsync(callback);
 
                 assertTimeout(Duration.ofSeconds(5), () -> {

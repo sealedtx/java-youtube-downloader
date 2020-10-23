@@ -23,6 +23,7 @@ package com.github.kiulian.downloader;
 
 import com.alibaba.fastjson.JSONObject;
 import com.github.kiulian.downloader.cipher.CipherFunction;
+import com.github.kiulian.downloader.model.ProxyWrapper;
 import com.github.kiulian.downloader.model.VideoDetails;
 import com.github.kiulian.downloader.model.YoutubeVideo;
 import com.github.kiulian.downloader.model.formats.Format;
@@ -39,8 +40,15 @@ public class YoutubeDownloader {
 
     private Parser parser;
 
+    public ProxyWrapper proxyWrapper;
+
     public YoutubeDownloader() {
-        this.parser = new DefaultParser();
+        this.parser = new DefaultParser(this);
+    }
+
+    public YoutubeDownloader(ProxyWrapper proxyWrapper) {
+        this.proxyWrapper = proxyWrapper;
+        this.parser = new DefaultParser(this);
     }
 
     public YoutubeDownloader(Parser parser) {
@@ -75,8 +83,11 @@ public class YoutubeDownloader {
         List<SubtitlesInfo> subtitlesInfo = parser.getSubtitlesInfoFromCaptions(ytPlayerConfig);
         
         String clientVersion = parser.getClientVersion(ytPlayerConfig);
+
+        YoutubeVideo yt = new YoutubeVideo(videoDetails, formats, subtitlesInfo, clientVersion);
+        yt.proxyWrapper = proxyWrapper;
         
-        return new YoutubeVideo(videoDetails, formats, subtitlesInfo, clientVersion);
+        return yt;
     }
 
     public YoutubePlaylist getPlaylist(String playlistId) throws YoutubeException {

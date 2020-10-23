@@ -68,7 +68,7 @@ public class YoutubeVideoExtractor_Tests {
 
             assertNotNull(format.url(), "url should not be null");
 
-            assertTrue(isReachable(format.url()), "url should be reachable");
+            assertTrue(isReachable(format.url(), downloader.proxyWrapper), "url should be reachable");
         });
     }
 
@@ -121,7 +121,7 @@ public class YoutubeVideoExtractor_Tests {
 
             assertNotNull(format.url(), "url should not be null");
 
-            assertTrue(isReachable(format.url()), "url should be reachable");
+            assertTrue(isReachable(format.url(), downloader.proxyWrapper), "url should be reachable");
             
             int maxBitrate = 100_000; 
             formats = video.findFormats(f -> f instanceof AudioFormat && f.bitrate() < maxBitrate);

@@ -1,5 +1,7 @@
 package com.github.kiulian.downloader;
 
+import com.github.kiulian.downloader.model.ProxyWrapper;
+
 import java.io.File;
 import java.io.IOException;
 import java.net.HttpURLConnection;
@@ -14,9 +16,12 @@ class TestUtils {
 
     static final String NO_SUBTITLES_ID = "y9pfCQ5qQYY";
 
-    static boolean isReachable(String url) {
+    static boolean isReachable(String url, ProxyWrapper proxyWrapper) {
         try {
-            HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
+            HttpURLConnection connection = proxyWrapper == null ?
+                    (HttpURLConnection) new URL(url).openConnection() :
+                    (HttpURLConnection) new URL(url).openConnection(proxyWrapper.toProxy());
+
             connection.setConnectTimeout(1000);
             connection.setReadTimeout(1000);
             connection.setRequestMethod("HEAD");

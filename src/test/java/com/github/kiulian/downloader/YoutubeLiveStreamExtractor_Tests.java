@@ -1,6 +1,7 @@
 package com.github.kiulian.downloader;
 
 import com.alibaba.fastjson.JSONObject;
+import com.github.kiulian.downloader.model.ProxyWrapper;
 import com.github.kiulian.downloader.model.VideoDetails;
 import com.github.kiulian.downloader.parser.DefaultParser;
 import org.junit.jupiter.api.DisplayName;
@@ -13,12 +14,14 @@ import static org.junit.jupiter.api.Assertions.*;
 @DisplayName("Tests extracting metadata for youtube live streams")
 class YoutubeLiveStreamExtractor_Tests {
 
+    YoutubeDownloader downloader = new YoutubeDownloader();
+
     @Test
     @DisplayName("We should be able to get the HLS Stream URL for a live stream")
     void getLiveStreamHLS_Success() {
         String htmlUrl = "https://www.youtube.com/watch?v=" + LIVE_ID;
 
-        DefaultParser parser = new DefaultParser();
+        DefaultParser parser = new DefaultParser(downloader);
 
         assertDoesNotThrow(() -> {
             JSONObject ytPlayerConfig = parser.getPlayerConfig(htmlUrl);
@@ -29,7 +32,7 @@ class YoutubeLiveStreamExtractor_Tests {
 
             assertTrue(details.isLive(), "this should be a live video");
             assertNotNull(details.liveUrl(), "there should be a live video url");
-            assertTrue(isReachable(details.liveUrl()), "url should be reachable");
+            assertTrue(isReachable(details.liveUrl(), downloader.proxyWrapper), "url should be reachable");
         });
     }
 
@@ -38,7 +41,7 @@ class YoutubeLiveStreamExtractor_Tests {
     void getWasLiveFormats_Success() {
         String htmlUrl = "https://www.youtube.com/watch?v=" + WAS_LIVE_ID;
 
-        DefaultParser parser = new DefaultParser();
+        DefaultParser parser = new DefaultParser(downloader);
 
         assertDoesNotThrow(() -> {
             JSONObject ytPlayerConfig = parser.getPlayerConfig(htmlUrl);
