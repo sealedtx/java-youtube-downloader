@@ -1,25 +1,5 @@
 package com.github.kiulian.downloader.model;
 
-/*-
- * #
- * Java youtube video and audio downloader
- *
- * Copyright (C) 2020 Igor Kiulian
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- * #
- */
-
 
 import com.github.kiulian.downloader.OnYoutubeDownloadListener;
 import com.github.kiulian.downloader.YoutubeException;
@@ -243,9 +223,9 @@ public class YoutubeVideo {
     private void downloadStraight(Format format, OutputStream os, final OnYoutubeDownloadListener listener) throws IOException {
         URLConnection urlConnection = new URL(format.url()).openConnection();
         int contentLength = urlConnection.getContentLength();
-        
+
         InputStream is = urlConnection.getInputStream();
-        
+
         byte[] buffer = new byte[BUFFER_SIZE];
         if (listener == null) {
             copyAndCloseInput(is, os, buffer);
@@ -262,13 +242,13 @@ public class YoutubeVideo {
         final String pathPrefix = "&cver=" + clientVersion + "&range=";
         final long contentLength = format.contentLength();
         byte[] buffer = new byte[BUFFER_SIZE];
-        
+
         while (done < contentLength) {
             long toRead = PART_LENGTH;
             if (done + toRead > contentLength) {
                 toRead = (int) (contentLength - done);
             }
-            
+
             partNumber++;
             String partUrl = format.url() + pathPrefix
                     + done + "-" + (done + toRead - 1)    // range first-last byte positions
@@ -286,11 +266,11 @@ public class YoutubeVideo {
     // Copies as many bytes as possible then closes input stream
     private static long copyAndCloseInput(InputStream is, OutputStream os, byte[] buffer, long offset, long totalLength, OnYoutubeDownloadListener listener) throws IOException {
         long done = 0;
-        
+
         try {
             int read = 0;
             long lastProgress = offset == 0 ? 0 : (offset * 100) / totalLength;
-            
+
             while ((read = is.read(buffer)) != -1) {
                 if (Thread.interrupted()) {
                     throw new CancellationException("Downloading is canceled");
@@ -311,7 +291,7 @@ public class YoutubeVideo {
 
     private static long copyAndCloseInput(InputStream is, OutputStream os, byte[] buffer) throws IOException {
         long done = 0;
-        
+
         try {
             int count = 0;
             while ((count = is.read(buffer)) != -1) {

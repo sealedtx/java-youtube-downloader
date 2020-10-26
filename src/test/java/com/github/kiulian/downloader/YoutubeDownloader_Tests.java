@@ -364,7 +364,7 @@ class YoutubeDownloader_Tests {
     void downloadSubtitle_Sync_Success() {
         YoutubeDownloader downloader = new YoutubeDownloader();
         assertDoesNotThrow(() -> {
-            List<SubtitlesInfo> subtitlesInfo = downloader.getVideoSubtitles(DESPACITO_ID);
+            List<SubtitlesInfo> subtitlesInfo = downloader.getVideoSubtitles(N3WPORT_ID);
 
             for (SubtitlesInfo subtitleInfo : subtitlesInfo) {
                 String subtitles = subtitleInfo.getSubtitles().download();
@@ -379,7 +379,7 @@ class YoutubeDownloader_Tests {
         YoutubeDownloader downloader = new YoutubeDownloader();
 
         assertDoesNotThrow(() -> {
-            List<SubtitlesInfo> subtitlesInfo = downloader.getVideoSubtitles(DESPACITO_ID);
+            List<SubtitlesInfo> subtitlesInfo = downloader.getVideoSubtitles(N3WPORT_ID);
 
             for (SubtitlesInfo info : subtitlesInfo) {
                 SubtitlesInfo failedInfo = new SubtitlesInfo(info.getUrl().replace("lang=" + info.getLanguage(), "lang=not_a_code"), "not_a_code", false);
@@ -396,7 +396,7 @@ class YoutubeDownloader_Tests {
     void downloadSubtitle_Async_Success() {
         YoutubeDownloader downloader = new YoutubeDownloader();
         assertDoesNotThrow(() -> {
-            List<SubtitlesInfo> subtitlesInfo = downloader.getVideoSubtitles(DESPACITO_ID);
+            List<SubtitlesInfo> subtitlesInfo = downloader.getVideoSubtitles(N3WPORT_ID);
 
             for (SubtitlesInfo info : subtitlesInfo) {
                 Future<String> subtitleFuture = info.getSubtitles().downloadAsync();
@@ -417,7 +417,7 @@ class YoutubeDownloader_Tests {
         YoutubeDownloader downloader = new YoutubeDownloader();
 
         assertDoesNotThrow(() -> {
-            List<SubtitlesInfo> subtitlesInfo = downloader.getVideoSubtitles(DESPACITO_ID);
+            List<SubtitlesInfo> subtitlesInfo = downloader.getVideoSubtitles(N3WPORT_ID);
 
             for (SubtitlesInfo info : subtitlesInfo) {
                 Future<String> subtitleFuture = info.getSubtitles().downloadAsync(callback);
@@ -441,7 +441,7 @@ class YoutubeDownloader_Tests {
         YoutubeDownloader downloader = new YoutubeDownloader();
 
         assertDoesNotThrow(() -> {
-            List<SubtitlesInfo> subtitlesInfo = downloader.getVideoSubtitles(DESPACITO_ID);
+            List<SubtitlesInfo> subtitlesInfo = downloader.getVideoSubtitles(N3WPORT_ID);
 
             for (SubtitlesInfo info : subtitlesInfo) {
                 info = new SubtitlesInfo(info.getUrl().replace("lang=" + info.getLanguage(), "lang=not_a_code"), "not_a_code", false);
@@ -463,7 +463,7 @@ class YoutubeDownloader_Tests {
     void downloadSubtitles_Formatted_Success() {
         YoutubeDownloader downloader = new YoutubeDownloader();
         assertDoesNotThrow(() -> {
-            List<SubtitlesInfo> subtitlesInfo = downloader.getVideoSubtitles(DESPACITO_ID);
+            List<SubtitlesInfo> subtitlesInfo = downloader.getVideoSubtitles(N3WPORT_ID);
 
             for (SubtitlesInfo info : subtitlesInfo) {
                 String subtitles = info.getSubtitles()
@@ -482,7 +482,7 @@ class YoutubeDownloader_Tests {
     void downloadSubtitles_FormattedTranslated_Success() {
         YoutubeDownloader downloader = new YoutubeDownloader();
         assertDoesNotThrow(() -> {
-            List<SubtitlesInfo> subtitlesInfo = downloader.getVideoSubtitles(DESPACITO_ID);
+            List<SubtitlesInfo> subtitlesInfo = downloader.getVideoSubtitles(N3WPORT_ID);
 
             for (SubtitlesInfo subtitleInfo : subtitlesInfo) {
                 String subtitle = subtitleInfo.getSubtitles()

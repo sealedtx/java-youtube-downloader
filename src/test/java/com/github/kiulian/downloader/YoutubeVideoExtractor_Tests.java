@@ -73,67 +73,6 @@ public class YoutubeVideoExtractor_Tests {
     }
 
     @Test
-    @DisplayName("getVideo should be successful for default videos with signature")
-    void getVideo_WithSignature_Success() {
-        YoutubeDownloader downloader = new YoutubeDownloader();
-
-        assertDoesNotThrow(() -> {
-            YoutubeVideo video = downloader.getVideo(DESPACITO_ID);
-
-            VideoDetails details = video.details();
-            assertEquals(DESPACITO_ID, details.videoId(), "videoId should be " + DESPACITO_ID);
-
-            String title = "Luis Fonsi - Despacito ft. Daddy Yankee";
-            assertEquals(title, details.title(), "title should be " + title);
-            assertFalse(details.thumbnails().isEmpty(), "thumbnails should be not empty");
-            assertNotEquals(0, details.lengthSeconds(), "length should not be 0");
-            assertNotEquals(0, details.viewCount(), "viewCount should not be 0");
-
-            List<Format> formats = video.formats();
-            assertFalse(formats.isEmpty(), "formats should not be empty");
-
-            int itag = 137;
-            Format format = video.findFormatByItag(itag);
-            assertNotNull(format, "findFormatByItag should return not null format");
-            assertTrue(format instanceof VideoFormat, "format with itag " + itag + " should be instance of AudioVideoFormat");
-            assertEquals(itag, format.itag().id(), "itag should be " + itag);
-
-            assertNotEquals(0, ((VideoFormat) format).fps(), "fps should not be 0");
-
-            int expectedWidth = 1920;
-            Integer width = ((VideoFormat) format).width();
-            assertNotNull(width, "width should not be null");
-            assertEquals(expectedWidth, width.intValue(), "format with itag " + itag + " should have width " + expectedWidth);
-
-            int expectedHeight = 1080;
-            Integer height = ((VideoFormat) format).height();
-            assertNotNull(height, "height should not be null");
-            assertEquals(expectedHeight, height.intValue(), "format with itag " + itag + " should have height " + expectedHeight);
-
-            String expectedMimeType = "video/mp4";
-            assertTrue(format.mimeType().contains(expectedMimeType), "mimetype should be " + expectedMimeType);
-
-            Extension expectedExtension = Extension.MPEG4;
-            assertEquals(expectedExtension, format.extension(), "extension should be " + expectedExtension.value());
-
-            String expectedLabel = "1080p";
-            assertEquals(expectedLabel, ((VideoFormat) format).qualityLabel(), "qualityLable should be " + expectedLabel);
-
-            assertNotNull(format.url(), "url should not be null");
-
-            assertTrue(isReachable(format.url()), "url should be reachable");
-            
-            int maxBitrate = 100_000; 
-            formats = video.findFormats(f -> f instanceof AudioFormat && f.bitrate() < maxBitrate);
-            assertFalse(formats.isEmpty(), "filtered formats should not be empty");
-            formats.forEach(f -> {
-                assertTrue(f instanceof AudioFormat, "format should be audio");
-                assertTrue(f.bitrate() < maxBitrate, "format bitrate should be < " + maxBitrate);
-            });
-        });
-    }
-
-    @Test
     @DisplayName("getVideo should throw exception for unavailable video")
     void getVideo_Unavailable_ThrowsException() {
         YoutubeDownloader downloader = new YoutubeDownloader();

@@ -7,12 +7,12 @@ import java.net.URL;
 
 class TestUtils {
     static final String ME_AT_THE_ZOO_ID = "jNQXAC9IVRw"; // me at the zoo
-    static final String DESPACITO_ID = "kJQP7kiw5Fk"; // despacito
+    static final String N3WPORT_ID = "DFdOcVpRhWI"; // N3WPORT - Alive (feat. Neoni) [NCS Release]
 
     static final String LIVE_ID = "5qap5aO4i9A";
     static final String WAS_LIVE_ID = "boSGRDYm92E";
 
-    static final String NO_SUBTITLES_ID = "y9pfCQ5qQYY";
+    static final String NO_SUBTITLES_ID = "CboIIxKd12Q"; // Jeris - Get Lost (No Copyright Music)
 
     static boolean isReachable(String url) {
         try {
