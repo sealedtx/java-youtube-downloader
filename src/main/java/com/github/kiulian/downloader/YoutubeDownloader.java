@@ -67,6 +67,7 @@ public class YoutubeDownloader {
         String htmlUrl = "https://www.youtube.com/watch?v=" + videoId;
 
         JSONObject ytPlayerConfig = parser.getPlayerConfig(htmlUrl);
+        ytPlayerConfig.put("yt-downloader-videoId", videoId);
 
         VideoDetails videoDetails = parser.getVideoDetails(ytPlayerConfig);
 

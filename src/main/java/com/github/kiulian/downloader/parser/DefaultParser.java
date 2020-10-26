@@ -51,6 +51,7 @@ import java.util.regex.Pattern;
 public class DefaultParser implements Parser {
     private static final Pattern subtitleLangCodeRegex = Pattern.compile("lang_code=\"(.{2,3})\"");
     private static final Pattern textNumberRegex = Pattern.compile("[0-9, ']+");
+    private static final Pattern assetsRegex = Pattern.compile("\"assets\":.+?\"js\":\\s*\"([^\"]+)\"");
 
     private Extractor extractor;
     private CipherFactory cipherFactory;
@@ -89,9 +90,22 @@ public class DefaultParser implements Parser {
 
     @Override
     public String getJsUrl(JSONObject config) throws YoutubeException {
-        if (!config.containsKey("assets"))
+        String js = null;
+        if (config.containsKey("assets")) {
+            js = config.getJSONObject("assets").getString("js");
+        } else {
+            // if assets not found - download embed webpage and search there
+            String videoId = config.getString("yt-downloader-videoId");
+            String html = extractor.loadUrl("https://www.youtube.com/embed/" + videoId);
+            Matcher matcher = assetsRegex.matcher(html);
+            if (matcher.find()) {
+                js = matcher.group(1).replace("\\", "");
+            }
+        }
+        if (js == null) {
             throw new YoutubeException.BadPageException("Could not extract js url: assets not found");
-        return "https://youtube.com" + config.getJSONObject("assets").getString("js");
+        }
+        return "https://youtube.com" + js;
     }
 
     @Override
@@ -189,10 +203,11 @@ public class DefaultParser implements Parser {
         if (streamingData.containsKey("adaptiveFormats")) {
             jsonAdaptiveFormats.addAll(streamingData.getJSONArray("adaptiveFormats"));
         }
+        String jsUrl = getJsUrl(config);
 
         List<Format> formats = new ArrayList<>(jsonFormats.size() + jsonAdaptiveFormats.size());
-        populateFormats(formats, jsonFormats, config, false);
-        populateFormats(formats, jsonAdaptiveFormats, config, true);
+        populateFormats(formats, jsonFormats, jsUrl, false);
+        populateFormats(formats, jsonAdaptiveFormats, jsUrl, true);
         return formats;
     }
 
@@ -265,25 +280,25 @@ public class DefaultParser implements Parser {
         return videos;
     }
 
-    private void populateFormats(List<Format> formats, JSONArray jsonFormats, JSONObject config, boolean isAdaptive) throws YoutubeException.CipherException {
+    private void populateFormats(List<Format> formats, JSONArray jsonFormats, String jsUrl, boolean isAdaptive) throws YoutubeException.CipherException {
         for (int i = 0; i < jsonFormats.size(); i++) {
             JSONObject json = jsonFormats.getJSONObject(i);
             if ("FORMAT_STREAM_TYPE_OTF".equals(json.getString("type")))
                 continue; // unsupported otf formats which cause 404 not found
             try {
-                Format format = parseFormat(json, config, isAdaptive);
+                Format format = parseFormat(json, jsUrl, isAdaptive);
                 formats.add(format);
             } catch (YoutubeException.CipherException e) {
                 throw e;
             } catch (YoutubeException e) {
-                System.err.println("Error parsing format: " + json);
+                System.err.println("Error parsing format: " + e.getMessage());
             } catch (Exception e) {
                 e.printStackTrace();
             }
         }
     }
 
-    private Format parseFormat(JSONObject json, JSONObject config, boolean isAdaptive) throws YoutubeException {
+    private Format parseFormat(JSONObject json, String jsUrl, boolean isAdaptive) throws YoutubeException {
         if (json.containsKey("signatureCipher")) {
             JSONObject jsonCipher = new JSONObject();
             String[] cipherData = json.getString("signatureCipher").replace("\\u0026", "&").split("&");
@@ -311,7 +326,6 @@ public class DefaultParser implements Parser {
                 } catch (UnsupportedEncodingException e) {
                     e.printStackTrace();
                 }
-                String jsUrl = getJsUrl(config);
                 Cipher cipher = cipherFactory.createCipher(jsUrl);
 
                 String signature = cipher.getSignature(s);
@@ -387,7 +401,7 @@ public class DefaultParser implements Parser {
         }
         for (int ti = 0; ti < trackingParams.size(); ti++) {
             JSONArray params = trackingParams.getJSONObject(ti).getJSONArray("params");
-            for (int pi = 0; pi < params.size(); pi ++) {
+            for (int pi = 0; pi < params.size(); pi++) {
                 if (params.getJSONObject(pi).getString("key").equals("cver")) {
                     return params.getJSONObject(pi).getString("value");
                 }
