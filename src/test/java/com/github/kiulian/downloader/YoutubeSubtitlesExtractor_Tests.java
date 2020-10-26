@@ -8,7 +8,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
-import static com.github.kiulian.downloader.TestUtils.DESPACITO_ID;
+import static com.github.kiulian.downloader.TestUtils.N3WPORT_ID;
 import static com.github.kiulian.downloader.TestUtils.NO_SUBTITLES_ID;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -21,7 +21,7 @@ public class YoutubeSubtitlesExtractor_Tests {
         YoutubeDownloader downloader = new YoutubeDownloader();
 
         assertDoesNotThrow(() -> {
-            YoutubeVideo video = downloader.getVideo(DESPACITO_ID);
+            YoutubeVideo video = downloader.getVideo(N3WPORT_ID);
 
             List<SubtitlesInfo> subtitlesInfos = video.subtitles();
             assertFalse(subtitlesInfos.isEmpty(), "subtitles info should not be empty");
@@ -47,7 +47,7 @@ public class YoutubeSubtitlesExtractor_Tests {
         YoutubeDownloader downloader = new YoutubeDownloader();
 
         assertDoesNotThrow(() -> {
-            List<SubtitlesInfo> subtitlesInfos = downloader.getVideoSubtitles(DESPACITO_ID);
+            List<SubtitlesInfo> subtitlesInfos = downloader.getVideoSubtitles(N3WPORT_ID);
             assertFalse(subtitlesInfos.isEmpty(), "subtitles info should not be empty");
         });
     }
@@ -68,7 +68,7 @@ public class YoutubeSubtitlesExtractor_Tests {
     void getDownloadUrl_Success() {
         YoutubeDownloader downloader = new YoutubeDownloader();
         assertDoesNotThrow(() -> {
-            List<SubtitlesInfo> subtitlesInfos = downloader.getVideoSubtitles(DESPACITO_ID);
+            List<SubtitlesInfo> subtitlesInfos = downloader.getVideoSubtitles(N3WPORT_ID);
             for (SubtitlesInfo info : subtitlesInfos) {
                 String downloadUrl = info.getSubtitles().getDownloadUrl();
                 assertEquals(info.getUrl(), downloadUrl, "download url should be equals to info url");
