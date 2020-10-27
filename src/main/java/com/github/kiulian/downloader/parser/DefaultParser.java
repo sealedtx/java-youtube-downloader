@@ -51,7 +51,8 @@ import java.util.regex.Pattern;
 public class DefaultParser implements Parser {
     private static final Pattern subtitleLangCodeRegex = Pattern.compile("lang_code=\"(.{2,3})\"");
     private static final Pattern textNumberRegex = Pattern.compile("[0-9, ']+");
-    private static final Pattern assetsRegex = Pattern.compile("\"assets\":.+?\"js\":\\s*\"([^\"]+)\"");
+    private static final Pattern assetsJsRegex = Pattern.compile("\"assets\":.+?\"js\":\\s*\"([^\"]+)\"");
+    private static final Pattern embJsRegex = Pattern.compile("\"jsUrl\":\\s*\"([^\"]+)\"");
 
     private Extractor extractor;
     private CipherFactory cipherFactory;
@@ -97,9 +98,14 @@ public class DefaultParser implements Parser {
             // if assets not found - download embed webpage and search there
             String videoId = config.getString("yt-downloader-videoId");
             String html = extractor.loadUrl("https://www.youtube.com/embed/" + videoId);
-            Matcher matcher = assetsRegex.matcher(html);
+            Matcher matcher = assetsJsRegex.matcher(html);
             if (matcher.find()) {
                 js = matcher.group(1).replace("\\", "");
+            } else {
+                matcher = embJsRegex.matcher(html);
+                if (matcher.find()) {
+                    js = matcher.group(1).replace("\\", "");
+                }
             }
         }
         if (js == null) {
