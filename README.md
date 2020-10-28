@@ -18,11 +18,7 @@ YoutubeDownloader downloader = new YoutubeDownloader();
 
 // you can easly implement or extend default parsing logic 
 YoutubeDownloader downloader = new YoutubeDownloader(new Parser()); 
-// or just extend functionality via existing API
-// cipher features
-downloader.addCipherFunctionPattern(2, "\\b([a-zA-Z0-9$]{2})\\s*=\\s*function\\(\\s*a\\s*\\)\\s*\\{\\s*a\\s*=\\s*a\\.split\\(\\s*\"\"\\s*\\)");
-downloader.addCipherFunctionEquivalent("some regex for js function", new CustomJavaFunction());
-// extractor features
+// downloader configurations
 downloader.setParserRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.121 Safari/537.36");
 downloader.setParserRetryOnFailure(1);
 
