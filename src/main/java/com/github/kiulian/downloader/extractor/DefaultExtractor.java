@@ -18,7 +18,8 @@ import java.util.regex.Pattern;
 public class DefaultExtractor implements Extractor {
     private static final List<Pattern> YT_PLAYER_CONFIG_PATTERNS = Arrays.asList(
             Pattern.compile(";ytplayer\\.config = (\\{.*?\\})\\;ytplayer"),
-            Pattern.compile(";ytplayer\\.config = (\\{.*?\\})\\;")
+            Pattern.compile(";ytplayer\\.config = (\\{.*?\\})\\;"),
+            Pattern.compile("ytInitialPlayerResponse\\s*=\\s*(\\{.+?\\})\\;var meta")
     );
     private static final Pattern YT_INITIAL_DATA = Pattern.compile("window\\[\"ytInitialData\"\\] = (\\{.*?\\});");
 
