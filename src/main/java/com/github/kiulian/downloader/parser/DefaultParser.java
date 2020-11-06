@@ -63,11 +63,7 @@ public class DefaultParser implements Parser {
             if(config.containsKey("args")) {
                 return config;
             } else {
-                JSONObject args = new JSONObject();
-                JSONObject playerResponse = new JSONObject();
-                playerResponse.put("player_response", config);
-                args.put("args", playerResponse);
-                return args;
+                return new JSONObject().fluentPut("args", new JSONObject().fluentPut("player_response", config));
             }
         } catch (Exception e) {
             throw new YoutubeException.BadPageException("Could not parse player config json");
