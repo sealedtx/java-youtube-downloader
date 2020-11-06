@@ -59,7 +59,12 @@ public class DefaultParser implements Parser {
 
         String ytPlayerConfig = extractor.extractYtPlayerConfig(html);
         try {
-            return JSON.parseObject(ytPlayerConfig);
+            JSONObject config = JSON.parseObject(ytPlayerConfig);
+            if(config.containsKey("args")) {
+                return config;
+            } else {
+                return new JSONObject().fluentPut("args", new JSONObject().fluentPut("player_response", config));
+            }
         } catch (Exception e) {
             throw new YoutubeException.BadPageException("Could not parse player config json");
         }
