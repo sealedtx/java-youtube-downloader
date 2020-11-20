@@ -60,7 +60,7 @@ public class DefaultParser implements Parser {
         String ytPlayerConfig = extractor.extractYtPlayerConfig(html);
         try {
             JSONObject config = JSON.parseObject(ytPlayerConfig);
-            if(config.containsKey("args")) {
+            if (config.containsKey("args")) {
                 return config;
             } else {
                 return new JSONObject().fluentPut("args", new JSONObject().fluentPut("player_response", config));
@@ -349,16 +349,35 @@ public class DefaultParser implements Parser {
     }
 
     private void populatePlaylist(JSONObject content, List<PlaylistVideoDetails> videos, String clientVersion) throws YoutubeException {
-        JSONArray contents = content.getJSONArray("contents");
-        for (int i = 0; i < contents.size(); i++) {
-            videos.add(new PlaylistVideoDetails(contents.getJSONObject(i).getJSONObject("playlistVideoRenderer")));
-        }
-        if (content.containsKey("continuations")) {
+        JSONArray contents;
+        if (content.containsKey("contents")) { // parse first items (up to 100)
+            contents = content.getJSONArray("contents");
+        } else if (content.containsKey("continuationItems")) { // parse continuationItems
+            contents = content.getJSONArray("continuationItems");
+        } else if (content.containsKey("continuations")) { // load continuation
             String continuation = content.getJSONArray("continuations")
                     .getJSONObject(0)
                     .getJSONObject("nextContinuationData")
                     .getString("continuation");
             loadPlaylistContinuation(continuation, videos, clientVersion);
+            return;
+        } else { // noting found
+            return;
+        }
+
+        for (int i = 0; i < contents.size(); i++) {
+            JSONObject contentsItem = contents.getJSONObject(i);
+            if (contentsItem.containsKey("playlistVideoRenderer")) {
+                videos.add(new PlaylistVideoDetails(contentsItem.getJSONObject("playlistVideoRenderer")));
+            } else {
+                if (contentsItem.containsKey("continuationItemRenderer")) {
+                    String continuation = contentsItem.getJSONObject("continuationItemRenderer")
+                            .getJSONObject("continuationEndpoint")
+                            .getJSONObject("continuationCommand")
+                            .getString("token");
+                    loadPlaylistContinuation(continuation, videos, clientVersion);
+                }
+            }
         }
     }
 
@@ -373,11 +392,18 @@ public class DefaultParser implements Parser {
         String html = getExtractor().loadUrl(url);
 
         try {
-            JSONArray response = JSON.parseArray(html);
-            content = response.getJSONObject(1)
-                    .getJSONObject("response")
-                    .getJSONObject("continuationContents")
-                    .getJSONObject("playlistVideoListContinuation");
+            JSONArray json = JSON.parseArray(html);
+            JSONObject response = json.getJSONObject(1).getJSONObject("response");
+
+            if (response.containsKey("continuationContents")) {
+                content = response
+                        .getJSONObject("continuationContents")
+                        .getJSONObject("playlistVideoListContinuation");
+            } else {
+                content = response.getJSONArray("onResponseReceivedActions")
+                        .getJSONObject(0)
+                        .getJSONObject("appendContinuationItemsAction");
+            }
             populatePlaylist(content, videos, clientVersion);
         } catch (YoutubeException e) {
             throw e;
