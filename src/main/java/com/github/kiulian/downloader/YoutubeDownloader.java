@@ -13,7 +13,12 @@ import com.github.kiulian.downloader.model.subtitles.SubtitlesInfo;
 import com.github.kiulian.downloader.parser.DefaultParser;
 import com.github.kiulian.downloader.parser.Parser;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.URL;
 import java.util.List;
+import java.util.Scanner;
 
 public class YoutubeDownloader {
 
@@ -73,6 +78,28 @@ public class YoutubeDownloader {
         List<PlaylistVideoDetails> videos = parser.getPlaylistVideos(ytInitialData, playlistDetails.videoCount());
 
         return new YoutubePlaylist(playlistDetails, videos);
+    }
+
+    public YoutubePlaylist getUploadsPlaylist(String channelId) throws IOException, YoutubeException {
+        URL channelLink;
+        if (channelId.length() == 24 && channelId.startsWith("UC")) {
+            channelLink = new URL("https://www.youtube.com/channel/" + channelId);
+        } else {
+            channelLink = new URL("https://www.youtube.com/c/" + channelId);
+        }
+        BufferedReader br = new BufferedReader(new InputStreamReader(channelLink.openStream()));
+        String line;
+        while ((line = br.readLine()) != null) {
+            Scanner scan = new Scanner(line);
+            scan.useDelimiter("list=");
+            while (scan.hasNext()) {
+                String pId = scan.next();
+                if (pId.startsWith("UU")) {
+                    return getPlaylist(pId.substring(0, 24));
+                }
+            }
+        }
+        throw new YoutubeException.BadPageException("Upload Playlist not found");
     }
 
     public List<SubtitlesInfo> getVideoSubtitles(String videoId) throws YoutubeException {
