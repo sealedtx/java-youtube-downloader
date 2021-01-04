@@ -64,6 +64,9 @@ public class YoutubeDownloader {
         String htmlUrl = "https://www.youtube.com/playlist?list=" + playlistId;
 
         JSONObject ytInitialData = parser.getInitialData(htmlUrl);
+        if (!ytInitialData.containsKey("metadata")) {
+            throw new YoutubeException.BadPageException("Invalid initial data json");
+        }
 
         PlaylistDetails playlistDetails = parser.getPlaylistDetails(playlistId, ytInitialData);
 

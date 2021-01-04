@@ -31,7 +31,7 @@ import java.util.regex.Pattern;
 
 public class DefaultParser implements Parser {
     private static final Pattern subtitleLangCodeRegex = Pattern.compile("lang_code=\"(.{2,3})\"");
-    private static final Pattern textNumberRegex = Pattern.compile("[0-9, ']+");
+    private static final Pattern textNumberRegex = Pattern.compile("[0-9]+[0-9, ']*");
     private static final Pattern assetsJsRegex = Pattern.compile("\"assets\":.+?\"js\":\\s*\"([^\"]+)\"");
     private static final Pattern embJsRegex = Pattern.compile("\"jsUrl\":\\s*\"([^\"]+)\"");
 
