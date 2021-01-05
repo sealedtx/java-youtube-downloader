@@ -11,6 +11,7 @@ import com.github.kiulian.downloader.model.playlist.PlaylistDetails;
 import com.github.kiulian.downloader.model.playlist.PlaylistVideoDetails;
 import com.github.kiulian.downloader.model.subtitles.SubtitlesInfo;
 
+import java.io.IOException;
 import java.util.List;
 
 public interface Parser {
@@ -42,4 +43,6 @@ public interface Parser {
     PlaylistDetails getPlaylistDetails(String playlistId, JSONObject initialData);
 
     List<PlaylistVideoDetails> getPlaylistVideos(JSONObject initialData, int videoCount) throws YoutubeException;
+
+    String getChannelUploadsPlaylistId(String channelId) throws IOException, YoutubeException;
 }

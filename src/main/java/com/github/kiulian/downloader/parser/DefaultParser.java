@@ -20,12 +20,13 @@ import com.github.kiulian.downloader.model.playlist.PlaylistDetails;
 import com.github.kiulian.downloader.model.playlist.PlaylistVideoDetails;
 import com.github.kiulian.downloader.model.subtitles.SubtitlesInfo;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
+import java.net.URL;
 import java.net.URLDecoder;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -270,6 +271,29 @@ public class DefaultParser implements Parser {
         }
         populatePlaylist(content, videos, getClientVersionFromContext(initialData.getJSONObject("responseContext")));
         return videos;
+    }
+
+    @Override
+    public String getChannelUploadsPlaylistId(String channelId) throws IOException, YoutubeException {
+        URL channelLink;
+        if (channelId.length() == 24 && channelId.startsWith("UC")) {
+            channelLink = new URL("https://www.youtube.com/channel/" + channelId + "/videos?view=57");
+        } else {
+            channelLink = new URL("https://www.youtube.com/c/" + channelId + "/videos?view=57");
+        }
+        BufferedReader br = new BufferedReader(new InputStreamReader(channelLink.openStream()));
+        String line;
+        while ((line = br.readLine()) != null) {
+            Scanner scan = new Scanner(line);
+            scan.useDelimiter("list=");
+            while (scan.hasNext()) {
+                String pId = scan.next();
+                if (pId.startsWith("UU")) {
+                    return pId.substring(0, 24);
+                }
+            }
+        }
+        throw new YoutubeException.BadPageException("Upload Playlist not found");
     }
 
     private void populateFormats(List<Format> formats, JSONArray jsonFormats, String jsUrl, boolean isAdaptive) throws YoutubeException.CipherException {

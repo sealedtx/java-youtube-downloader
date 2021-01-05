@@ -80,26 +80,9 @@ public class YoutubeDownloader {
         return new YoutubePlaylist(playlistDetails, videos);
     }
 
-    public YoutubePlaylist getUploadsPlaylist(String channelId) throws IOException, YoutubeException {
-        URL channelLink;
-        if (channelId.length() == 24 && channelId.startsWith("UC")) {
-            channelLink = new URL("https://www.youtube.com/channel/" + channelId + "/videos?view=57");
-        } else {
-            channelLink = new URL("https://www.youtube.com/c/" + channelId + "/videos?view=57");
-        }
-        BufferedReader br = new BufferedReader(new InputStreamReader(channelLink.openStream()));
-        String line;
-        while ((line = br.readLine()) != null) {
-            Scanner scan = new Scanner(line);
-            scan.useDelimiter("list=");
-            while (scan.hasNext()) {
-                String pId = scan.next();
-                if (pId.startsWith("UU")) {
-                    return getPlaylist(pId.substring(0, 24));
-                }
-            }
-        }
-        throw new YoutubeException.BadPageException("Upload Playlist not found");
+    public YoutubePlaylist getChannelUploads(String channelId) throws IOException, YoutubeException {
+        String playlistId = parser.getChannelUploadsPlaylistId(channelId);
+        return getPlaylist(playlistId);
     }
 
     public List<SubtitlesInfo> getVideoSubtitles(String videoId) throws YoutubeException {
