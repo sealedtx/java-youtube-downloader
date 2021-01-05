@@ -83,9 +83,9 @@ public class YoutubeDownloader {
     public YoutubePlaylist getUploadsPlaylist(String channelId) throws IOException, YoutubeException {
         URL channelLink;
         if (channelId.length() == 24 && channelId.startsWith("UC")) {
-            channelLink = new URL("https://www.youtube.com/channel/" + channelId + "?view=57");
+            channelLink = new URL("https://www.youtube.com/channel/" + channelId + "/videos?view=57");
         } else {
-            channelLink = new URL("https://www.youtube.com/c/" + channelId + "?view=57");
+            channelLink = new URL("https://www.youtube.com/c/" + channelId + "/videos?view=57");
         }
         BufferedReader br = new BufferedReader(new InputStreamReader(channelLink.openStream()));
         String line;
