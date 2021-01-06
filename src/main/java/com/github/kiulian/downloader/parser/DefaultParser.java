@@ -302,7 +302,9 @@ public class DefaultParser implements Parser {
                 }
             }
         }
-        catch (IOException ignored) {}
+        catch (IOException e) {
+            throw new YoutubeException.BadPageException(String.format("Could not load url: %s, exception: %s", channelLink, e.getMessage()));
+        }
         finally {
             Utils.closeSilently(br);
         }
