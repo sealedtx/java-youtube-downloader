@@ -44,5 +44,5 @@ public interface Parser {
 
     List<PlaylistVideoDetails> getPlaylistVideos(JSONObject initialData, int videoCount) throws YoutubeException;
 
-    String getChannelUploadsPlaylistId(String channelId) throws IOException, YoutubeException;
+    String getChannelUploadsPlaylistId(String channelId) throws YoutubeException;
 }

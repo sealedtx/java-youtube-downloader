@@ -39,8 +39,8 @@ public class YoutubeChannelUploads_Tests {
         YoutubeDownloader downloader = new YoutubeDownloader();
         assertThrows(YoutubeException.BadPageException.class, () ->
                 downloader.getChannelUploads(NOTEXISTINGCHANNELID), "should throw BadPageException");
-        assertThrows(java.io.FileNotFoundException.class, () ->
-                downloader.getChannelUploads(NOTEXISTINGCHANNELNAME), "should throw FileNotFoundException");
+        assertThrows(YoutubeException.BadPageException.class, () ->
+                downloader.getChannelUploads(NOTEXISTINGCHANNELNAME), "should throw BadPageException");
 
     }
 

@@ -80,7 +80,7 @@ public class YoutubeDownloader {
         return new YoutubePlaylist(playlistDetails, videos);
     }
 
-    public YoutubePlaylist getChannelUploads(String channelId) throws IOException, YoutubeException {
+    public YoutubePlaylist getChannelUploads(String channelId) throws YoutubeException {
         String playlistId = parser.getChannelUploadsPlaylistId(channelId);
         return getPlaylist(playlistId);
     }
