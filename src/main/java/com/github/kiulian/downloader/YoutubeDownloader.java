@@ -13,7 +13,12 @@ import com.github.kiulian.downloader.model.subtitles.SubtitlesInfo;
 import com.github.kiulian.downloader.parser.DefaultParser;
 import com.github.kiulian.downloader.parser.Parser;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.URL;
 import java.util.List;
+import java.util.Scanner;
 
 public class YoutubeDownloader {
 
@@ -73,6 +78,11 @@ public class YoutubeDownloader {
         List<PlaylistVideoDetails> videos = parser.getPlaylistVideos(ytInitialData, playlistDetails.videoCount());
 
         return new YoutubePlaylist(playlistDetails, videos);
+    }
+
+    public YoutubePlaylist getChannelUploads(String channelId) throws YoutubeException {
+        String playlistId = parser.getChannelUploadsPlaylistId(channelId);
+        return getPlaylist(playlistId);
     }
 
     public List<SubtitlesInfo> getVideoSubtitles(String videoId) throws YoutubeException {
