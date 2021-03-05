@@ -12,8 +12,6 @@ class TestUtils {
     static final String LIVE_ID = "5qap5aO4i9A";
     static final String WAS_LIVE_ID = "boSGRDYm92E";
 
-    static final String NO_SUBTITLES_ID = "CboIIxKd12Q"; // Jeris - Get Lost (No Copyright Music)
-
     static boolean isReachable(String url) {
         try {
             HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();

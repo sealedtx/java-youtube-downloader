@@ -18,11 +18,17 @@ import java.util.concurrent.FutureTask;
 public class Subtitles {
 
     private final String url;
+    private final boolean fromCaptions;
     private Extension format;
     private String translationLanguage;
 
     Subtitles(String url) {
+        this(url, false);
+    }
+
+    Subtitles(String url, boolean fromCaptions) {
         this.url = url;
+        this.fromCaptions = fromCaptions;
     }
 
     public Subtitles formatTo(Extension extension) {
@@ -31,7 +37,10 @@ public class Subtitles {
     }
 
     public Subtitles translateTo(String language) {
-        this.translationLanguage = language;
+        // currently translation is supported only for subtitles from captions
+        if (fromCaptions) {
+            this.translationLanguage = language;
+        }
         return this;
     }
 

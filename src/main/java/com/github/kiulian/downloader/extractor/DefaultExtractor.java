@@ -6,8 +6,10 @@ import com.github.kiulian.downloader.YoutubeException;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -78,13 +80,26 @@ public class DefaultExtractor implements Extractor {
 
     @Override
     public String loadUrl(String url) throws YoutubeException {
+        return loadUrl(url, null, "GET");
+    }
+
+    @Override
+    public String loadUrl(String url, String data, String method) throws YoutubeException {
         int retryCount = retryOnFailure;
         String errorMsg = "";
         while (retryCount-- >= 0) {
             try {
                 HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
+                connection.setRequestMethod(method);
                 for (Map.Entry<String, String> entry : requestProperties.entrySet()) {
                     connection.setRequestProperty(entry.getKey(), entry.getValue());
+                }
+                if (data != null) {
+                    connection.setDoOutput(true);
+                    try (OutputStreamWriter outputWriter = new OutputStreamWriter(connection.getOutputStream(), StandardCharsets.UTF_8)){
+                        outputWriter.write(data);
+                        outputWriter.flush();
+                    }
                 }
                 int responseCode = connection.getResponseCode();
                 if (responseCode != 200) {

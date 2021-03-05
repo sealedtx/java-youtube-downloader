@@ -498,6 +498,27 @@ class YoutubeDownloader_Tests {
     }
 
     @Test
+    @DisplayName("download formatted and translated subtitles should be successful")
+    void downloadSubtitles_FormattedTranslatedFromCaptions_Success() {
+        YoutubeDownloader downloader = new YoutubeDownloader();
+        assertDoesNotThrow(() -> {
+            YoutubeVideo video = downloader.getVideo(N3WPORT_ID);
+            List<SubtitlesInfo> subtitlesInfo = video.subtitles();
+
+            for (SubtitlesInfo subtitleInfo : subtitlesInfo) {
+                String subtitle = subtitleInfo.getSubtitles()
+                        .formatTo(Extension.JSON3)
+                        .translateTo("uk")
+                        .download();
+                assertFalse(subtitle.isEmpty(), "subtitles should not be empty");
+                assertDoesNotThrow(() -> {
+                    JSONObject.parseObject(subtitle);
+                }, "subtitles should be formatted to json");
+            }
+        });
+    }
+
+    @Test
     @DisplayName("setRetryOnFailure should throw exception for invalid values")
     void setRetryOnFailure_InvalidRetryCount_ThrowsException() {
         YoutubeDownloader downloader = new YoutubeDownloader();
