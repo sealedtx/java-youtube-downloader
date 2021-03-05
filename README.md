@@ -107,8 +107,8 @@ List<SubtitlesInfo> subtitles = downloader.getVideoSubtitles(videoId); // NOTE: 
 for (SubtitlesInfo info : subtitles) {
     Subtitles subtitles = info.getSubtitles()
              .formatTo(Extension.JSON3)
-             .translateTo("uk");
-    // sync download
+             .translateTo("uk"); // // NOTE: subtitle translation supported only for "subtitles from captions"
+        // sync download
     String subtitlesData = subtitles.download();
     // async download
     Future<String> subtitlesFuture = subtitles.downloadAsync(callback/*optional*/);
@@ -155,7 +155,7 @@ Include
 <dependency>
   <groupId>com.github.sealedtx</groupId>
   <artifactId>java-youtube-downloader</artifactId>
-  <version>2.5.1</version>
+  <version>2.5.2</version>
 </dependency>
 ```
 
@@ -171,7 +171,7 @@ allprojects {
 ```
 ```gradle 
 dependencies {
-  implementation 'com.github.sealedtx:java-youtube-downloader:2.5.1'
+  implementation 'com.github.sealedtx:java-youtube-downloader:2.5.2'
 }
 ```
 ### Android
