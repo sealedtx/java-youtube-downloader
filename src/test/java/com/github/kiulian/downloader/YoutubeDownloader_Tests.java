@@ -11,6 +11,8 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.CancellationException;
@@ -24,6 +26,22 @@ import static org.mockito.Mockito.*;
 
 @DisplayName("Tests downloading youtube videos")
 class YoutubeDownloader_Tests {
+
+    @Test
+    @DisplayName("download video sync in-memory to a stream should be successful")
+    void downloadVideo_Sync_Stream_Success() throws IOException, YoutubeException {
+        YoutubeDownloader downloader = new YoutubeDownloader();
+        YoutubeVideo video = downloader.getVideo(ME_AT_THE_ZOO_ID);
+        Format format = video.findFormatByItag(18);
+        assertNotNull(format, "findFormatByItag should return not null format");
+        assertTrue(isReachable(format.url()), "url should be reachable");
+        try (InputStream is = video.download(format)) {
+            assertNotNull(is, "InputStream should not be null");
+            final int expectedLength = 1234;
+            byte[] buff = new byte[1234]; // stream is larger, just grab some
+            assertEquals(expectedLength, is.read(buff), "InputStream should have some content");
+        }
+    }
 
     @Test
     @DisplayName("download video sync should be successful")

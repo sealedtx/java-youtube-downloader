@@ -141,6 +141,10 @@ public class YoutubeVideo {
         return find;
     }
 
+    public InputStream download(Format format) throws IOException {
+        return new URL(format.url()).openStream();
+    }
+
     public File download(Format format, File outDir) throws IOException, YoutubeException {
         return download(format, outDir, videoDetails.title());
     }
