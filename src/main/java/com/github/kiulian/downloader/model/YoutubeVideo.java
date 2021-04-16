@@ -141,6 +141,14 @@ public class YoutubeVideo {
         return find;
     }
 
+    public void download(final Format format, final OutputStream os, final OnYoutubeDownloadListener listener) throws IOException {
+        if (format.isAdaptive() && format.contentLength() != null) {
+            downloadByPart(format, os, listener);
+        } else {
+            downloadStraight(format, os, listener);
+        }
+    }
+
     public File download(Format format, File outDir) throws IOException, YoutubeException {
         return download(format, outDir, videoDetails.title());
     }
@@ -195,11 +203,7 @@ public class YoutubeVideo {
         OutputStream os = null;
         try {
             os = new FileOutputStream(outputFile);
-            if (format.isAdaptive() && format.contentLength() != null) {
-                downloadByPart(format, os, listener);
-            } else {
-                downloadStraight(format, os, listener);
-            }
+            download(format, os, listener);
             if (listener != null) {
                 listener.onFinished(outputFile);
             }
