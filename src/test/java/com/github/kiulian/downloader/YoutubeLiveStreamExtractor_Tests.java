@@ -1,8 +1,9 @@
 package com.github.kiulian.downloader;
 
-import com.alibaba.fastjson.JSONObject;
-import com.github.kiulian.downloader.model.VideoDetails;
-import com.github.kiulian.downloader.parser.DefaultParser;
+import com.github.kiulian.downloader.downloader.request.RequestVideoInfo;
+import com.github.kiulian.downloader.downloader.response.Response;
+import com.github.kiulian.downloader.model.videos.VideoDetails;
+import com.github.kiulian.downloader.model.videos.VideoInfo;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -16,14 +17,13 @@ class YoutubeLiveStreamExtractor_Tests {
     @Test
     @DisplayName("We should be able to get the HLS Stream URL for a live stream")
     void getLiveStreamHLS_Success() {
-        String htmlUrl = "https://www.youtube.com/watch?v=" + LIVE_ID;
-
-        DefaultParser parser = new DefaultParser();
+        YoutubeDownloader downloader = new YoutubeDownloader();
 
         assertDoesNotThrow(() -> {
-            JSONObject ytPlayerConfig = parser.getPlayerConfig(htmlUrl);
-
-            VideoDetails details = parser.getVideoDetails(ytPlayerConfig);
+            Response<VideoInfo> response = downloader.getVideoInfo(new RequestVideoInfo(LIVE_ID));
+            assertTrue(response.ok());
+            VideoInfo video = response.data();
+            VideoDetails details = video.details();
 
             assertEquals(LIVE_ID, details.videoId(), "videoId should be " + LIVE_ID);
 
@@ -36,13 +36,13 @@ class YoutubeLiveStreamExtractor_Tests {
     @Test
     @DisplayName("We should be able to get formats for a video that was live")
     void getWasLiveFormats_Success() {
-        String htmlUrl = "https://www.youtube.com/watch?v=" + WAS_LIVE_ID;
-
-        DefaultParser parser = new DefaultParser();
+        YoutubeDownloader downloader = new YoutubeDownloader();
 
         assertDoesNotThrow(() -> {
-            JSONObject ytPlayerConfig = parser.getPlayerConfig(htmlUrl);
-            VideoDetails details = parser.getVideoDetails(ytPlayerConfig);
+            Response<VideoInfo> response = downloader.getVideoInfo(new RequestVideoInfo(WAS_LIVE_ID));
+            assertTrue(response.ok());
+            VideoInfo video = response.data();
+            VideoDetails details = video.details();
 
             assertEquals(WAS_LIVE_ID, details.videoId(), "videoId should be " + WAS_LIVE_ID);
             assertTrue(details.isLiveContent(), "videoId was live ");

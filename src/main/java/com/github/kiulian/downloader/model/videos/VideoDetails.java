@@ -1,4 +1,4 @@
-package com.github.kiulian.downloader.model;
+package com.github.kiulian.downloader.model.videos;
 
 /*-
  * #
@@ -26,6 +26,7 @@ import java.util.List;
 
 import com.alibaba.fastjson.JSONObject;
 import com.github.kiulian.downloader.YoutubeException;
+import com.github.kiulian.downloader.model.AbstractVideoDetails;
 
 public class VideoDetails extends AbstractVideoDetails {
 
@@ -36,7 +37,8 @@ public class VideoDetails extends AbstractVideoDetails {
     private boolean isLiveContent;
     private String liveUrl;
 
-    public VideoDetails() {
+    public VideoDetails(String videoId) {
+        this.videoId = videoId;
     }
 
     public VideoDetails(JSONObject json, String liveHLSUrl) {
@@ -54,9 +56,8 @@ public class VideoDetails extends AbstractVideoDetails {
     }
 
     @Override
-    protected void checkDownload() throws YoutubeException.LiveVideoException {
-        if (isLive || (isLiveContent && lengthSeconds() == 0))
-            throw new YoutubeException.LiveVideoException("Can not download live stream");
+    public boolean isDownloadable()  {
+        return !isLive() && !(isLiveContent && lengthSeconds() == 0);
     }
 
     public List<String> keywords() {

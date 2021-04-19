@@ -1,11 +1,16 @@
 package com.github.kiulian.downloader;
 
 import com.alibaba.fastjson.JSONObject;
+import com.github.kiulian.downloader.downloader.YoutubeCallback;
+import com.github.kiulian.downloader.downloader.YoutubeProgressCallback;
+import com.github.kiulian.downloader.downloader.request.*;
+import com.github.kiulian.downloader.downloader.response.Response;
+import com.github.kiulian.downloader.downloader.response.ResponseStatus;
 import com.github.kiulian.downloader.model.Extension;
-import com.github.kiulian.downloader.model.YoutubeVideo;
-import com.github.kiulian.downloader.model.formats.Format;
-import com.github.kiulian.downloader.model.subtitles.OnSubtitlesDownloadListener;
+import com.github.kiulian.downloader.model.videos.VideoInfo;
+import com.github.kiulian.downloader.model.videos.formats.Format;
 import com.github.kiulian.downloader.model.subtitles.SubtitlesInfo;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -13,7 +18,6 @@ import org.mockito.Mockito;
 import java.io.File;
 import java.time.Duration;
 import java.util.List;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import static com.github.kiulian.downloader.TestUtils.*;
@@ -24,450 +28,275 @@ import static org.mockito.Mockito.*;
 @DisplayName("Tests downloading youtube videos")
 class YoutubeDownloader_Tests {
 
-    @Test
-    @DisplayName("download video sync should be successful")
-    void downloadVideo_Sync_Success() {
-        YoutubeDownloader downloader = new YoutubeDownloader();
-
-        assertDoesNotThrow(() -> {
-            YoutubeVideo video = downloader.getVideo(ME_AT_THE_ZOO_ID);
-
-            int itag = 18;
-            Format format = video.findFormatByItag(itag);
-            assertNotNull(format, "findFormatByItag should return not null format");
-
-            assertTrue(isReachable(format.url()), "url should be reachable");
-
-            File outDir = new File("videos");
-            assertDoesNotThrow(() -> {
-                File file = video.download(format, outDir);
-                assertTrue(outDir.exists(), "output directory should be created");
-
-                assertTrue(file.exists(), "file should be downloaded");
-
-                Extension extension = format.extension();
-                assertTrue(file.getName().endsWith(extension.value()), "file name should ends with: " + extension.value());
-
-                assertTrue(file.length() > 0, "file should be not empty");
-            });
-
-        });
+    private List<SubtitlesInfo> getSubtitles() {
+        Response<List<SubtitlesInfo>> response = downloader.getSubtitlesInfo(new RequestSubtitlesInfo(N3WPORT_ID));
+        assertTrue(response.ok());
+        return response.data();
     }
 
-    @Test
-    @DisplayName("download video should work async future")
-    void downloadVideo_AsyncFuture_Success() {
-        YoutubeDownloader downloader = new YoutubeDownloader();
+    private Format getFormat() {
+        Response<VideoInfo> response = downloader.getVideoInfo(new RequestVideoInfo(ME_AT_THE_ZOO_ID));
+        assertTrue(response.ok());
+        VideoInfo video = response.data();
 
-        assertDoesNotThrow(() -> {
-            YoutubeVideo video = downloader.getVideo(ME_AT_THE_ZOO_ID);
-
-            int itag = 18;
-            Format format = video.findFormatByItag(itag);
-            assertNotNull(format, "findFormatByItag should return not null format");
-
-            assertTrue(isReachable(format.url()), "url should be reachable");
-
-            File outDir = new File("videos");
-            assertDoesNotThrow(() -> {
-                Future<File> future = video.downloadAsync(format, outDir);
-
-                File file = future.get(5, TimeUnit.SECONDS);
-                assertTrue(outDir.exists(), "output directory should be created");
-
-                assertTrue(file.exists(), "file should be downloaded");
-
-                Extension extension = format.extension();
-                assertTrue(file.getName().endsWith(extension.value()), "file name should ends with: " + extension.value());
-
-                assertTrue(file.length() > 0, "file should be not empty");
-            });
-
-        });
+        int itag = 18;
+        return video.findFormatByItag(itag);
     }
 
-    @Test
-    @DisplayName("download video should work async callback")
-    void downloadVideo_AsyncCallback_Success() {
-        YoutubeDownloader downloader = new YoutubeDownloader();
-
-        assertDoesNotThrow(() -> {
-            YoutubeVideo video = downloader.getVideo(ME_AT_THE_ZOO_ID);
-
-            int itag = 18;
-            Format format = video.findFormatByItag(itag);
-            assertNotNull(format, "findFormatByItag should return not null format");
-
-            assertTrue(isReachable(format.url()), "url should be reachable");
-
-            File outDir = new File("videos");
-
-            char[] name = new char[200]; // Youtube title max length - 100 characters + file extension + duplication number
-            video.downloadAsync(format, outDir, new OnYoutubeDownloadListener() {
-                @Override
-                public void onDownloading(int progress) {
-                    System.out.printf("Downloading %d%%\n", progress);
-                }
-
-                @Override
-                public void onFinished(File file) {
-                    System.arraycopy(file.getName().toCharArray(), 0, name, 0, file.getName().length());
-                    System.out.printf("Finished %s\n", file.getPath());
-                }
-
-                @Override
-                public void onError(Throwable throwable) {
-                    System.out.printf("Error %s\n", throwable.getMessage());
-                }
-
-            });
-
-            int timeout = 5; // seconds
-            while (--timeout > 0) {
-                Thread.sleep(1000);
-                if (!new String(name).trim().isEmpty())
-                    break;
-            }
-
-            File file = new File(outDir, new String(name).trim());
-
-            assertTrue(outDir.exists(), "output directory should be created");
-
-            assertTrue(file.exists(), "file should be downloaded");
-
-            Extension extension = format.extension();
-            assertTrue(file.getName().endsWith(extension.value()), "file name should ends with: " + extension.value());
-
-            assertTrue(file.length() > 0, "file should be not empty");
-        });
+    private void validateFileDownloadAndDelete(Format format, File file) {
+        validateFileDownloadAndDelete(format, file, null, false);
     }
 
-    @Test
-    @DisplayName("download video sync with specified output file name should be successful")
-    void downloadVideo_SyncSpecifiedName_Success() {
-        YoutubeDownloader downloader = new YoutubeDownloader();
-        String fileName = "myAwesomeName";
-        assertDoesNotThrow(() -> {
-            YoutubeVideo video = downloader.getVideo(ME_AT_THE_ZOO_ID);
-
-            int itag = 18;
-            Format format = video.findFormatByItag(itag);
-            assertNotNull(format, "findFormatByItag should return not null format");
-
-            assertTrue(isReachable(format.url()), "url should be reachable");
-
-            File outDir = new File("videos");
-            assertDoesNotThrow(() -> {
-                File file = video.download(format, outDir, fileName);
-                assertTrue(outDir.exists(), "output directory should be created");
-
-                assertTrue(file.exists(), "file should be downloaded");
-                assertTrue(file.getName().contains(fileName), "file name should contains: " + fileName);
-
-                Extension extension = format.extension();
-                assertTrue(file.getName().endsWith(extension.value()), "file name should ends with: " + extension.value());
-
-                assertTrue(file.length() > 0, "file should be not empty");
-            });
-
-        });
+    private void validateFileDownloadAndDelete(Format format, File file, String fileName) {
+        validateFileDownloadAndDelete(format, file, fileName, false);
     }
 
-    @Test
-    @DisplayName("download video sync with specified output file name and overwrite flag should be successful")
-    void downloadVideo_SyncSpecifiedNameOverwrite_Success() {
-        YoutubeDownloader downloader = new YoutubeDownloader();
-        String fileName = "myAwesomeName";
-        assertDoesNotThrow(() -> {
-            YoutubeVideo video = downloader.getVideo(ME_AT_THE_ZOO_ID);
+    private void validateFileDownloadAndDelete(Format format, File file, String fileName, boolean overwrite) {
+        assertTrue(file.exists(), "file should be downloaded");
 
-            int itag = 18;
-            Format format = video.findFormatByItag(itag);
-            assertNotNull(format, "findFormatByItag should return not null format");
+        Extension extension = format.extension();
+        assertTrue(file.getName().endsWith(extension.value()), "file name should ends with: " + extension.value());
 
-            assertTrue(isReachable(format.url()), "url should be reachable");
-
-            File outDir = new File("videos");
-            assertDoesNotThrow(() -> {
-                File file = video.download(format, outDir, fileName, true);
-                assertTrue(outDir.exists(), "output directory should be created");
-
-                assertTrue(file.exists(), "file should be downloaded");
+        assertTrue(file.length() > 0, "file should be not empty");
+        if (fileName != null) {
+            if (overwrite) {
                 String actualFileName = fileName + "." + format.extension().value();
                 assertEquals(file.getName(), actualFileName, "file name should be: " + actualFileName);
-
-                Extension extension = format.extension();
-                assertTrue(file.getName().endsWith(extension.value()), "file name should ends with: " + extension.value());
-
-                assertTrue(file.length() > 0, "file should be not empty");
-            });
-
-        });
-    }
-
-    @Test
-    @DisplayName("download video should work async callback")
-    void downloadVideo_AsyncCallbackSpecifiedName_Success() {
-        YoutubeDownloader downloader = new YoutubeDownloader();
-
-        String fileName = "myAwesomeName";
-        assertDoesNotThrow(() -> {
-            YoutubeVideo video = downloader.getVideo(ME_AT_THE_ZOO_ID);
-
-            int itag = 18;
-            Format format = video.findFormatByItag(itag);
-            assertNotNull(format, "findFormatByItag should return not null format");
-
-            assertTrue(isReachable(format.url()), "url should be reachable");
-
-            File outDir = new File("videos");
-
-            char[] name = new char[200]; // Youtube title max length - 100 characters + file extension + duplication number
-            video.downloadAsync(format, outDir, fileName, new OnYoutubeDownloadListener() {
-                @Override
-                public void onDownloading(int progress) {
-                    System.out.printf("Downloading %d%%\n", progress);
-                }
-
-                @Override
-                public void onFinished(File file) {
-                    System.arraycopy(file.getName().toCharArray(), 0, name, 0, file.getName().length());
-                    System.out.printf("Finished %s\n", file.getPath());
-
-                }
-
-                @Override
-                public void onError(Throwable throwable) {
-                    System.out.printf("Error %s\n", throwable.getMessage());
-                }
-
-            });
-
-            int timeout = 5; // seconds
-            while (--timeout > 0) {
-                Thread.sleep(1000);
-                if (!new String(name).trim().isEmpty())
-                    break;
+            } else {
+                assertTrue(file.getName().contains(fileName), "file name should contains: " + fileName);
             }
+        }
+        file.delete();
+    }
 
-            File file = new File(outDir, new String(name).trim());
+    private YoutubeDownloader downloader;
 
-            assertTrue(outDir.exists(), "output directory should be created");
-
-            assertTrue(file.exists(), "file should be downloaded");
-            assertTrue(file.getName().contains(fileName), "file name should contains: " + fileName);
-
-            Extension extension = format.extension();
-            assertTrue(file.getName().endsWith(extension.value()), "file name should ends with: " + extension.value());
-
-            assertTrue(file.length() > 0, "file should be not empty");
-        });
+    @BeforeEach
+    void initDownloader() {
+        downloader = new YoutubeDownloader();
     }
 
     @Test
-    @DisplayName("download video should work async callback")
-    void downloadVideo_AsyncCallbackSpecifiedNameOverwrite_Success() {
-        YoutubeDownloader downloader = new YoutubeDownloader();
-
+    @DisplayName("download video should work")
+    void downloadVideo_Success() {
+        File outDir = new File("videos");
         String fileName = "myAwesomeName";
+
+        Format format = getFormat();
+        assertNotNull(format, "findFormatByItag should return not null format");
+        assertTrue(isReachable(format.url()), "url should be reachable");
+
         assertDoesNotThrow(() -> {
-            YoutubeVideo video = downloader.getVideo(ME_AT_THE_ZOO_ID);
+            Response<File> responseFile = downloader.downloadVideo(new RequestVideoDownload(format).saveTo(outDir));
+            assertTrue(responseFile.ok());
 
-            int itag = 18;
-            Format format = video.findFormatByItag(itag);
-            assertNotNull(format, "findFormatByItag should return not null format");
+            File file = responseFile.data();
+            validateFileDownloadAndDelete(format, file);
+        }, "download video sync should work");
 
-            assertTrue(isReachable(format.url()), "url should be reachable");
+        assertDoesNotThrow(() -> {
+            Response<File> responseFile = downloader.downloadVideo(new RequestVideoDownload(format).saveTo(outDir).async());
+            assertEquals(ResponseStatus.downloading, responseFile.status());
 
-            File outDir = new File("videos");
+            File file = responseFile.data(5, TimeUnit.SECONDS);
+            validateFileDownloadAndDelete(format, file);
+        }, "download video should work async future");
 
-            char[] name = new char[200]; // Youtube title max length - 100 characters + file extension + duplication number
-            video.downloadAsync(format, outDir, fileName, true, new OnYoutubeDownloadListener() {
-                @Override
-                public void onDownloading(int progress) {
-                    System.out.printf("Downloading %d%%\n", progress);
-                }
+        assertDoesNotThrow(() -> {
 
-                @Override
-                public void onFinished(File file) {
-                    System.arraycopy(file.getName().toCharArray(), 0, name, 0, file.getName().length());
-                    System.out.printf("Finished %s\n", file.getPath());
+            RequestVideoDownload request = new RequestVideoDownload(format).saveTo(outDir).renameTo(fileName);
+            Response<File> responseFile = downloader.downloadVideo(request);
+            assertTrue(responseFile.ok());
 
-                }
+            File file = responseFile.data();
+            validateFileDownloadAndDelete(format, file, fileName);
+        }, "download video sync with specified output file name should work");
 
-                @Override
-                public void onError(Throwable throwable) {
-                    System.out.printf("Error %s\n", throwable.getMessage());
-                }
+        assertDoesNotThrow(() -> {
+            RequestVideoDownload request = new RequestVideoDownload(format).saveTo(outDir).renameTo(fileName).overwrite(true);
+            Response<File> responseFile = downloader.downloadVideo(request);
+            assertTrue(responseFile.ok());
 
+            File file = responseFile.data();
+            validateFileDownloadAndDelete(format, file, fileName, true);
+        }, "download video sync with specified output file name and overwrite flag should work");
+
+
+        assertDoesNotThrow(() -> {
+            YoutubeProgressCallback<File> mockCallback = mock(YoutubeProgressCallback.class);
+            RequestVideoDownload request = new RequestVideoDownload(format).callback(mockCallback).async();
+            Response<File> responseFile = downloader.downloadVideo(request);
+
+            assertTimeout(Duration.ofSeconds(5), () -> {
+                assertTrue(responseFile.ok());
+                File file = responseFile.data();
+
+                validateFileDownloadAndDelete(format, file);
             });
 
-            int timeout = 5; // seconds
-            while (--timeout > 0) {
-                Thread.sleep(1000);
-                if (!new String(name).trim().isEmpty())
-                    break;
-            }
+            verify(mockCallback, atLeastOnce()).onFinished(any(File.class));
+            verify(mockCallback, atLeastOnce()).onDownloading(anyInt());
+        }, "download video async with callback should work");
 
-            File file = new File(outDir, new String(name).trim());
+        assertDoesNotThrow(() -> {
+            RequestVideoDownload request = new RequestVideoDownload(format).renameTo(fileName).async();
+            Response<File> responseFile = downloader.downloadVideo(request);
 
-            assertTrue(outDir.exists(), "output directory should be created");
+            assertTimeout(Duration.ofSeconds(5), () -> {
+                assertTrue(responseFile.ok());
+                File file = responseFile.data();
 
-            assertTrue(file.exists(), "file should be downloaded");
-            String actualFileName = fileName + "." + format.extension().value();
-            assertEquals(file.getName(), actualFileName, "file name should be: " + actualFileName);
+                validateFileDownloadAndDelete(format, file, fileName);
+            });
 
-            Extension extension = format.extension();
-            assertTrue(file.getName().endsWith(extension.value()), "file name should ends with: " + extension.value());
+        }, "download video async with specified output file name should work");
 
-            assertTrue(file.length() > 0, "file should be not empty");
-        });
+        assertDoesNotThrow(() -> {
+            RequestVideoDownload request = new RequestVideoDownload(format).renameTo(fileName).overwrite(true).async();
+            Response<File> responseFile = downloader.downloadVideo(request);
+
+            assertTimeout(Duration.ofSeconds(5), () -> {
+                assertTrue(responseFile.ok());
+                File file = responseFile.data();
+
+                validateFileDownloadAndDelete(format, file, fileName, true);
+            });
+        }, "download video async with specified output file name and overwrite flag should work");
     }
 
     @Test
-    @DisplayName("download subtitle should be successful")
-    void downloadSubtitle_Sync_Success() {
-        YoutubeDownloader downloader = new YoutubeDownloader();
-        assertDoesNotThrow(() -> {
-            List<SubtitlesInfo> subtitlesInfo = downloader.getVideoSubtitles(DESPACITO_ID);
+    @DisplayName("download subtitle should work")
+    void downloadSubtitle_Success() {
+        List<SubtitlesInfo> subtitlesInfo = getSubtitles();
+        assertFalse(subtitlesInfo.isEmpty(), "subtitles should be not empty");
 
+        assertDoesNotThrow(() -> {
             for (SubtitlesInfo subtitleInfo : subtitlesInfo) {
-                String subtitles = subtitleInfo.getSubtitles().download();
-                assertFalse(subtitles.isEmpty(), "subtitles should not be empty");
+                RequestSubtitlesDownload request = new RequestSubtitlesDownload(subtitleInfo);
+                Response<String> responseSubtitle = downloader.downloadSubtitle(request);
+                assertTrue(responseSubtitle.ok());
+                assertFalse(responseSubtitle.data().isEmpty(), "subtitles should not be empty");
             }
-        });
-    }
-
-    @Test
-    @DisplayName("download subtitles with wrong lang code should throw exception")
-    void downloadSubtitle_SyncWrongLangCode_Error() {
-        YoutubeDownloader downloader = new YoutubeDownloader();
+        }, "download subtitle should work");
 
         assertDoesNotThrow(() -> {
-            List<SubtitlesInfo> subtitlesInfo = downloader.getVideoSubtitles(DESPACITO_ID);
-
             for (SubtitlesInfo info : subtitlesInfo) {
-                SubtitlesInfo failedInfo = new SubtitlesInfo(info.getUrl().replace("lang=" + info.getLanguage(), "lang=not_a_code"), "not_a_code", false);
-                assertThrows(YoutubeException.class, () -> {
-                    failedInfo.getSubtitles().download();
-                });
+                SubtitlesInfo subtitleInfo = new SubtitlesInfo(info.getUrl().replace("lang=" + info.getLanguage(), "lang=not_a_code"), "not_a_code", false);
+                RequestSubtitlesDownload request = new RequestSubtitlesDownload(subtitleInfo);
+                Response<String> responseSubtitle = downloader.downloadSubtitle(request);
+                assertFalse(responseSubtitle.ok());
+                assertNotNull(responseSubtitle.error(), "error should be not null");
             }
-        });
-    }
+        }, "download subtitles with wrong lang code should throw exception");
 
-
-    @Test
-    @DisplayName("download subtitle async should be successful")
-    void downloadSubtitle_Async_Success() {
-        YoutubeDownloader downloader = new YoutubeDownloader();
         assertDoesNotThrow(() -> {
-            List<SubtitlesInfo> subtitlesInfo = downloader.getVideoSubtitles(DESPACITO_ID);
-
-            for (SubtitlesInfo info : subtitlesInfo) {
-                Future<String> subtitleFuture = info.getSubtitles().downloadAsync();
+            for (SubtitlesInfo subtitleInfo : subtitlesInfo) {
+                RequestWebpage request = new RequestSubtitlesDownload(subtitleInfo)
+                        .async();
+                Response<String> responseSubtitle = downloader.downloadSubtitle(request);
 
                 assertTimeout(Duration.ofSeconds(5), () -> {
-                    String subtitles = subtitleFuture.get();
+                    String subtitles = responseSubtitle.data();
+                    assertNotNull(subtitles, "subtitles should be not null");
                     assertFalse(subtitles.isEmpty(), "subtitles should not be empty");
                 });
             }
-        });
-    }
-
-    @Test
-    @DisplayName("download subtitles async with callback should call onFinished")
-    void downloadSubtitle_AsyncWithCallback_Success() {
-        OnSubtitlesDownloadListener callback = Mockito.mock(OnSubtitlesDownloadListener.class);
-
-        YoutubeDownloader downloader = new YoutubeDownloader();
+        }, "download subtitle async should work");
 
         assertDoesNotThrow(() -> {
-            List<SubtitlesInfo> subtitlesInfo = downloader.getVideoSubtitles(DESPACITO_ID);
+            YoutubeCallback<String> callback = Mockito.mock(YoutubeCallback.class);
 
-            for (SubtitlesInfo info : subtitlesInfo) {
-                Future<String> subtitleFuture = info.getSubtitles().downloadAsync(callback);
+            for (SubtitlesInfo subtitleInfo : subtitlesInfo) {
+                RequestWebpage request = new RequestSubtitlesDownload(subtitleInfo)
+                        .callback(callback)
+                        .async();
+                Response<String> responseSubtitle = downloader.downloadSubtitle(request);
 
                 assertTimeout(Duration.ofSeconds(5), () -> {
-                    String subtitles = subtitleFuture.get();
+                    String subtitles = responseSubtitle.data();
+                    assertNotNull(subtitles, "subtitles should be not null");
                     assertFalse(subtitles.isEmpty(), "subtitles should not be empty");
                 });
             }
 
             verify(callback, times(subtitlesInfo.size())).onFinished(any());
             verify(callback, never()).onError(any());
-        });
-    }
-
-    @Test
-    @DisplayName("download subtitles async with callback and wrong lang code should call onError")
-    void downloadSubtitle_AsyncWithCallbackWrongLangCode_Error() throws InterruptedException {
-        OnSubtitlesDownloadListener callback = Mockito.mock(OnSubtitlesDownloadListener.class);
-
-        YoutubeDownloader downloader = new YoutubeDownloader();
+        }, "download subtitles async with callback should call onFinished");
 
         assertDoesNotThrow(() -> {
-            List<SubtitlesInfo> subtitlesInfo = downloader.getVideoSubtitles(DESPACITO_ID);
+            YoutubeCallback<String> callback = Mockito.mock(YoutubeCallback.class);
 
-            for (SubtitlesInfo info : subtitlesInfo) {
-                info = new SubtitlesInfo(info.getUrl().replace("lang=" + info.getLanguage(), "lang=not_a_code"), "not_a_code", false);
-                Future<String> subtitleFuture = info.getSubtitles().downloadAsync(callback);
+            for (SubtitlesInfo subtitleInfo : subtitlesInfo) {
+                subtitleInfo = new SubtitlesInfo(subtitleInfo.getUrl().replace("lang=" + subtitleInfo.getLanguage(), "lang=not_a_code"), "not_a_code", false);
+
+                RequestWebpage request = new RequestSubtitlesDownload(subtitleInfo)
+                        .callback(callback)
+                        .async();
+                Response<String> responseSubtitle = downloader.downloadSubtitle(request);
 
                 assertTimeout(Duration.ofSeconds(5), () -> {
-                    String subtitles = subtitleFuture.get();
-                    assertNull(subtitles, "subtitles should be null");
+                    assertNotNull(responseSubtitle.error(), "error should be not null");
+                    assertNull(responseSubtitle.data(), "subtitles should be null");
                 });
 
             }
             verify(callback, times(subtitlesInfo.size())).onError(any());
             verify(callback, never()).onFinished(any());
-        });
-    }
+        }, "download subtitles async with callback and wrong lang code should call onError");
 
-    @Test
-    @DisplayName("download formatted subtitles should be successful")
-    void downloadSubtitles_Formatted_Success() {
-        YoutubeDownloader downloader = new YoutubeDownloader();
         assertDoesNotThrow(() -> {
-            List<SubtitlesInfo> subtitlesInfo = downloader.getVideoSubtitles(DESPACITO_ID);
-
-            for (SubtitlesInfo info : subtitlesInfo) {
-                String subtitles = info.getSubtitles()
-                        .formatTo(Extension.JSON3)
-                        .download();
+            for (SubtitlesInfo subtitleInfo : subtitlesInfo) {
+                RequestSubtitlesDownload request = new RequestSubtitlesDownload(subtitleInfo)
+                        .formatTo(Extension.JSON3);
+                Response<String> responseSubtitle = downloader.downloadSubtitle(request);
+                assertTrue(responseSubtitle.ok());
+                String subtitles = responseSubtitle.data();
                 assertFalse(subtitles.isEmpty(), "subtitles should not be empty");
                 assertDoesNotThrow(() -> {
                     JSONObject.parseObject(subtitles);
                 }, "subtitles should be formatted to json");
             }
-        });
+        }, "download formatted subtitles should work");
+
+        assertDoesNotThrow(() -> {
+            for (SubtitlesInfo subtitleInfo : subtitlesInfo) {
+                RequestSubtitlesDownload request = new RequestSubtitlesDownload(subtitleInfo)
+                        .formatTo(Extension.JSON3)
+                        .translateTo("uk");
+                Response<String> responseSubtitle = downloader.downloadSubtitle(request);
+                assertTrue(responseSubtitle.ok());
+                String subtitles = responseSubtitle.data();
+                assertFalse(subtitles.isEmpty(), "subtitles should not be empty");
+                assertDoesNotThrow(() -> {
+                    JSONObject.parseObject(subtitles);
+                }, "subtitles should be formatted to json");
+            }
+        }, "download formatted and translated subtitles should work");
     }
 
-    @Test
-    @DisplayName("download formatted and translated subtitles should be successful")
-    void downloadSubtitles_FormattedTranslated_Success() {
+    //    @Test // currently disabled because even on youtube.com translate feature does not work
+    @DisplayName("download formatted and translated subtitles should work")
+    void downloadSubtitles_FormattedTranslatedFromCaptions_Success() {
         YoutubeDownloader downloader = new YoutubeDownloader();
         assertDoesNotThrow(() -> {
-            List<SubtitlesInfo> subtitlesInfo = downloader.getVideoSubtitles(DESPACITO_ID);
+            Response<VideoInfo> response = downloader.getVideoInfo(new RequestVideoInfo(N3WPORT_ID));
+            assertTrue(response.ok());
+            VideoInfo video = response.data();
+            List<SubtitlesInfo> subtitlesInfo = video.subtitles();
 
             for (SubtitlesInfo subtitleInfo : subtitlesInfo) {
-                String subtitle = subtitleInfo.getSubtitles()
+                RequestSubtitlesDownload request = new RequestSubtitlesDownload(subtitleInfo)
                         .formatTo(Extension.JSON3)
-                        .translateTo("uk")
-                        .download();
+                        .translateTo("uk");
+                Response<String> responseSubtitle = downloader.downloadSubtitle(request);
+                assertEquals(ResponseStatus.completed, responseSubtitle.status());
+                assertTrue(responseSubtitle.ok());
+                String subtitle = responseSubtitle.data();
                 assertFalse(subtitle.isEmpty(), "subtitles should not be empty");
                 assertDoesNotThrow(() -> {
                     JSONObject.parseObject(subtitle);
                 }, "subtitles should be formatted to json");
             }
-        });
-    }
-
-    @Test
-    @DisplayName("setRetryOnFailure should throw exception for invalid values")
-    void setRetryOnFailure_InvalidRetryCount_ThrowsException() {
-        YoutubeDownloader downloader = new YoutubeDownloader();
-        assertThrows(IllegalArgumentException.class, () -> {
-            downloader.setParserRetryOnFailure(-1);
         });
     }
 

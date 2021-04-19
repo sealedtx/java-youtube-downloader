@@ -1,4 +1,4 @@
-package com.github.kiulian.downloader.model.formats;
+package com.github.kiulian.downloader.model.videos.formats;
 
 /*-
  * #
@@ -22,35 +22,18 @@ package com.github.kiulian.downloader.model.formats;
 
 
 import com.alibaba.fastjson.JSONObject;
-import com.github.kiulian.downloader.model.quality.AudioQuality;
-import com.github.kiulian.downloader.model.quality.VideoQuality;
+import com.github.kiulian.downloader.model.videos.quality.AudioQuality;
 
-public class AudioVideoFormat extends Format {
+public class AudioFormat extends Format {
 
     private final Integer averageBitrate;
     private final Integer audioSampleRate;
     private final AudioQuality audioQuality;
-    private final String qualityLabel;
-    private final Integer width;
-    private final Integer height;
-    private final VideoQuality videoQuality;
 
-    public AudioVideoFormat(JSONObject json, boolean isAdaptive) {
-        super(json, isAdaptive);
+    public AudioFormat(JSONObject json, boolean isAdaptive, String clientVersion) {
+        super(json, isAdaptive, clientVersion);
         audioSampleRate = json.getInteger("audioSampleRate");
         averageBitrate = json.getInteger("averageBitrate");
-        qualityLabel = json.getString("qualityLabel");
-        width = json.getInteger("width");
-        height = json.getInteger("height");
-
-        VideoQuality videoQuality = null;
-        if (json.containsKey("quality")) {
-            try {
-                videoQuality = VideoQuality.valueOf(json.getString("quality"));
-            } catch (IllegalArgumentException ignore) {
-            }
-        }
-        this.videoQuality = videoQuality;
 
         AudioQuality audioQuality = null;
         if (json.containsKey("audioQuality")) {
@@ -66,23 +49,7 @@ public class AudioVideoFormat extends Format {
 
     @Override
     public String type() {
-        return AUDIO_VIDEO;
-    }
-
-    public VideoQuality videoQuality() {
-        return videoQuality != null ? videoQuality : itag.videoQuality();
-    }
-
-    public String qualityLabel() {
-        return qualityLabel;
-    }
-
-    public Integer width() {
-        return width;
-    }
-
-    public Integer height() {
-        return height;
+        return AUDIO;
     }
 
     public Integer averageBitrate() {
@@ -96,5 +63,4 @@ public class AudioVideoFormat extends Format {
     public Integer audioSampleRate() {
         return audioSampleRate;
     }
-
 }

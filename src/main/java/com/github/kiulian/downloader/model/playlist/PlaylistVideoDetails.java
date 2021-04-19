@@ -21,9 +21,6 @@ package com.github.kiulian.downloader.model.playlist;
  */
 
 import com.alibaba.fastjson.JSONObject;
-import com.github.kiulian.downloader.YoutubeException.DownloadUnavailableException;
-import com.github.kiulian.downloader.YoutubeException.LiveVideoException;
-import com.github.kiulian.downloader.YoutubeException.RestrictedVideoException;
 import com.github.kiulian.downloader.model.AbstractVideoDetails;
 
 public class PlaylistVideoDetails extends AbstractVideoDetails {
@@ -56,12 +53,8 @@ public class PlaylistVideoDetails extends AbstractVideoDetails {
     }
 
     @Override
-    protected void checkDownload() throws DownloadUnavailableException {
-        if (!isPlayable) {
-            throw new RestrictedVideoException("Can not download " + title());
-        } else if (isLive() || lengthSeconds() == 0) {
-            throw new LiveVideoException("Can not download live stream");
-        }
+    protected boolean isDownloadable() {
+        return isPlayable && super.isDownloadable();
     }
 
     public int index() {

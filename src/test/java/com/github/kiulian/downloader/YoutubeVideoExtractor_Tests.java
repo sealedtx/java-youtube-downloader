@@ -1,10 +1,12 @@
 package com.github.kiulian.downloader;
 
+import com.github.kiulian.downloader.downloader.request.RequestVideoInfo;
+import com.github.kiulian.downloader.downloader.response.Response;
 import com.github.kiulian.downloader.model.Extension;
-import com.github.kiulian.downloader.model.VideoDetails;
-import com.github.kiulian.downloader.model.YoutubeVideo;
-import com.github.kiulian.downloader.model.formats.*;
-import com.github.kiulian.downloader.model.quality.AudioQuality;
+import com.github.kiulian.downloader.model.videos.VideoDetails;
+import com.github.kiulian.downloader.model.videos.VideoInfo;
+import com.github.kiulian.downloader.model.videos.formats.*;
+import com.github.kiulian.downloader.model.videos.quality.AudioQuality;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -24,7 +26,9 @@ public class YoutubeVideoExtractor_Tests {
         YoutubeDownloader downloader = new YoutubeDownloader();
 
         assertDoesNotThrow(() -> {
-            YoutubeVideo video = downloader.getVideo(ME_AT_THE_ZOO_ID);
+            Response<VideoInfo> response = downloader.getVideoInfo(new RequestVideoInfo(ME_AT_THE_ZOO_ID));
+            assertTrue(response.ok());
+            VideoInfo video = response.data();
 
             VideoDetails details = video.details();
             assertEquals(ME_AT_THE_ZOO_ID, details.videoId(), "videoId should be " + ME_AT_THE_ZOO_ID);
@@ -73,91 +77,13 @@ public class YoutubeVideoExtractor_Tests {
     }
 
     @Test
-    @DisplayName("getVideo should be successful for default videos with signature")
-    void getVideo_WithSignature_Success() {
-        YoutubeDownloader downloader = new YoutubeDownloader();
-
-        assertDoesNotThrow(() -> {
-            YoutubeVideo video = downloader.getVideo(DESPACITO_ID);
-
-            VideoDetails details = video.details();
-            assertEquals(DESPACITO_ID, details.videoId(), "videoId should be " + DESPACITO_ID);
-
-            String title = "Luis Fonsi - Despacito ft. Daddy Yankee";
-            assertEquals(title, details.title(), "title should be " + title);
-            assertFalse(details.thumbnails().isEmpty(), "thumbnails should be not empty");
-            assertNotEquals(0, details.lengthSeconds(), "length should not be 0");
-            assertNotEquals(0, details.viewCount(), "viewCount should not be 0");
-
-            List<Format> formats = video.formats();
-            assertFalse(formats.isEmpty(), "formats should not be empty");
-
-            int itag = 137;
-            Format format = video.findFormatByItag(itag);
-            assertNotNull(format, "findFormatByItag should return not null format");
-            assertTrue(format instanceof VideoFormat, "format with itag " + itag + " should be instance of AudioVideoFormat");
-            assertEquals(itag, format.itag().id(), "itag should be " + itag);
-
-            assertNotEquals(0, ((VideoFormat) format).fps(), "fps should not be 0");
-
-            int expectedWidth = 1920;
-            Integer width = ((VideoFormat) format).width();
-            assertNotNull(width, "width should not be null");
-            assertEquals(expectedWidth, width.intValue(), "format with itag " + itag + " should have width " + expectedWidth);
-
-            int expectedHeight = 1080;
-            Integer height = ((VideoFormat) format).height();
-            assertNotNull(height, "height should not be null");
-            assertEquals(expectedHeight, height.intValue(), "format with itag " + itag + " should have height " + expectedHeight);
-
-            String expectedMimeType = "video/mp4";
-            assertTrue(format.mimeType().contains(expectedMimeType), "mimetype should be " + expectedMimeType);
-
-            Extension expectedExtension = Extension.MPEG4;
-            assertEquals(expectedExtension, format.extension(), "extension should be " + expectedExtension.value());
-
-            String expectedLabel = "1080p";
-            assertEquals(expectedLabel, ((VideoFormat) format).qualityLabel(), "qualityLable should be " + expectedLabel);
-
-            assertNotNull(format.url(), "url should not be null");
-
-            assertTrue(isReachable(format.url()), "url should be reachable");
-            
-            int maxBitrate = 100_000; 
-            formats = video.findFormats(f -> f instanceof AudioFormat && f.bitrate() < maxBitrate);
-            assertFalse(formats.isEmpty(), "filtered formats should not be empty");
-            formats.forEach(f -> {
-                assertTrue(f instanceof AudioFormat, "format should be audio");
-                assertTrue(f.bitrate() < maxBitrate, "format bitrate should be < " + maxBitrate);
-            });
-        });
-    }
-
-    @Test
     @DisplayName("getVideo should throw exception for unavailable video")
     void getVideo_Unavailable_ThrowsException() {
         YoutubeDownloader downloader = new YoutubeDownloader();
         String unavailableVideoId = "12345678901";
-        assertThrows(YoutubeException.BadPageException.class, () -> {
-            downloader.getVideo(unavailableVideoId);
-        });
-    }
-
-    @Test
-    @DisplayName("addInitialFunctionPattern should add regex with priority to initialFunctionPatterns")
-    void addInitialFunctionPattern_Success() {
-        YoutubeDownloader downloader = new YoutubeDownloader();
-        downloader.addCipherFunctionPattern(0, "([a-zA-Z0-9$]+)\\s*=\\s*function\\(\\s*a\\s*\\)\\s*\\{\\s*a\\s*=\\s*a\\.split\\(\\s*\"\"\\s*\\)");
-        String videoId = "SmM0653YvXU";
-
-        assertThrows(YoutubeException.CipherException.class, () -> {
-            downloader.getVideo(videoId);
-        }, "getVideo should throw CipherException if initial function patterns has wrong priority");
-
-        downloader.addCipherFunctionPattern(0, "(?:\\b|[^a-zA-Z0-9$])([a-zA-Z0-9$]{2})\\s*=\\s*function\\(\\s*a\\s*\\)\\s*\\{\\s*a\\s*=\\s*a\\.split\\(\\s*\"\"\\s*\\)");
-        assertDoesNotThrow(() -> {
-            downloader.getVideo(videoId);
-        }, "getVideo should not throw exception if initial function patterns has correct priority");
+        Response<VideoInfo> response = downloader.getVideoInfo(new RequestVideoInfo(unavailableVideoId));
+        assertFalse(response.ok());
+        assertTrue(response.error() instanceof YoutubeException.BadPageException);
     }
 
 }

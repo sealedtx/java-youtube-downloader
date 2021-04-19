@@ -1,28 +1,10 @@
-package com.github.kiulian.downloader.model.formats;
+package com.github.kiulian.downloader.model.videos.formats;
 
-/*-
- * #
- * Java youtube video and audio downloader
- *
- * Copyright (C) 2020 Igor Kiulian
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- * 
- *      http://www.apache.org/licenses/LICENSE-2.0
- * 
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- * #
- */
+
 
 
 import com.alibaba.fastjson.JSONObject;
-import com.github.kiulian.downloader.model.quality.VideoQuality;
+import com.github.kiulian.downloader.model.videos.quality.VideoQuality;
 
 public class VideoFormat extends Format {
 
@@ -32,8 +14,8 @@ public class VideoFormat extends Format {
     private final Integer height;
     private final VideoQuality videoQuality;
 
-    public VideoFormat(JSONObject json, boolean isAdaptive) {
-        super(json, isAdaptive);
+    public VideoFormat(JSONObject json, boolean isAdaptive, String clientVersion) {
+        super(json, isAdaptive, clientVersion);
         fps = json.getInteger("fps");
         qualityLabel = json.getString("qualityLabel");
         if (json.containsKey("size")) {

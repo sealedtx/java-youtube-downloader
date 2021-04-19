@@ -1,29 +1,10 @@
-package com.github.kiulian.downloader.model.formats;
+package com.github.kiulian.downloader.model.videos.formats;
 
-/*-
- * #
- * Java youtube video and audio downloader
- *
- * Copyright (C) 2020 Igor Kiulian
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- * #
- */
+
 
 
 import com.alibaba.fastjson.JSONObject;
 import com.github.kiulian.downloader.model.Extension;
-import com.github.kiulian.downloader.model.Itag;
 
 public abstract class Format {
 
@@ -41,10 +22,12 @@ public abstract class Format {
     protected final Long contentLength;
     protected final Long lastModified;
     protected final Long approxDurationMs;
+    protected final String clientVersion;
 
-    protected Format(JSONObject json, boolean isAdaptive) {
+    protected Format(JSONObject json, boolean isAdaptive, String clientVersion) {
         this.isAdaptive = isAdaptive;
-        
+        this.clientVersion = clientVersion;
+
         Itag itag;
         try {
             itag = Itag.valueOf("i" + json.getInteger("itag"));
@@ -87,6 +70,10 @@ public abstract class Format {
 
     public boolean isAdaptive() {
         return isAdaptive;
+    }
+
+    public String clientVersion() {
+        return clientVersion;
     }
 
     public Itag itag() {
