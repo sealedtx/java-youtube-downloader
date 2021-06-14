@@ -192,7 +192,6 @@ response.cancel();
 
 ### Subtitles
 ```java
-// ------ SUBTITLES --------
 // you can get subtitles from video captions if you have already parsed video info
 List<SubtitlesInfo> subtitlesInfo = video.subtitles(); // NOTE: includes auto-generated
 // if you don't need video info, but just subtitles make this request instead
