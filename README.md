@@ -151,16 +151,16 @@ File outputDir = new File("my_videos");
 Format format = videoFormats.get(0);
 
 // sync downloading
-RequestVideoDownload request = new RequestVideoDownload(format)
+RequestVideoFileDownload request = new RequestVideoFileDownload(format)
     // optional params    
     .saveTo(outputDir) // by default "videos" directory
     .renameTo("video") // by default file name will be same as video title on youtube
     .overwriteIfExists(true); // if false and file with such name already exits sufix will be added video(1).mp4
-Response<File> response = downloader.downloadVideo(request);
+Response<File> response = downloader.downloadVideoFile(request);
 File data = response.data();
 
 // async downloading with callback
-RequestVideoDownload request = new RequestVideoDownload(format)
+RequestVideoFileDownload request = new RequestVideoFileDownload(format)
     .callback(new YoutubeProgressCallback<File>() {
         @Override
         public void onDownloading(int progress) {
@@ -178,16 +178,18 @@ RequestVideoDownload request = new RequestVideoDownload(format)
         }
     })
     .async();
-Response<File> response = downloader.downloadVideo(request);
+Response<File> response = downloader.downloadVideoFile(request);
 File data = response.data(); // will block current thread
 
 // async downloading without callback
-RequestVideoDownload request = new RequestVideoDownload(format).async();
-Response<File> response = downloader.downloadVideo(request);
+RequestVideoFileDownload request = new RequestVideoFileDownload(format).async();
+Response<File> response = downloader.downloadVideoFile(request);
 File data = response.data(20, TimeUnit.SECONDS); // will block current thread and may throw TimeoutExeption
 
-// cancel downloading
-response.cancel();
+// download in-memory to OutputStream
+OutputStream os = new ByteArrayOutputStream();
+RequestVideoStreamDownload request = new RequestVideoStreamDownload(format, os);
+Response<Void> response = downloader.downloadVideoStream(request);
 ```
 
 ### Subtitles

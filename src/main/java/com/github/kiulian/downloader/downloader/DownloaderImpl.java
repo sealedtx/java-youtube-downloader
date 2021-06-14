@@ -2,15 +2,12 @@ package com.github.kiulian.downloader.downloader;
 
 import com.github.kiulian.downloader.Config;
 import com.github.kiulian.downloader.YoutubeException;
-import com.github.kiulian.downloader.downloader.request.RequestRaw;
-import com.github.kiulian.downloader.downloader.request.RequestVideoDownload;
-import com.github.kiulian.downloader.downloader.request.RequestWebpage;
+import com.github.kiulian.downloader.downloader.request.*;
 import com.github.kiulian.downloader.downloader.response.ResponseImpl;
 import com.github.kiulian.downloader.model.videos.formats.Format;
 
 import java.io.*;
 import java.net.*;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.*;
 
@@ -32,11 +29,11 @@ public class DownloaderImpl implements Downloader {
         if (request.isAsync()) {
             ExecutorService executorService = config.getExecutorService();
             Future<String> result = executorService.submit(() -> download(request));
-            return ResponseImpl.of(result);
+            return ResponseImpl.fromFuture(result);
         }
         try {
             String result = download(request);
-            return ResponseImpl.of(result);
+            return ResponseImpl.from(result);
         } catch (IOException | YoutubeException e) {
             return ResponseImpl.error(e);
         }
@@ -112,42 +109,74 @@ public class DownloaderImpl implements Downloader {
     }
 
     @Override
-    public ResponseImpl<File> downloadVideoAsFile(RequestVideoDownload request) {
+    public ResponseImpl<File> downloadVideoAsFile(RequestVideoFileDownload request) {
         if (request.isAsync()) {
             ExecutorService executorService = config.getExecutorService();
             Future<File> result = executorService.submit(() -> download(request));
-            return ResponseImpl.of(result);
+            return ResponseImpl.fromFuture(result);
         }
         try {
             File result = download(request);
-            return ResponseImpl.of(result);
+            return ResponseImpl.from(result);
         } catch (IOException e) {
             return ResponseImpl.error(e);
         }
     }
 
-    private File download(RequestVideoDownload request) throws IOException {
+    @Override
+    public ResponseImpl<Void> downloadVideoAsStream(RequestVideoStreamDownload request) {
+        if (request.isAsync()) {
+            ExecutorService executorService = config.getExecutorService();
+            Future<Void> result = executorService.submit(() -> download(request));
+            return ResponseImpl.fromFuture(result);
+        }
+        try {
+            download(request);
+            return ResponseImpl.from(null);
+        } catch (IOException e) {
+            return ResponseImpl.error(e);
+        }
+    }
+
+    private File download(RequestVideoFileDownload request) throws IOException {
         Format format = request.getFormat();
         File outputFile = request.getOutputFile();
-        Map<String, String> headers = request.getHeaders();
         YoutubeCallback<File> callback = request.getCallback();
+        OutputStream os = new FileOutputStream(outputFile);
+
+        download(request, format, os);
+        if (callback != null) {
+            callback.onFinished(outputFile);
+        }
+        return outputFile;
+    }
+
+    private Void download(RequestVideoStreamDownload request) throws IOException {
+        Format format = request.getFormat();
+        YoutubeCallback<Void> callback = request.getCallback();
+        OutputStream os = request.getOutputStream();
+
+        download(request, format, os);
+        if (callback != null) {
+            callback.onFinished(null);
+        }
+        return null;
+    }
+
+    private void download(Request<?, ?> request, Format format, OutputStream os) throws IOException {
+        Map<String, String> headers = request.getHeaders();
+        YoutubeCallback<?> callback = request.getCallback();
         int maxRetries = request.getMaxRetries() != null ? request.getMaxRetries() : config.getMaxRetries();
         Proxy proxy = request.getProxy();
 
         IOException exception;
         do {
-            OutputStream os = null;
             try {
-                os = new FileOutputStream(outputFile);
                 if (format.isAdaptive() && format.contentLength() != null) {
                     downloadByPart(format, os, headers, proxy, callback);
                 } else {
                     downloadStraight(format, os, headers, proxy, callback);
                 }
-                if (callback != null) {
-                    callback.onFinished(outputFile);
-                }
-
                 // reset error in case of successful retry
                 exception = null;
             } catch (IOException e) {
@@ -163,11 +192,10 @@ public class DownloaderImpl implements Downloader {
             }
             throw exception;
         }
-        return outputFile;
     }
 
     // Downloads the format in one single request
-    private void downloadStraight(Format format, OutputStream os, Map<String, String> headers, Proxy proxy, YoutubeCallback<File> callback) throws IOException {
+    private void downloadStraight(Format format, OutputStream os, Map<String, String> headers, Proxy proxy, YoutubeCallback<?> callback) throws IOException {
         HttpURLConnection urlConnection = openConnection(format.url(), headers, proxy);
         int responseCode = urlConnection.getResponseCode();
         if (responseCode != 200) {
@@ -185,7 +213,7 @@ public class DownloaderImpl implements Downloader {
     }
 
     // Downloads the format part by part, with as many requests as needed
-    private void downloadByPart(Format format, OutputStream os, Map<String, String> headers, Proxy proxy, YoutubeCallback<File> listener) throws IOException {
+    private void downloadByPart(Format format, OutputStream os, Map<String, String> headers, Proxy proxy, YoutubeCallback<?> listener) throws IOException {
         long done = 0;
         int partNumber = 0;
 
@@ -220,7 +248,7 @@ public class DownloaderImpl implements Downloader {
     }
 
     // Copies as many bytes as possible then closes input stream
-    private static long copyAndCloseInput(InputStream is, OutputStream os, byte[] buffer, long offset, long totalLength, final YoutubeCallback<File> listener) throws IOException {
+    private static long copyAndCloseInput(InputStream is, OutputStream os, byte[] buffer, long offset, long totalLength, final YoutubeCallback<?> listener) throws IOException {
         long done = 0;
 
         try {
@@ -236,7 +264,7 @@ public class DownloaderImpl implements Downloader {
                 long progress = ((offset + done) * 100) / totalLength;
                 if (progress > lastProgress) {
                     if (listener instanceof YoutubeProgressCallback) {
-                        ((YoutubeProgressCallback<File>) listener).onDownloading((int) progress);
+                        ((YoutubeProgressCallback<?>) listener).onDownloading((int) progress);
                     }
                     lastProgress = progress;
                 }

@@ -51,11 +51,11 @@ public class ParserImpl implements Parser {
         if (request.isAsync()) {
             ExecutorService executorService = config.getExecutorService();
             Future<VideoInfo> result = executorService.submit(() -> parseVideo(request.getVideoId(), request.getCallback()));
-            return ResponseImpl.of(result);
+            return ResponseImpl.fromFuture(result);
         }
         try {
             VideoInfo result = parseVideo(request.getVideoId(), request.getCallback());
-            return ResponseImpl.of(result);
+            return ResponseImpl.from(result);
         } catch (YoutubeException e) {
             return ResponseImpl.error(e);
         }
@@ -259,11 +259,11 @@ public class ParserImpl implements Parser {
         if (request.isAsync()) {
             ExecutorService executorService = config.getExecutorService();
             Future<PlaylistInfo> result = executorService.submit(() -> parsePlaylist(request.getPlaylistId(), request.getCallback()));
-            return ResponseImpl.of(result);
+            return ResponseImpl.fromFuture(result);
         }
         try {
             PlaylistInfo result = parsePlaylist(request.getPlaylistId(), request.getCallback());
-            return ResponseImpl.of(result);
+            return ResponseImpl.from(result);
         } catch (YoutubeException e) {
             return ResponseImpl.error(e);
         }
@@ -451,11 +451,11 @@ public class ParserImpl implements Parser {
         if (request.isAsync()) {
             ExecutorService executorService = config.getExecutorService();
             Future<PlaylistInfo> result = executorService.submit(() -> parseChannelsUploads(request.getChannelId(), request.getCallback()));
-            return ResponseImpl.of(result);
+            return ResponseImpl.fromFuture(result);
         }
         try {
             PlaylistInfo result = parseChannelsUploads(request.getChannelId(), request.getCallback());
-            return ResponseImpl.of(result);
+            return ResponseImpl.from(result);
         } catch (YoutubeException e) {
             return ResponseImpl.error(e);
         }
@@ -503,11 +503,11 @@ public class ParserImpl implements Parser {
         if (request.isAsync()) {
             ExecutorService executorService = config.getExecutorService();
             Future<List<SubtitlesInfo>> result = executorService.submit(() -> parseSubtitlesInfo(request.getVideoId(), request.getCallback()));
-            return ResponseImpl.of(result);
+            return ResponseImpl.fromFuture(result);
         }
         try {
             List<SubtitlesInfo> result = parseSubtitlesInfo(request.getVideoId(), request.getCallback());
-            return ResponseImpl.of(result);
+            return ResponseImpl.from(result);
         } catch (YoutubeException e) {
             return ResponseImpl.error(e);
         }

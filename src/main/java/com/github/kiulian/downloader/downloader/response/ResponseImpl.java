@@ -12,7 +12,7 @@ public class ResponseImpl<T> implements Response<T> {
         this.error = error;
     }
 
-    public static <T> ResponseImpl<T> of(T data) {
+    public static <T> ResponseImpl<T> from(T data) {
         Future<T> future = new Future<T>() {
 
             @Override
@@ -41,10 +41,10 @@ public class ResponseImpl<T> implements Response<T> {
             }
         };
 
-        return of(future);
+        return fromFuture(future);
     }
 
-    public static <T> ResponseImpl<T> of(Future<T> data) {
+    public static <T> ResponseImpl<T> fromFuture(Future<T> data) {
         return new ResponseImpl<>(data, null);
     }
 

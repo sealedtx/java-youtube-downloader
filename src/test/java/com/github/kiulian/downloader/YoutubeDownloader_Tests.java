@@ -15,6 +15,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.time.Duration;
 import java.util.List;
@@ -87,7 +88,7 @@ class YoutubeDownloader_Tests {
         assertTrue(isReachable(format.url()), "url should be reachable");
 
         assertDoesNotThrow(() -> {
-            Response<File> responseFile = downloader.downloadVideo(new RequestVideoDownload(format).saveTo(outDir));
+            Response<File> responseFile = downloader.downloadVideoFile(new RequestVideoFileDownload(format).saveTo(outDir));
             assertTrue(responseFile.ok());
 
             File file = responseFile.data();
@@ -95,7 +96,7 @@ class YoutubeDownloader_Tests {
         }, "download video sync should work");
 
         assertDoesNotThrow(() -> {
-            Response<File> responseFile = downloader.downloadVideo(new RequestVideoDownload(format).saveTo(outDir).async());
+            Response<File> responseFile = downloader.downloadVideoFile(new RequestVideoFileDownload(format).saveTo(outDir).async());
             assertEquals(ResponseStatus.downloading, responseFile.status());
 
             File file = responseFile.data(5, TimeUnit.SECONDS);
@@ -104,8 +105,8 @@ class YoutubeDownloader_Tests {
 
         assertDoesNotThrow(() -> {
 
-            RequestVideoDownload request = new RequestVideoDownload(format).saveTo(outDir).renameTo(fileName);
-            Response<File> responseFile = downloader.downloadVideo(request);
+            RequestVideoFileDownload request = new RequestVideoFileDownload(format).saveTo(outDir).renameTo(fileName);
+            Response<File> responseFile = downloader.downloadVideoFile(request);
             assertTrue(responseFile.ok());
 
             File file = responseFile.data();
@@ -113,8 +114,8 @@ class YoutubeDownloader_Tests {
         }, "download video sync with specified output file name should work");
 
         assertDoesNotThrow(() -> {
-            RequestVideoDownload request = new RequestVideoDownload(format).saveTo(outDir).renameTo(fileName).overwriteIfExists(true);
-            Response<File> responseFile = downloader.downloadVideo(request);
+            RequestVideoFileDownload request = new RequestVideoFileDownload(format).saveTo(outDir).renameTo(fileName).overwriteIfExists(true);
+            Response<File> responseFile = downloader.downloadVideoFile(request);
             assertTrue(responseFile.ok());
 
             File file = responseFile.data();
@@ -124,8 +125,8 @@ class YoutubeDownloader_Tests {
 
         assertDoesNotThrow(() -> {
             YoutubeProgressCallback<File> mockCallback = mock(YoutubeProgressCallback.class);
-            RequestVideoDownload request = new RequestVideoDownload(format).callback(mockCallback).async();
-            Response<File> responseFile = downloader.downloadVideo(request);
+            RequestVideoFileDownload request = new RequestVideoFileDownload(format).callback(mockCallback).async();
+            Response<File> responseFile = downloader.downloadVideoFile(request);
 
             assertTimeout(Duration.ofSeconds(5), () -> {
                 assertTrue(responseFile.ok());
@@ -139,8 +140,8 @@ class YoutubeDownloader_Tests {
         }, "download video async with callback should work");
 
         assertDoesNotThrow(() -> {
-            RequestVideoDownload request = new RequestVideoDownload(format).renameTo(fileName).async();
-            Response<File> responseFile = downloader.downloadVideo(request);
+            RequestVideoFileDownload request = new RequestVideoFileDownload(format).renameTo(fileName).async();
+            Response<File> responseFile = downloader.downloadVideoFile(request);
 
             assertTimeout(Duration.ofSeconds(5), () -> {
                 assertTrue(responseFile.ok());
@@ -152,8 +153,8 @@ class YoutubeDownloader_Tests {
         }, "download video async with specified output file name should work");
 
         assertDoesNotThrow(() -> {
-            RequestVideoDownload request = new RequestVideoDownload(format).renameTo(fileName).overwriteIfExists(true).async();
-            Response<File> responseFile = downloader.downloadVideo(request);
+            RequestVideoFileDownload request = new RequestVideoFileDownload(format).renameTo(fileName).overwriteIfExists(true).async();
+            Response<File> responseFile = downloader.downloadVideoFile(request);
 
             assertTimeout(Duration.ofSeconds(5), () -> {
                 assertTrue(responseFile.ok());
@@ -162,6 +163,21 @@ class YoutubeDownloader_Tests {
                 validateFileDownloadAndDelete(format, file, fileName, true);
             });
         }, "download video async with specified output file name and overwrite flag should work");
+
+        assertDoesNotThrow(() -> {
+            try (ByteArrayOutputStream os = new ByteArrayOutputStream()) {
+                Response<Void> responseFile = downloader.downloadVideoStream(new RequestVideoStreamDownload(format, os));
+                assertTrue(responseFile.ok());
+                byte[] outputBytes = os.toByteArray();
+                int size = outputBytes.length;
+                assertTrue(size > 0, "OutputStream should have some content");
+
+                Long contentLength = format.contentLength();
+                if (contentLength != null) {
+                    assertEquals(contentLength.intValue(), size, "OutputStream bytes size be contentLength");
+                }
+            }
+        });
     }
 
     @Test

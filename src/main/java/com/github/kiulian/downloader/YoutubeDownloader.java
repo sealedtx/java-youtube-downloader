@@ -67,7 +67,7 @@ public class YoutubeDownloader {
         return parser.parsePlaylist(request);
     }
 
-    public Response<File> downloadVideo(RequestVideoDownload request) {
+    public Response<File> downloadVideoFile(RequestVideoFileDownload request) {
         File outDir = request.getOutputDirectory();
         try {
             createOutDir(outDir);
@@ -76,6 +76,10 @@ public class YoutubeDownloader {
         }
 
         return downloader.downloadVideoAsFile(request);
+    }
+
+    public Response<Void> downloadVideoStream(RequestVideoStreamDownload request) {
+        return downloader.downloadVideoAsStream(request);
     }
 
     public Response<String> downloadSubtitle(RequestWebpage request) {

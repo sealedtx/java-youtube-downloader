@@ -7,7 +7,7 @@ import java.util.UUID;
 
 import static com.github.kiulian.downloader.model.Utils.removeIllegalChars;
 
-public class RequestVideoDownload extends Request<RequestVideoDownload, File> {
+public class RequestVideoFileDownload extends Request<RequestVideoFileDownload, File> {
 
     private File outputDirectory = new File("videos");
     private boolean overwrite = false;
@@ -15,21 +15,21 @@ public class RequestVideoDownload extends Request<RequestVideoDownload, File> {
 
     private final Format format;
 
-    public RequestVideoDownload(Format format) {
+    public RequestVideoFileDownload(Format format) {
         this.format = format;
     }
 
-    public RequestVideoDownload saveTo(File directory) {
+    public RequestVideoFileDownload saveTo(File directory) {
         this.outputDirectory = directory;
         return this;
     }
 
-    public RequestVideoDownload renameTo(String fileName) {
+    public RequestVideoFileDownload renameTo(String fileName) {
         this.fileName = fileName;
         return this;
     }
 
-    public RequestVideoDownload overwriteIfExists(boolean overwrite) {
+    public RequestVideoFileDownload overwriteIfExists(boolean overwrite) {
         this.overwrite = overwrite;
         return this;
     }

@@ -1,6 +1,7 @@
 package com.github.kiulian.downloader.downloader;
 
-import com.github.kiulian.downloader.downloader.request.RequestVideoDownload;
+import com.github.kiulian.downloader.downloader.request.RequestVideoFileDownload;
+import com.github.kiulian.downloader.downloader.request.RequestVideoStreamDownload;
 import com.github.kiulian.downloader.downloader.request.RequestWebpage;
 import com.github.kiulian.downloader.downloader.response.Response;
 
@@ -10,8 +11,8 @@ public interface Downloader {
 
     Response<String> downloadWebpage(RequestWebpage request);
 
-    Response<File> downloadVideoAsFile(RequestVideoDownload request);
+    Response<File> downloadVideoAsFile(RequestVideoFileDownload request);
 
-    //TODO: implement download Video in-memory by accepting OutputStream
+    Response<Void> downloadVideoAsStream(RequestVideoStreamDownload request);
 
 }
