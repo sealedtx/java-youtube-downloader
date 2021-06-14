@@ -28,7 +28,7 @@ public class YoutubeDownloader {
     private final Parser parser;
 
     public YoutubeDownloader() {
-        this(new Config());
+        this(Config.buildDefault());
     }
 
     public YoutubeDownloader(Config config) {

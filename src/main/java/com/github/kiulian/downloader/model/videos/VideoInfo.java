@@ -5,7 +5,7 @@ package com.github.kiulian.downloader.model.videos;
 
 import com.github.kiulian.downloader.model.Filter;
 import com.github.kiulian.downloader.model.videos.formats.AudioFormat;
-import com.github.kiulian.downloader.model.videos.formats.AudioVideoFormat;
+import com.github.kiulian.downloader.model.videos.formats.VideoWithAudioFormat;
 import com.github.kiulian.downloader.model.videos.formats.Format;
 import com.github.kiulian.downloader.model.videos.formats.VideoFormat;
 import com.github.kiulian.downloader.model.subtitles.SubtitlesInfo;
@@ -33,7 +33,7 @@ public class VideoInfo {
         return formats;
     }
 
-    public List<SubtitlesInfo> subtitles() {
+    public List<SubtitlesInfo> subtitlesInfo() {
         return subtitlesInfo;
     }
 
@@ -49,31 +49,45 @@ public class VideoInfo {
         return null;
     }
 
-    public List<VideoFormat> videoFormats() {
-        return videoFormats(false);
-    }
-
-    public List<VideoFormat> videoFormats(boolean withAudio) {
-        List<VideoFormat> find = new LinkedList<>();
+    public List<VideoWithAudioFormat> videoWithAudioFormats() {
+        List<VideoWithAudioFormat> find = new LinkedList<>();
 
         for (Format format : formats) {
-            if (withAudio && !(format instanceof AudioVideoFormat)) {
-                continue;
+            if (format instanceof VideoWithAudioFormat) {
+                find.add((VideoWithAudioFormat) format);
             }
-            if (!(format instanceof VideoFormat)) {
-                continue;
-            }
-            find.add((VideoFormat) format);
         }
         return find;
     }
 
-    public VideoFormat bestVideoFormat(boolean withAudio) {
+    public VideoFormat bestVideoWithAudioFormat() {
         VideoFormat bestFormat = null;
         for (Format format : formats) {
-            if (withAudio && !(format instanceof AudioVideoFormat)) {
+            if (!(format instanceof VideoWithAudioFormat)) {
                 continue;
             }
+            VideoFormat videoFormat = (VideoFormat) format;
+            if (bestFormat == null || videoFormat.videoQuality().compare(bestFormat.videoQuality()) > 0) {
+                bestFormat = videoFormat;
+            }
+        }
+        return bestFormat;
+    }
+
+    public List<VideoFormat> videoFormats() {
+        List<VideoFormat> find = new LinkedList<>();
+
+        for (Format format : formats) {
+            if (format instanceof VideoFormat) {
+                find.add((VideoFormat) format);
+            }
+        }
+        return find;
+    }
+
+    public VideoFormat bestVideoFormat() {
+        VideoFormat bestFormat = null;
+        for (Format format : formats) {
             if (!(format instanceof VideoFormat)) {
                 continue;
             }

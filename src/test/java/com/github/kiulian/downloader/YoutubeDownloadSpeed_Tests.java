@@ -60,7 +60,7 @@ public class YoutubeDownloadSpeed_Tests extends TestUtils {
 
     @BeforeEach
     void initDownloader() {
-        final Config config = new Config();
+        final Config config = Config.buildDefault();
         this.downloader = new DownloaderImpl(config);
         this.youtubeDownloader = new YoutubeDownloader(config, downloader);
         if (!outDir.isDirectory()) {

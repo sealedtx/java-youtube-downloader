@@ -29,7 +29,7 @@ public class RequestVideoDownload extends Request<RequestVideoDownload, File> {
         return this;
     }
 
-    public RequestVideoDownload overwrite(boolean overwrite) {
+    public RequestVideoDownload overwriteIfExists(boolean overwrite) {
         this.overwrite = overwrite;
         return this;
     }

@@ -42,8 +42,4 @@ public class SubtitlesInfo {
         return fromCaptions;
     }
 
-    public Subtitles getSubtitles() {
-        return new Subtitles(url, fromCaptions);
-    }
-
 }

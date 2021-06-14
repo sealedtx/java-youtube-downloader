@@ -30,7 +30,7 @@ public class YoutubePlaylistExtractor_Tests extends YoutubePlaylistTest {
     void getShortPlaylist_Success() {
         assertDoesNotThrow(() -> {
             PlaylistInfo playlist = getPlaylist(BRUCE_PLAYLIST_ID);
-            testPlaylist(playlist, BRUCE_PLAYLIST_ID, "Bruce lee", "Tom De Brito", 10);
+            testPlaylist(playlist, BRUCE_PLAYLIST_ID, "Bruce lee", "dragonoragéedenuit", 10);
             testVideo(getVideo(playlist, "xML-j6NsGwM", 1),
                     "legend of bruce lee - Enemy.mp4", "andreaboni1", true);
             testVideo(getVideo(playlist, "DE3er3wDAik", 10),
@@ -102,7 +102,7 @@ public class YoutubePlaylistExtractor_Tests extends YoutubePlaylistTest {
     private static void testPlaylist(PlaylistInfo playlist, String playlistId, String title, String author, int size) {
         PlaylistDetails details = playlist.details();
         assertEquals(title, details.title(), "title should be " + title);
-        assertEquals(author, details.author(), "author should be " + author);
+        assertEquals(author, details.author(), "author should be " + author + " but was " + details.author());
         
         List<PlaylistVideoDetails> videos = playlist.videos();
         assertNotNull(videos, "playlist videos should not be null: " + playlistId);

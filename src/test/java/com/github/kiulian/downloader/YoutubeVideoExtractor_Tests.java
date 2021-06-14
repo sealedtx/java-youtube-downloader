@@ -45,21 +45,21 @@ public class YoutubeVideoExtractor_Tests {
             int itag = 18;
             Format format = video.findFormatByItag(itag);
             assertNotNull(format, "findFormatByItag should return not null format");
-            assertTrue(format instanceof AudioVideoFormat, "format with itag " + itag + " should be instance of AudioVideoFormat");
+            assertTrue(format instanceof VideoWithAudioFormat, "format with itag " + itag + " should be instance of AudioVideoFormat");
             assertEquals(itag, format.itag().id(), "itag should be " + itag);
 
             int expectedWidth = 320;
-            Integer width = ((AudioVideoFormat) format).width();
+            Integer width = ((VideoWithAudioFormat) format).width();
             assertNotNull(width, "width should not be null");
             assertEquals(expectedWidth, width.intValue(), "format with itag " + itag + " should have width " + expectedWidth);
 
             int expectedHeight = 240;
-            Integer height = ((AudioVideoFormat) format).height();
+            Integer height = ((VideoWithAudioFormat) format).height();
             assertNotNull(height, "height should not be null");
             assertEquals(expectedHeight, height.intValue(), "format with itag " + itag + " should have height " + expectedHeight);
 
             AudioQuality expectedAudioQuality = AudioQuality.low;
-            assertEquals(expectedAudioQuality, ((AudioVideoFormat) format).audioQuality(), "audioQuality should be " + expectedAudioQuality.name());
+            assertEquals(expectedAudioQuality, ((VideoWithAudioFormat) format).audioQuality(), "audioQuality should be " + expectedAudioQuality.name());
 
             String expectedMimeType = "video/mp4";
             assertTrue(format.mimeType().contains(expectedMimeType), "mimetype should be " + expectedMimeType);
@@ -68,7 +68,7 @@ public class YoutubeVideoExtractor_Tests {
             assertEquals(expectedExtension, format.extension(), "extension should be " + expectedExtension.value());
 
             String expectedLabel = "240p";
-            assertEquals(expectedLabel, ((AudioVideoFormat) format).qualityLabel(), "qualityLable should be " + expectedLabel);
+            assertEquals(expectedLabel, ((VideoWithAudioFormat) format).qualityLabel(), "qualityLable should be " + expectedLabel);
 
             assertNotNull(format.url(), "url should not be null");
 

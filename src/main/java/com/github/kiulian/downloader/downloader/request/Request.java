@@ -2,6 +2,7 @@ package com.github.kiulian.downloader.downloader.request;
 
 import com.github.kiulian.downloader.downloader.YoutubeCallback;
 import com.github.kiulian.downloader.downloader.proxy.ProxyAuthenticator;
+import com.github.kiulian.downloader.downloader.proxy.ProxyCredentialsImpl;
 
 import java.net.InetSocketAddress;
 import java.net.Proxy;
@@ -21,8 +22,8 @@ public abstract class Request<T extends Request<T, S>, S> {
     }
 
     public T proxy(String host, int port, String userName, String password) {
-        if (ProxyAuthenticator.getAuthenticator() == null) {
-            throw new NullPointerException("ProxyAuthenticator is not inited. Use setProxyAuthenticator() if you need proxy authentication");
+        if (ProxyAuthenticator.getDefault() == null) {
+            ProxyAuthenticator.setDefault(new ProxyAuthenticator(new ProxyCredentialsImpl()));
         }
         this.proxy = new Proxy(Proxy.Type.HTTP, new InetSocketAddress(host, port));
         ProxyAuthenticator.addAuthentication(host, port, userName, password);

@@ -18,7 +18,7 @@ import com.github.kiulian.downloader.model.videos.formats.Itag;
 import com.github.kiulian.downloader.model.videos.VideoDetails;
 import com.github.kiulian.downloader.model.videos.VideoInfo;
 import com.github.kiulian.downloader.model.videos.formats.AudioFormat;
-import com.github.kiulian.downloader.model.videos.formats.AudioVideoFormat;
+import com.github.kiulian.downloader.model.videos.formats.VideoWithAudioFormat;
 import com.github.kiulian.downloader.model.videos.formats.Format;
 import com.github.kiulian.downloader.model.videos.formats.VideoFormat;
 import com.github.kiulian.downloader.model.playlist.PlaylistDetails;
@@ -217,7 +217,7 @@ public class ParserImpl implements Parser {
         boolean hasAudio = itag.isAudio() || json.containsKey("audioQuality");
 
         if (hasVideo && hasAudio)
-            return new AudioVideoFormat(json, isAdaptive, clientVersion);
+            return new VideoWithAudioFormat(json, isAdaptive, clientVersion);
         else if (hasVideo)
             return new VideoFormat(json, isAdaptive, clientVersion);
         return new AudioFormat(json, isAdaptive, clientVersion);

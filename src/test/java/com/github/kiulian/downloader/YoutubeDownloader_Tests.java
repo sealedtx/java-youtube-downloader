@@ -113,7 +113,7 @@ class YoutubeDownloader_Tests {
         }, "download video sync with specified output file name should work");
 
         assertDoesNotThrow(() -> {
-            RequestVideoDownload request = new RequestVideoDownload(format).saveTo(outDir).renameTo(fileName).overwrite(true);
+            RequestVideoDownload request = new RequestVideoDownload(format).saveTo(outDir).renameTo(fileName).overwriteIfExists(true);
             Response<File> responseFile = downloader.downloadVideo(request);
             assertTrue(responseFile.ok());
 
@@ -152,7 +152,7 @@ class YoutubeDownloader_Tests {
         }, "download video async with specified output file name should work");
 
         assertDoesNotThrow(() -> {
-            RequestVideoDownload request = new RequestVideoDownload(format).renameTo(fileName).overwrite(true).async();
+            RequestVideoDownload request = new RequestVideoDownload(format).renameTo(fileName).overwriteIfExists(true).async();
             Response<File> responseFile = downloader.downloadVideo(request);
 
             assertTimeout(Duration.ofSeconds(5), () -> {
@@ -282,7 +282,7 @@ class YoutubeDownloader_Tests {
             Response<VideoInfo> response = downloader.getVideoInfo(new RequestVideoInfo(N3WPORT_ID));
             assertTrue(response.ok());
             VideoInfo video = response.data();
-            List<SubtitlesInfo> subtitlesInfo = video.subtitles();
+            List<SubtitlesInfo> subtitlesInfo = video.subtitlesInfo();
 
             for (SubtitlesInfo subtitleInfo : subtitlesInfo) {
                 RequestSubtitlesDownload request = new RequestSubtitlesDownload(subtitleInfo)

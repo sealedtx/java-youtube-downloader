@@ -1,5 +1,6 @@
 package com.github.kiulian.downloader;
 
+import com.github.kiulian.downloader.downloader.request.RequestSubtitlesDownload;
 import com.github.kiulian.downloader.downloader.request.RequestSubtitlesInfo;
 import com.github.kiulian.downloader.downloader.request.RequestVideoInfo;
 import com.github.kiulian.downloader.downloader.response.Response;
@@ -27,7 +28,7 @@ public class YoutubeSubtitlesExtractor_Tests {
             assertTrue(response.ok());
             VideoInfo video = response.data();
 
-            List<SubtitlesInfo> subtitlesInfos = video.subtitles();
+            List<SubtitlesInfo> subtitlesInfos = video.subtitlesInfo();
             assertFalse(subtitlesInfos.isEmpty(), "subtitles info should not be empty");
         });
     }
@@ -54,10 +55,10 @@ public class YoutubeSubtitlesExtractor_Tests {
             assertTrue(response.ok());
             List<SubtitlesInfo> subtitlesInfos = response.data();
             for (SubtitlesInfo info : subtitlesInfos) {
-                String downloadUrl = info.getSubtitles().getDownloadUrl();
+                String downloadUrl = new RequestSubtitlesDownload(info).getDownloadUrl();
                 assertEquals(info.getUrl(), downloadUrl, "download url should be equals to info url");
 
-                downloadUrl = info.getSubtitles()
+                downloadUrl = new RequestSubtitlesDownload(info)
                         .formatTo(Extension.JSON3)
                         .getDownloadUrl();
                 assertTrue(downloadUrl.contains("&fmt=" + Extension.JSON3.value()), "download url should contains format query param");

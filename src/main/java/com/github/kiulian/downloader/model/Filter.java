@@ -3,9 +3,6 @@ package com.github.kiulian.downloader.model;
 import java.util.LinkedList;
 import java.util.List;
 
-
-
-
 @FunctionalInterface
 public interface Filter<T> {
 

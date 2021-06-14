@@ -1,6 +1,8 @@
 package com.github.kiulian.downloader;
 
 import com.github.kiulian.downloader.downloader.proxy.ProxyAuthenticator;
+import com.github.kiulian.downloader.downloader.proxy.ProxyCredentials;
+import com.github.kiulian.downloader.downloader.proxy.ProxyCredentialsImpl;
 
 import java.net.InetSocketAddress;
 import java.net.Proxy;
@@ -35,46 +37,52 @@ public class Config {
     private ExecutorService executorService;
     private Proxy proxy;
 
-    public Config() {
+    private Config(Builder builder) {
+        this.headers = builder.headers;
+        this.maxRetries = builder.maxRetries;
+        this.executorService = builder.executorService;
+        this.proxy = builder.proxy;
+    }
+
+    private Config() {
         this.headers = new HashMap<>();
         this.maxRetries = DEFAULT_RETRY_ON_FAILURE;
         this.executorService = Executors.newCachedThreadPool(threadFactory);
 
-        header("User-Agent", DEFAULT_USER_AGENT);
-        header("Accept-language", DEFAULT_ACCEPT_LANG);
+        setHeader("User-Agent", DEFAULT_USER_AGENT);
+        setHeader("Accept-language", DEFAULT_ACCEPT_LANG);
     }
 
-    public Config maxRetries(int maxRetries) {
+    static Config buildDefault() {
+        return new Config();
+    }
+
+    public void setMaxRetries(int maxRetries) {
         this.maxRetries = maxRetries;
-        return this;
     }
 
-    public Config header(String key, String value) {
+    public void setHeader(String key, String value) {
         headers.put(key, value);
-        return this;
     }
 
-    public Config proxy(String host, int port) {
+    public void setProxy(String host, int port) {
         proxy = new Proxy(Proxy.Type.HTTP, new InetSocketAddress(host, port));
-        return this;
     }
 
-    public Config proxy(String host, int port, String userName, String password) {
-        if (ProxyAuthenticator.getAuthenticator() == null) {
-            throw new NullPointerException("ProxyAuthenticator is not inited. Use ProxyAuthenticator.setProxyAuthenticator() if you need proxy authentication");
+    public void setProxy(String host, int port, String userName, String password) {
+        if (ProxyAuthenticator.getDefault() == null) {
+            ProxyAuthenticator.setDefault(new ProxyAuthenticator(new ProxyCredentialsImpl()));
         }
         proxy = new Proxy(Proxy.Type.HTTP, new InetSocketAddress(host, port));
         ProxyAuthenticator.addAuthentication(host, port, userName, password);
-        return this;
     }
 
-    public Config executorService(ExecutorService executorService) {
+    public void setExecutorService(ExecutorService executorService) {
         this.executorService = executorService;
-        return this;
     }
 
-    public void proxyAuthenticator(ProxyAuthenticator authenticator) {
-        ProxyAuthenticator.setDefault(authenticator);
+    public void setProxyAuthenticator(ProxyCredentials credentials) {
+        ProxyAuthenticator.setDefault(new ProxyAuthenticator(credentials));
     }
 
     public ExecutorService getExecutorService() {
@@ -92,4 +100,54 @@ public class Config {
     public Map<String, String> getHeaders() {
         return headers;
     }
+
+    public static class Builder {
+        private Map<String, String> headers = new HashMap<>();
+        private int maxRetries = DEFAULT_RETRY_ON_FAILURE;
+        private ExecutorService executorService;
+        private Proxy proxy;
+
+        public Builder maxRetries(int maxRetries) {
+            this.maxRetries = maxRetries;
+            return this;
+        }
+
+        public Builder header(String key, String value) {
+            headers.put(key, value);
+            return this;
+        }
+
+        public Builder proxy(String host, int port) {
+            proxy = new Proxy(Proxy.Type.HTTP, new InetSocketAddress(host, port));
+            return this;
+        }
+
+        public Builder proxy(String host, int port, String userName, String password) {
+            if (ProxyAuthenticator.getDefault() == null) {
+                ProxyAuthenticator.setDefault(new ProxyAuthenticator(new ProxyCredentialsImpl()));
+            }
+            proxy = new Proxy(Proxy.Type.HTTP, new InetSocketAddress(host, port));
+            ProxyAuthenticator.addAuthentication(host, port, userName, password);
+            return this;
+        }
+
+        public Builder executorService(ExecutorService executorService) {
+            this.executorService = executorService;
+            return this;
+        }
+
+        public Builder proxyCredentialsManager(ProxyCredentials credentials) {
+            ProxyAuthenticator.setDefault(new ProxyAuthenticator(credentials));
+            return this;
+        }
+
+        public Config build() {
+            if (executorService == null) {
+                executorService = Executors.newCachedThreadPool(threadFactory);
+            }
+            return new Config(this);
+        }
+
+    }
+
 }
