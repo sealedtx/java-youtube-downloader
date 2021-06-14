@@ -14,7 +14,7 @@ Library is **not stable**, because Youtube often changes web structure of its pa
 Usage
 -------
 
-#### Configuration
+### Configuration
 ```java
 // init downloader with default config
 YoutubeDownloader downloader = new YoutubeDownloader();
