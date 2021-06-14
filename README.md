@@ -14,8 +14,8 @@ Library is **not stable**, because Youtube often changes web structure of its pa
 Usage
 -------
 
+#### Configuration
 ```java
-// ------ INIT DOWNLOADER --------
 // init downloader with default config
 YoutubeDownloader downloader = new YoutubeDownloader();
 // or with custom config
@@ -32,17 +32,46 @@ YoutubeDownloader downloader = new YoutubeDownloader(config);
 // or configure after init
 Config config = downloader.getConfig();
 config.setMaxRetries(0);
+```
 
-// ------ REQUESTS --------
-// each request accepts optional params that will override global config settings for current reequest
+### Requests
+```java
+// each request accepts optional params that will override global configuration
 Request request = new Request(...)
         .maxRetries(...) 
         .proxy(...) 
         .header(...)
         .callback(...) // add callback for async processing
-        .async(); // make request async     
+        .async(); // make request async
+```
 
-// ------ VIDEO INFO --------
+### Response
+```java
+Response<T> response = downloader.get...(request)
+
+// get response status one of [downloading, completed, canceled, error]
+ResponseStatus status = response.status();
+
+// get reponse data 
+// NOTE: will block current thread until completion if request is async        
+T data = response.data(); 
+// or get with timeout, may throw TimeoutException
+T data = response.data(1, TimeUnit.SECONDS);
+
+// cancel if request is async
+boolean canceled = response.cancel();        
+
+// get response error if request finished exceptionally
+// NOTE: will block current thread until completion if request is async        
+Throwable error = response.error();
+
+// check if request finished successfully
+// NOTE: will block current thread until completion if request is async        
+boolean ok = response.ok();
+```
+
+### VideoInfo
+```java
 String videoId = "abc12345"; // for url https://www.youtube.com/watch?v=abc12345
 
 // sync parsing
@@ -73,6 +102,11 @@ System.out.println(details.title());
 System.out.println(details.viewCount());
 details.thumbnails().forEach(image -> System.out.println("Thumbnail: " + image));
 
+// HLS url only for live videos and streams
+if (video.details().isLive()) {
+    System.out.println("Live Stream HLS URL: " + video.details().liveUrl());
+}
+        
 // get videos formats only with audio
 List<VideoWithAudioFormat> videoWithAudioFormats = video.videoWithAudioFormats();
 videoWithAudioFormats.forEach(it -> {
@@ -109,7 +143,10 @@ Format formatByItag = video.findFormatByItag(18); // return null if not found
 if (formatByItag != null) {
     System.out.println(formatByItag.url());
 }
+```
 
+### Downloading video
+```java
 File outputDir = new File("my_videos");
 Format format = videoFormats.get(0);
 
@@ -151,12 +188,10 @@ File data = response.data(20, TimeUnit.SECONDS); // will block current thread an
 
 // cancel downloading
 response.cancel();
+```
 
-// live videos and streams
-if (video.details().isLive()) {
-    System.out.println("Live Stream HLS URL: " + video.details().liveUrl());
-}
-
+### Subtitles
+```java
 // ------ SUBTITLES --------
 // you can get subtitles from video captions if you have already parsed video info
 List<SubtitlesInfo> subtitlesInfo = video.subtitles(); // NOTE: includes auto-generated
@@ -183,8 +218,10 @@ for (SubtitlesInfo info : subtitles) {
     // to download using external download manager
     String downloadUrl = request.getDownloadUrl();
 }
+```
 
-// ------ PLAYLISTS --------
+### Playlists
+```java
 String playlistId = "abc12345"; // for url https://www.youtube.com/playlist?list=abc12345
 RequestPlaylistInfo request = new RequestPlaylistInfo(playlistId);
 Response<PlaylistInfo> response = downloader.getPlaylistInfo(request);
@@ -200,9 +237,15 @@ PlaylistVideoDetails videoDetails = playlistInfo.videos().get(0);
 System.out.println(videoDetails.videoId());
 System.out.println(videoDetails.title());
 System.out.println(videoDetails.index());
+```
 
-// ------ CHANNEL UPLOADS --------
-Response<PlaylistInfo> response = downloader.getChannelUploads(new RequestChannelUploads(channelId));
+### Channel uploads
+```java
+String channelId = "abc12345";  // for url https://www.youtube.com/channel/abc12345
+// or 
+String channelId = "someName";  // for url https://www.youtube.com/c/someName
+RequestChannelUploads request = new RequestChannelUploads(channelId);
+Response<PlaylistInfo> response = downloader.getChannelUploads(request);
 PlaylistInfo playlistInfo = response.data();
 ```
 
