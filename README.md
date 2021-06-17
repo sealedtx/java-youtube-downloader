@@ -34,7 +34,7 @@ Config config = downloader.getConfig();
 config.setMaxRetries(0);
 ```
 
-### Requests
+### Request
 ```java
 // each request accepts optional params that will override global configuration
 Request request = new Request(...)
@@ -267,7 +267,7 @@ Include
 <dependency>
   <groupId>com.github.sealedtx</groupId>
   <artifactId>java-youtube-downloader</artifactId>
-  <version>2.5.2</version>
+  <version>3.0.0</version>
 </dependency>
 ```
 
@@ -283,7 +283,7 @@ allprojects {
 ```
 ```gradle 
 dependencies {
-  implementation 'com.github.sealedtx:java-youtube-downloader:2.5.2'
+  implementation 'com.github.sealedtx:java-youtube-downloader:3.0.0'
 }
 ```
 ### Android
