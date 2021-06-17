@@ -1,17 +1,19 @@
-package com.github.kiulian.downloader.model.formats;
+package com.github.kiulian.downloader.model.videos.formats;
+
+
 
 
 import com.alibaba.fastjson.JSONObject;
-import com.github.kiulian.downloader.model.quality.AudioQuality;
+import com.github.kiulian.downloader.model.videos.quality.AudioQuality;
 
-public class AudioFormat extends Format {
+public class VideoWithAudioFormat extends VideoFormat {
 
     private final Integer averageBitrate;
     private final Integer audioSampleRate;
     private final AudioQuality audioQuality;
 
-    public AudioFormat(JSONObject json, boolean isAdaptive) {
-        super(json, isAdaptive);
+    public VideoWithAudioFormat(JSONObject json, boolean isAdaptive, String clientVersion) {
+        super(json, isAdaptive, clientVersion);
         audioSampleRate = json.getInteger("audioSampleRate");
         averageBitrate = json.getInteger("averageBitrate");
 
@@ -29,7 +31,7 @@ public class AudioFormat extends Format {
 
     @Override
     public String type() {
-        return AUDIO;
+        return AUDIO_VIDEO;
     }
 
     public Integer averageBitrate() {
@@ -43,4 +45,5 @@ public class AudioFormat extends Format {
     public Integer audioSampleRate() {
         return audioSampleRate;
     }
+
 }

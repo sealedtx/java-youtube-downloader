@@ -1,91 +1,89 @@
 package com.github.kiulian.downloader;
 
 
-import com.alibaba.fastjson.JSONObject;
-import com.github.kiulian.downloader.cipher.CipherFunction;
-import com.github.kiulian.downloader.model.VideoDetails;
-import com.github.kiulian.downloader.model.YoutubeVideo;
-import com.github.kiulian.downloader.model.formats.Format;
-import com.github.kiulian.downloader.model.playlist.PlaylistDetails;
-import com.github.kiulian.downloader.model.playlist.PlaylistVideoDetails;
-import com.github.kiulian.downloader.model.playlist.YoutubePlaylist;
+
+
+import com.github.kiulian.downloader.cipher.CachedCipherFactory;
+import com.github.kiulian.downloader.downloader.*;
+import com.github.kiulian.downloader.downloader.request.*;
+import com.github.kiulian.downloader.downloader.response.Response;
+import com.github.kiulian.downloader.downloader.response.ResponseImpl;
+import com.github.kiulian.downloader.extractor.ExtractorImpl;
+import com.github.kiulian.downloader.model.videos.VideoInfo;
+import com.github.kiulian.downloader.model.playlist.PlaylistInfo;
 import com.github.kiulian.downloader.model.subtitles.SubtitlesInfo;
-import com.github.kiulian.downloader.parser.DefaultParser;
+import com.github.kiulian.downloader.parser.ParserImpl;
 import com.github.kiulian.downloader.parser.Parser;
 
-import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.net.URL;
 import java.util.List;
-import java.util.Scanner;
+
+import static com.github.kiulian.downloader.model.Utils.createOutDir;
 
 public class YoutubeDownloader {
 
-    private Parser parser;
+    private final Config config;
+    private final Downloader downloader;
+    private final Parser parser;
 
     public YoutubeDownloader() {
-        this.parser = new DefaultParser();
+        this(Config.buildDefault());
     }
 
-    public YoutubeDownloader(Parser parser) {
+    public YoutubeDownloader(Config config) {
+        this.config = config;
+        this.downloader = new DownloaderImpl(config);
+        this.parser = new ParserImpl(config, downloader, new ExtractorImpl(downloader), new CachedCipherFactory(downloader));
+    }
+
+    public YoutubeDownloader(Config config, Downloader downloader) {
+        this(config, downloader, new ParserImpl(config, downloader, new ExtractorImpl(downloader), new CachedCipherFactory(downloader)));
+    }
+
+    public YoutubeDownloader(Config config, Downloader downloader, Parser parser) {
+        this.config = config;
         this.parser = parser;
+        this.downloader = downloader;
     }
 
-    public void setParserRequestProperty(String key, String value) {
-        parser.getExtractor().setRequestProperty(key, value);
+    public Config getConfig() {
+        return config;
     }
 
-    public void setParserRetryOnFailure(int retryOnFailure) {
-        parser.getExtractor().setRetryOnFailure(retryOnFailure);
+    public Response<VideoInfo> getVideoInfo(RequestVideoInfo request) {
+        return parser.parseVideo(request);
     }
 
-    public void addCipherFunctionPattern(int priority, String regex) {
-        parser.getCipherFactory().addInitialFunctionPattern(priority, regex);
+    public Response<List<SubtitlesInfo>> getSubtitlesInfo(RequestSubtitlesInfo request) {
+        return parser.parseSubtitlesInfo(request);
     }
 
-    public void addCipherFunctionEquivalent(String regex, CipherFunction function) {
-        parser.getCipherFactory().addFunctionEquivalent(regex, function);
+    public Response<PlaylistInfo> getChannelUploads(RequestChannelUploads request) {
+        return parser.parseChannelsUploads(request);
     }
 
-    public YoutubeVideo getVideo(String videoId) throws YoutubeException {
-        String htmlUrl = "https://www.youtube.com/watch?v=" + videoId;
-
-        JSONObject ytPlayerConfig = parser.getPlayerConfig(htmlUrl);
-        ytPlayerConfig.put("yt-downloader-videoId", videoId);
-
-        VideoDetails videoDetails = parser.getVideoDetails(ytPlayerConfig);
-
-        List<Format> formats = parser.parseFormats(ytPlayerConfig);
-
-        List<SubtitlesInfo> subtitlesInfo = parser.getSubtitlesInfoFromCaptions(ytPlayerConfig);
-
-        String clientVersion = parser.getClientVersion(ytPlayerConfig);
-
-        return new YoutubeVideo(videoDetails, formats, subtitlesInfo, clientVersion);
+    public Response<PlaylistInfo> getPlaylistInfo(RequestPlaylistInfo request) {
+        return parser.parsePlaylist(request);
     }
 
-    public YoutubePlaylist getPlaylist(String playlistId) throws YoutubeException {
-        String htmlUrl = "https://www.youtube.com/playlist?list=" + playlistId;
-
-        JSONObject ytInitialData = parser.getInitialData(htmlUrl);
-        if (!ytInitialData.containsKey("metadata")) {
-            throw new YoutubeException.BadPageException("Invalid initial data json");
+    public Response<File> downloadVideoFile(RequestVideoFileDownload request) {
+        File outDir = request.getOutputDirectory();
+        try {
+            createOutDir(outDir);
+        } catch (IOException e) {
+            return ResponseImpl.error(e);
         }
 
-        PlaylistDetails playlistDetails = parser.getPlaylistDetails(playlistId, ytInitialData);
-
-        List<PlaylistVideoDetails> videos = parser.getPlaylistVideos(ytInitialData, playlistDetails.videoCount());
-
-        return new YoutubePlaylist(playlistDetails, videos);
+        return downloader.downloadVideoAsFile(request);
     }
 
-    public YoutubePlaylist getChannelUploads(String channelId) throws YoutubeException {
-        String playlistId = parser.getChannelUploadsPlaylistId(channelId);
-        return getPlaylist(playlistId);
+    public Response<Void> downloadVideoStream(RequestVideoStreamDownload request) {
+        return downloader.downloadVideoAsStream(request);
     }
 
-    public List<SubtitlesInfo> getVideoSubtitles(String videoId) throws YoutubeException {
-        return parser.getSubtitlesInfo(videoId);
+    public Response<String> downloadSubtitle(RequestWebpage request) {
+        return downloader.downloadWebpage(request);
     }
+
 }

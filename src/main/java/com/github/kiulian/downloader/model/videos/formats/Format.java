@@ -1,9 +1,10 @@
-package com.github.kiulian.downloader.model.formats;
+package com.github.kiulian.downloader.model.videos.formats;
+
+
 
 
 import com.alibaba.fastjson.JSONObject;
 import com.github.kiulian.downloader.model.Extension;
-import com.github.kiulian.downloader.model.Itag;
 
 public abstract class Format {
 
@@ -21,9 +22,11 @@ public abstract class Format {
     protected final Long contentLength;
     protected final Long lastModified;
     protected final Long approxDurationMs;
+    protected final String clientVersion;
 
-    protected Format(JSONObject json, boolean isAdaptive) {
+    protected Format(JSONObject json, boolean isAdaptive, String clientVersion) {
         this.isAdaptive = isAdaptive;
+        this.clientVersion = clientVersion;
 
         Itag itag;
         try {
@@ -67,6 +70,10 @@ public abstract class Format {
 
     public boolean isAdaptive() {
         return isAdaptive;
+    }
+
+    public String clientVersion() {
+        return clientVersion;
     }
 
     public Itag itag() {

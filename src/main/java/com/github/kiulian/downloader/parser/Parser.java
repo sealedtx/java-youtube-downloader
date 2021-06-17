@@ -1,48 +1,31 @@
 package com.github.kiulian.downloader.parser;
 
 
-import com.alibaba.fastjson.JSONObject;
-import com.github.kiulian.downloader.YoutubeException;
-import com.github.kiulian.downloader.cipher.CipherFactory;
-import com.github.kiulian.downloader.extractor.Extractor;
-import com.github.kiulian.downloader.model.VideoDetails;
-import com.github.kiulian.downloader.model.formats.Format;
-import com.github.kiulian.downloader.model.playlist.PlaylistDetails;
-import com.github.kiulian.downloader.model.playlist.PlaylistVideoDetails;
+import com.github.kiulian.downloader.downloader.request.RequestChannelUploads;
+import com.github.kiulian.downloader.downloader.request.RequestPlaylistInfo;
+import com.github.kiulian.downloader.downloader.request.RequestSubtitlesInfo;
+import com.github.kiulian.downloader.downloader.request.RequestVideoInfo;
+import com.github.kiulian.downloader.downloader.response.Response;
+import com.github.kiulian.downloader.model.videos.VideoInfo;
+import com.github.kiulian.downloader.model.playlist.PlaylistInfo;
 import com.github.kiulian.downloader.model.subtitles.SubtitlesInfo;
 
-import java.io.IOException;
 import java.util.List;
 
 public interface Parser {
 
-    Extractor getExtractor();
-
-    CipherFactory getCipherFactory();
-
     /* Video */
 
-    JSONObject getPlayerConfig(String htmlUrl) throws YoutubeException;
-
-    String getClientVersion(JSONObject config);
-
-    VideoDetails getVideoDetails(JSONObject config);
-
-    String getJsUrl(JSONObject config) throws YoutubeException;
-
-    List<SubtitlesInfo> getSubtitlesInfoFromCaptions(JSONObject config);
-
-    List<SubtitlesInfo> getSubtitlesInfo(String videoId) throws YoutubeException;
-
-    List<Format> parseFormats(JSONObject json) throws YoutubeException;
+    Response<VideoInfo> parseVideo(RequestVideoInfo request);
 
     /* Playlist */
 
-    JSONObject getInitialData(String htmlUrl) throws YoutubeException;
+    Response<PlaylistInfo> parsePlaylist(RequestPlaylistInfo request);
 
-    PlaylistDetails getPlaylistDetails(String playlistId, JSONObject initialData);
+    /* Channel uploads */
+    Response<PlaylistInfo> parseChannelsUploads(RequestChannelUploads request);
 
-    List<PlaylistVideoDetails> getPlaylistVideos(JSONObject initialData, int videoCount) throws YoutubeException;
+    /* Subtitles */
 
-    String getChannelUploadsPlaylistId(String channelId) throws YoutubeException;
+    Response<List<SubtitlesInfo>> parseSubtitlesInfo(RequestSubtitlesInfo request);
 }

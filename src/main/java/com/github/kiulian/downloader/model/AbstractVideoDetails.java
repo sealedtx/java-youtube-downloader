@@ -6,11 +6,10 @@ import java.util.List;
 
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
-import com.github.kiulian.downloader.YoutubeException.DownloadUnavailableException;
 
 public abstract class AbstractVideoDetails {
 
-    private String videoId;
+    protected String videoId;
     private int lengthSeconds;
     private List<String> thumbnails;
 
@@ -19,7 +18,9 @@ public abstract class AbstractVideoDetails {
     protected String author;
     protected boolean isLive;
 
-    protected abstract void checkDownload() throws DownloadUnavailableException;
+    protected boolean isDownloadable() {
+        return (!isLive() && lengthSeconds() != 0);
+    }
 
     public AbstractVideoDetails() {
     }

@@ -2,7 +2,9 @@ package com.github.kiulian.downloader.cipher;
 
 
 import com.github.kiulian.downloader.YoutubeException;
-import com.github.kiulian.downloader.extractor.Extractor;
+import com.github.kiulian.downloader.downloader.Downloader;
+import com.github.kiulian.downloader.downloader.request.RequestWebpage;
+import com.github.kiulian.downloader.downloader.response.Response;
 
 import java.util.*;
 import java.util.regex.Matcher;
@@ -35,14 +37,14 @@ public class CachedCipherFactory implements CipherFactory {
             Pattern.compile("\\w+\\[(\\\"\\w+\\\")\\]\\(\\w,(\\d+)\\)")
     };
 
-    private Extractor extractor;
+    private Downloader downloader;
 
     private List<Pattern> knownInitialFunctionPatterns = new ArrayList<>();
     private Map<Pattern, CipherFunction> functionsEquivalentMap = new HashMap<>();
     private Map<String, Cipher> ciphers = new HashMap<>();
 
-    public CachedCipherFactory(Extractor extractor) {
-        this.extractor = extractor;
+    public CachedCipherFactory(Downloader downloader) {
+        this.downloader = downloader;
 
         for (String pattern : INITIAL_FUNCTION_PATTERNS) {
             addInitialFunctionPattern(knownInitialFunctionPatterns.size(), pattern);
@@ -72,7 +74,11 @@ public class CachedCipherFactory implements CipherFactory {
         Cipher cipher = ciphers.get(jsUrl);
 
         if (cipher == null) {
-            String js = extractor.loadUrl(jsUrl);
+            Response<String> response = downloader.downloadWebpage(new RequestWebpage(jsUrl));
+            if (!response.ok()) {
+                throw new YoutubeException.DownloadException(String.format("Could not load url: %s, exception: %s", jsUrl, response.error().getMessage()));
+            }
+            String js = response.data();
 
             List<JsFunction> transformFunctions = getTransformFunctions(js);
             String var = transformFunctions.get(0).getVar();

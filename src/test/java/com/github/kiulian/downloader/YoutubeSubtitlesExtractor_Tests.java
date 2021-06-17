@@ -1,8 +1,12 @@
 package com.github.kiulian.downloader;
 
+import com.github.kiulian.downloader.downloader.request.RequestSubtitlesDownload;
+import com.github.kiulian.downloader.downloader.request.RequestSubtitlesInfo;
+import com.github.kiulian.downloader.downloader.request.RequestVideoInfo;
+import com.github.kiulian.downloader.downloader.response.Response;
 import com.github.kiulian.downloader.model.Extension;
-import com.github.kiulian.downloader.model.YoutubeVideo;
 import com.github.kiulian.downloader.model.subtitles.SubtitlesInfo;
+import com.github.kiulian.downloader.model.videos.VideoInfo;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -20,9 +24,11 @@ public class YoutubeSubtitlesExtractor_Tests {
         YoutubeDownloader downloader = new YoutubeDownloader();
 
         assertDoesNotThrow(() -> {
-            YoutubeVideo video = downloader.getVideo(N3WPORT_ID);
+            Response<VideoInfo> response = downloader.getVideoInfo(new RequestVideoInfo(N3WPORT_ID));
+            assertTrue(response.ok());
+            VideoInfo video = response.data();
 
-            List<SubtitlesInfo> subtitlesInfos = video.subtitles();
+            List<SubtitlesInfo> subtitlesInfos = video.subtitlesInfo();
             assertFalse(subtitlesInfos.isEmpty(), "subtitles info should not be empty");
         });
     }
@@ -33,7 +39,9 @@ public class YoutubeSubtitlesExtractor_Tests {
         YoutubeDownloader downloader = new YoutubeDownloader();
 
         assertDoesNotThrow(() -> {
-            List<SubtitlesInfo> subtitlesInfos = downloader.getVideoSubtitles(N3WPORT_ID);
+            Response<List<SubtitlesInfo>> response = downloader.getSubtitlesInfo(new RequestSubtitlesInfo(N3WPORT_ID));
+            assertTrue(response.ok());
+            List<SubtitlesInfo> subtitlesInfos = response.data();
             assertFalse(subtitlesInfos.isEmpty(), "subtitles info should not be empty");
         });
     }
@@ -43,12 +51,14 @@ public class YoutubeSubtitlesExtractor_Tests {
     void getDownloadUrl_Success() {
         YoutubeDownloader downloader = new YoutubeDownloader();
         assertDoesNotThrow(() -> {
-            List<SubtitlesInfo> subtitlesInfos = downloader.getVideoSubtitles(N3WPORT_ID);
+            Response<List<SubtitlesInfo>> response = downloader.getSubtitlesInfo(new RequestSubtitlesInfo(N3WPORT_ID));
+            assertTrue(response.ok());
+            List<SubtitlesInfo> subtitlesInfos = response.data();
             for (SubtitlesInfo info : subtitlesInfos) {
-                String downloadUrl = info.getSubtitles().getDownloadUrl();
+                String downloadUrl = new RequestSubtitlesDownload(info).getDownloadUrl();
                 assertEquals(info.getUrl(), downloadUrl, "download url should be equals to info url");
 
-                downloadUrl = info.getSubtitles()
+                downloadUrl = new RequestSubtitlesDownload(info)
                         .formatTo(Extension.JSON3)
                         .getDownloadUrl();
                 assertTrue(downloadUrl.contains("&fmt=" + Extension.JSON3.value()), "download url should contains format query param");

@@ -5,12 +5,20 @@ import static org.junit.jupiter.api.Assertions.*;
 import java.io.*;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.net.Proxy;
+import java.util.Map;
 
+import com.github.kiulian.downloader.downloader.Downloader;
+import com.github.kiulian.downloader.downloader.DownloaderImpl;
+import com.github.kiulian.downloader.downloader.YoutubeProgressCallback;
+import com.github.kiulian.downloader.downloader.request.RequestVideoInfo;
+import com.github.kiulian.downloader.downloader.response.Response;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.Test;
 
-import com.github.kiulian.downloader.model.YoutubeVideo;
-import com.github.kiulian.downloader.model.formats.Format;
+import com.github.kiulian.downloader.model.videos.VideoInfo;
+import com.github.kiulian.downloader.model.videos.formats.Format;
+import org.junit.jupiter.api.Test;
 
 public class YoutubeDownloadSpeed_Tests extends TestUtils {
     private static final File outDir = new File("videos");
@@ -19,7 +27,7 @@ public class YoutubeDownloadSpeed_Tests extends TestUtils {
     private static final String ZOOM_OUT_ID = "DgqAAE9Aagc";
 
     // Make download pauses obvious
-    private static final OnYoutubeDownloadListener listener = new OnYoutubeDownloadListener() {
+    private static final YoutubeProgressCallback<File> listener = new YoutubeProgressCallback<File>() {
 
         @Override
         public void onFinished(File file) {}
@@ -33,21 +41,29 @@ public class YoutubeDownloadSpeed_Tests extends TestUtils {
         }
     };
 
-    protected YoutubeDownloader downloader;
+    protected DownloaderImpl downloader;
+    protected YoutubeDownloader youtubeDownloader;
     private static Method straightMethod;
     private static Method byPartMethod;
 
     @BeforeAll
     static void initReflectMethods() throws NoSuchMethodException, SecurityException {
-        straightMethod = YoutubeVideo.class.getDeclaredMethod("downloadStraight", Format.class, OutputStream.class, OnYoutubeDownloadListener.class);
-        straightMethod.setAccessible(true);
-        byPartMethod = YoutubeVideo.class.getDeclaredMethod("downloadByPart", Format.class, OutputStream.class, OnYoutubeDownloadListener.class);
-        byPartMethod.setAccessible(true);
+        for (Method declaredMethod : DownloaderImpl.class.getDeclaredMethods()) {
+            if (declaredMethod.getName().equals("downloadStraight")) {
+                straightMethod = declaredMethod;
+                declaredMethod.setAccessible(true);
+            } else if (declaredMethod.getName().equals("downloadByPart")){
+                byPartMethod = declaredMethod;
+                declaredMethod.setAccessible(true);
+            }
+        }
     }
 
     @BeforeEach
     void initDownloader() {
-        this.downloader = new YoutubeDownloader();
+        final Config config = Config.buildDefault();
+        this.downloader = new DownloaderImpl(config);
+        this.youtubeDownloader = new YoutubeDownloader(config, downloader);
         if (!outDir.isDirectory()) {
             outDir.mkdirs();
         }
@@ -65,25 +81,26 @@ public class YoutubeDownloadSpeed_Tests extends TestUtils {
     void downloadSpeed_Success() {
         
         assertDoesNotThrow(() -> {
-            YoutubeVideo video = downloader.getVideo(ZOOM_OUT_ID);
-            testSpeed(video, 18);
-            testSpeed(video, 135);
+            Response<VideoInfo> response = youtubeDownloader.getVideoInfo(new RequestVideoInfo(ZOOM_OUT_ID));
+            VideoInfo video = response.data();
+            testSpeed(downloader, video, 18);
+            testSpeed(downloader, video, 135);
         });
     }
 
-    private static void testSpeed(YoutubeVideo video, int itag) {
+    private static void testSpeed(DownloaderImpl downloader, VideoInfo video, int itag) {
         final Format format = video.findFormatByItag(itag);
         assertNotNull(format, "findFormatByItag should return not null format");
         
         assertDoesNotThrow(() -> {
-            
+            String title = video.details().title();
             long straightTime = System.currentTimeMillis();
-            File straightFile = download(video, format, false);
+            File straightFile = download(downloader, title, format, false);
             straightTime = System.currentTimeMillis() - straightTime;
             System.out.println(" " + straightTime + "ms");
             
             long byPartTime = System.currentTimeMillis();
-            File byPartFile = download(video, format, true);
+            File byPartFile = download(downloader, title, format, true);
             byPartTime = System.currentTimeMillis() - byPartTime;
             System.out.println(" " + byPartTime + "ms");
             
@@ -101,12 +118,12 @@ public class YoutubeDownloadSpeed_Tests extends TestUtils {
         });
     }
 
-    private static File download(YoutubeVideo video, Format format, boolean isByPart) throws IOException, YoutubeException {
+    private static File download(DownloaderImpl downloader, String title, Format format, boolean isByPart) throws IOException, YoutubeException {
         System.out.print(isByPart ? "By part " : "Straight");
-        File outputFile = new File(outDir, video.details().title() + "_" + (isByPart ? "bypart" : "straight") + format.itag().id() + "." + format.extension().value());
+        File outputFile = new File(outDir, title + "_" + (isByPart ? "bypart" : "straight") + format.itag().id() + "." + format.extension().value());
         try (OutputStream os = new FileOutputStream(outputFile)) {
             Method method = isByPart ? byPartMethod : straightMethod;
-            method.invoke(video, format, os, listener);
+            method.invoke(downloader, format, os, null, null, listener);
             listener.onFinished(outputFile);
             return outputFile;
         } catch (SecurityException | IllegalAccessException | IllegalArgumentException e) {

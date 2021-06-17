@@ -1,8 +1,10 @@
-package com.github.kiulian.downloader.model.formats;
+package com.github.kiulian.downloader.model.videos.formats;
+
+
 
 
 import com.alibaba.fastjson.JSONObject;
-import com.github.kiulian.downloader.model.quality.VideoQuality;
+import com.github.kiulian.downloader.model.videos.quality.VideoQuality;
 
 public class VideoFormat extends Format {
 
@@ -12,8 +14,8 @@ public class VideoFormat extends Format {
     private final Integer height;
     private final VideoQuality videoQuality;
 
-    public VideoFormat(JSONObject json, boolean isAdaptive) {
-        super(json, isAdaptive);
+    public VideoFormat(JSONObject json, boolean isAdaptive, String clientVersion) {
+        super(json, isAdaptive, clientVersion);
         fps = json.getInteger("fps");
         qualityLabel = json.getString("qualityLabel");
         if (json.containsKey("size")) {

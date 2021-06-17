@@ -2,11 +2,13 @@ package com.github.kiulian.downloader;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.github.kiulian.downloader.downloader.request.RequestPlaylistInfo;
+import com.github.kiulian.downloader.downloader.response.Response;
 import org.junit.jupiter.api.BeforeEach;
 
 import com.github.kiulian.downloader.model.playlist.PlaylistDetails;
 import com.github.kiulian.downloader.model.playlist.PlaylistVideoDetails;
-import com.github.kiulian.downloader.model.playlist.YoutubePlaylist;
+import com.github.kiulian.downloader.model.playlist.PlaylistInfo;
 
 public abstract class YoutubePlaylistTest extends TestUtils {
 
@@ -32,8 +34,11 @@ public abstract class YoutubePlaylistTest extends TestUtils {
         this.downloader = new YoutubeDownloader();
     }
 
-    protected YoutubePlaylist getPlaylist(String playlistId) throws YoutubeException {
-        YoutubePlaylist playlist = downloader.getPlaylist(playlistId);
+    protected PlaylistInfo getPlaylist(String playlistId) {
+        Response<PlaylistInfo> response = downloader.getPlaylistInfo(new RequestPlaylistInfo(playlistId));
+        assertTrue(response.ok());
+        PlaylistInfo playlist = response.data();
+
         PlaylistDetails details = playlist.details();
         assertNotNull(details, "playlist details should not be null: " + playlistId);
         assertEquals(playlistId, details.playlistId(), "playlistId should be " + playlistId);
@@ -42,7 +47,7 @@ public abstract class YoutubePlaylistTest extends TestUtils {
         return playlist;
     }
 
-    protected static PlaylistVideoDetails getVideo(YoutubePlaylist playlist, int index) {
+    protected static PlaylistVideoDetails getVideo(PlaylistInfo playlist, int index) {
         try {
             PlaylistVideoDetails videoDetails = playlist.videos().get(index - 1);
             assertNotNull(videoDetails, "video at index " + index + " should not be null video");

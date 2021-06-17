@@ -1,35 +1,32 @@
-package com.github.kiulian.downloader.model.subtitles;
-
-
+package com.github.kiulian.downloader.downloader.request;
 
 import com.github.kiulian.downloader.model.Extension;
+import com.github.kiulian.downloader.model.subtitles.SubtitlesInfo;
 
+public class RequestSubtitlesDownload extends RequestWebpage {
 
-public class Subtitles {
-
-    private final String url;
-    private final boolean fromCaptions;
     private Extension format;
     private String translationLanguage;
+    private boolean fromCaptions;
 
-    Subtitles(String url, boolean fromCaptions) {
-        this.url = url;
-        this.fromCaptions = fromCaptions;
+    public RequestSubtitlesDownload(SubtitlesInfo subtitlesInfo) {
+        super(subtitlesInfo.getUrl());
+        this.fromCaptions = subtitlesInfo.isFromCaptions();
     }
 
-    public Subtitles formatTo(Extension extension) {
+    public RequestSubtitlesDownload formatTo(Extension extension) {
         this.format = extension;
         return this;
     }
 
-    public Subtitles translateTo(String language) {
-        // currently translation is supported only for subtitles from captions
+    public RequestSubtitlesDownload translateTo(String language) {
         if (fromCaptions) {
             this.translationLanguage = language;
         }
         return this;
     }
 
+    @Override
     public String getDownloadUrl() {
         String downloadUrl = url;
         if (format != null && format.isSubtitle()) {

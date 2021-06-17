@@ -5,12 +5,12 @@ import java.util.List;
 
 import com.github.kiulian.downloader.model.Filter;
 
-public class YoutubePlaylist {
+public class PlaylistInfo {
 
     private PlaylistDetails details;
     private List<PlaylistVideoDetails> videos;
 
-    public YoutubePlaylist(PlaylistDetails details, List<PlaylistVideoDetails> videos) {
+    public PlaylistInfo(PlaylistDetails details, List<PlaylistVideoDetails> videos) {
         this.details = details;
         this.videos = videos;
     }

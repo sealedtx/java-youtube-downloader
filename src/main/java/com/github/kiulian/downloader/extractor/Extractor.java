@@ -1,21 +1,25 @@
 package com.github.kiulian.downloader.extractor;
 
 
+
+
+import com.alibaba.fastjson.JSONObject;
 import com.github.kiulian.downloader.YoutubeException;
 
+import java.util.List;
 
 public interface Extractor {
 
-    void setRequestProperty(String key, String value);
+    JSONObject extractInitialDataFromHtml(String html) throws YoutubeException;
 
-    void setRetryOnFailure(int retryOnFailure);
+    JSONObject extractPlayerConfigFromHtml(String html) throws YoutubeException;
 
-    String extractYtPlayerConfig(String html) throws YoutubeException;
+    List<String> extractSubtitlesLanguagesFromXml(String xml) throws YoutubeException;
 
-    String extractYtInitialData(String html) throws YoutubeException;
+    String extractJsUrlFromConfig(JSONObject config, String videoId) throws YoutubeException;
 
-    String loadUrl(String url) throws YoutubeException;
+    String extractClientVersionFromContext(JSONObject context);
 
-    String loadUrl(String url, String data, String method) throws YoutubeException;
+    int extractIntegerFromText(String text);
 
 }

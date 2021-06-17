@@ -1,5 +1,8 @@
 package com.github.kiulian.downloader;
 
+import com.github.kiulian.downloader.downloader.request.RequestChannelUploads;
+import com.github.kiulian.downloader.downloader.response.Response;
+import com.github.kiulian.downloader.model.playlist.PlaylistInfo;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -26,10 +29,21 @@ public class YoutubeChannelUploads_Tests {
     void getChannelUploads() {
         YoutubeDownloader downloader = new YoutubeDownloader();
         assertDoesNotThrow(() -> {
-            assertEquals(CHANNELIDPLAYLIST, downloader.getChannelUploads(CHANNELID).details().playlistId(), "playlist id should be " + CHANNELIDPLAYLIST);
-            assertEquals(CHANNELNAMEPLAYLIST, downloader.getChannelUploads(CHANNELNAME).details().playlistId(), "playlist id should be " + CHANNELNAMEPLAYLIST);
-            assertEquals(MUSICCHANNELIDPLAYLIST, downloader.getChannelUploads(MUSICCHANNELID).details().playlistId(), "playlist id should be " + MUSICCHANNELIDPLAYLIST);
-            assertEquals(MUSICCHANNELNAMEPLAYLIST, downloader.getChannelUploads(MUSICCHANNELNAME).details().playlistId(), "playlist id should be " + MUSICCHANNELNAMEPLAYLIST);
+            Response<PlaylistInfo> response = downloader.getChannelUploads(new RequestChannelUploads(CHANNELID));
+            assertTrue(response.ok(), "get channel uploads for id " + CHANNELIDPLAYLIST + " should be ok");
+            assertEquals(CHANNELIDPLAYLIST, response.data().details().playlistId(), "playlist id should be " + CHANNELIDPLAYLIST);
+
+            Response<PlaylistInfo> response1 = downloader.getChannelUploads(new RequestChannelUploads(CHANNELNAME));
+            assertTrue(response1.ok(), "get channel uploads for id " + CHANNELNAME + " should be ok");
+            assertEquals(CHANNELNAMEPLAYLIST, response1.data().details().playlistId(), "playlist id should be " + CHANNELNAMEPLAYLIST);
+
+            Response<PlaylistInfo> response2 = downloader.getChannelUploads(new RequestChannelUploads(MUSICCHANNELID));
+            assertTrue(response2.ok(), "get channel uploads for id " + MUSICCHANNELID + " should be ok");
+            assertEquals(MUSICCHANNELIDPLAYLIST, response2.data().details().playlistId(), "playlist id should be " + MUSICCHANNELIDPLAYLIST);
+
+            Response<PlaylistInfo> response3 = downloader.getChannelUploads(new RequestChannelUploads(MUSICCHANNELNAME));
+            assertTrue(response3.ok(), "get channel uploads for id " + MUSICCHANNELNAME + " should be ok");
+            assertEquals(MUSICCHANNELNAMEPLAYLIST, response3.data().details().playlistId(), "playlist id should be " + MUSICCHANNELNAMEPLAYLIST);
         }, "should not throw any exceptions");
     }
 
@@ -37,11 +51,18 @@ public class YoutubeChannelUploads_Tests {
     @DisplayName("Tests if not existing channels throw correct exceptions")
     void getChannelUploadsExceptions() {
         YoutubeDownloader downloader = new YoutubeDownloader();
-        assertThrows(YoutubeException.BadPageException.class, () ->
-                downloader.getChannelUploads(NOTEXISTINGCHANNELID), "should throw BadPageException");
-        assertThrows(YoutubeException.BadPageException.class, () ->
-                downloader.getChannelUploads(NOTEXISTINGCHANNELNAME), "should throw BadPageException");
 
+        assertDoesNotThrow(() -> {
+            Response<PlaylistInfo> response = downloader.getChannelUploads(new RequestChannelUploads(NOTEXISTINGCHANNELID));
+            assertFalse(response.ok(), "response should be not ok");
+            assertEquals(YoutubeException.BadPageException.class, response.error().getClass(), "response error should be BadPageException");
+        });
+
+        assertDoesNotThrow(() -> {
+            Response<PlaylistInfo> response = downloader.getChannelUploads(new RequestChannelUploads(NOTEXISTINGCHANNELNAME));
+            assertFalse(response.ok(), "response should be not ok");
+            assertEquals(YoutubeException.DownloadException.class, response.error().getClass(), "response error should be BadPageException");
+        });
     }
 
 }
