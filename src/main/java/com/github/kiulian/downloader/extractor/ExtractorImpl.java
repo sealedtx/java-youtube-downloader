@@ -20,7 +20,7 @@ public class ExtractorImpl implements Extractor {
     private static final List<Pattern> YT_PLAYER_CONFIG_PATTERNS = Arrays.asList(
             Pattern.compile(";ytplayer\\.config = (\\{.*?\\})\\;ytplayer"),
             Pattern.compile(";ytplayer\\.config = (\\{.*?\\})\\;"),
-            Pattern.compile("ytInitialPlayerResponse\\s*=\\s*(\\{.+?\\})\\;var meta")
+            Pattern.compile("ytInitialPlayerResponse\\s*=\\s*(\\{.+?\\})\\s*\\;")
     );
     private static final List<Pattern> YT_INITIAL_DATA_PATTERNS = Arrays.asList(
             Pattern.compile("window\\[\"ytInitialData\"\\] = (\\{.*?\\});"),
