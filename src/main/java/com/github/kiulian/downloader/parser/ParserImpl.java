@@ -1,7 +1,6 @@
 package com.github.kiulian.downloader.parser;
 
 
-
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
@@ -33,6 +32,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
 public class ParserImpl implements Parser {
+    private static final String ANDROID_APIKEY = "AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8";
 
     private final Config config;
     private final Downloader downloader;
@@ -61,7 +61,65 @@ public class ParserImpl implements Parser {
         }
     }
 
-    public VideoInfo parseVideo(String videoId, YoutubeCallback<VideoInfo> callback) throws YoutubeException {
+    private VideoInfo parseVideo(String videoId, YoutubeCallback<VideoInfo> callback) throws YoutubeException {
+        // try to spoof android
+        // workaround for issue https://github.com/sealedtx/java-youtube-downloader/issues/97
+        VideoInfo videoInfo = parseVideoAndroid(videoId);
+        if (videoInfo == null) {
+            videoInfo = parseVideoWeb(videoId, callback);
+        }
+        if (callback != null) {
+            callback.onFinished(videoInfo);
+        }
+        return videoInfo;
+    }
+
+    private VideoInfo parseVideoAndroid(String videoId) throws YoutubeException {
+        String url = "https://youtubei.googleapis.com/youtubei/v1/player?key=" + ANDROID_APIKEY;
+
+        String body =
+                "{" +
+                "  \"videoId\": \"" + videoId + "\"," +
+                "  \"context\": {" +
+                "    \"client\": {" +
+                "      \"hl\": \"en\"," +
+                "      \"gl\": \"US\"," +
+                "      \"clientName\": \"ANDROID\"," +
+                "      \"clientVersion\": \"16.02\"" +
+                "    }" +
+                "  }" +
+                "}";
+
+        RequestWebpage request = new RequestWebpage(url, "POST", body)
+                .header("Content-Type", "application/json");
+
+        Response<String> response = downloader.downloadWebpage(request);
+        if (!response.ok()) {
+            return null;
+        }
+
+        JSONObject playerResponse;
+        try {
+            playerResponse = JSONObject.parseObject(response.data());
+        } catch (Exception ignore) {
+            return null;
+        }
+
+        VideoDetails videoDetails = parseVideoDetails(videoId, playerResponse);
+        if (videoDetails.isDownloadable()) {
+            JSONObject context = playerResponse.getJSONObject("responseContext");
+            String clientVersion = extractor.extractClientVersionFromContext(context);
+            List<Format> formats = parseFormats(playerResponse, null, clientVersion);
+
+            List<SubtitlesInfo> subtitlesInfo = parseCaptions(playerResponse);
+            return new VideoInfo(videoDetails, formats, subtitlesInfo);
+        } else {
+            return new VideoInfo(videoDetails, Collections.emptyList(), Collections.emptyList());
+        }
+
+    }
+
+    private VideoInfo parseVideoWeb(String videoId, YoutubeCallback<VideoInfo> callback) throws YoutubeException {
         String htmlUrl = "https://www.youtube.com/watch?v=" + videoId;
 
         Response<String> response = downloader.downloadWebpage(new RequestWebpage(htmlUrl));
@@ -198,7 +256,7 @@ public class ParserImpl implements Parser {
             if (urlWithSig.contains("signature")
                     || (!jsonCipher.containsKey("s") && (urlWithSig.contains("&sig=") || urlWithSig.contains("&lsig=")))) {
                 // do nothing, this is pre-signed videos with signature
-            } else {
+            } else if (jsUrl != null) {
                 String s = jsonCipher.getString("s");
                 try {
                     s = URLDecoder.decode(s, "UTF-8");
@@ -210,6 +268,8 @@ public class ParserImpl implements Parser {
                 String signature = cipher.getSignature(s);
                 String decipheredUrl = urlWithSig + "&sig=" + signature;
                 json.put("url", decipheredUrl);
+            } else {
+                throw new YoutubeException.BadPageException("deciphering is required but no js url");
             }
         }
 
@@ -403,7 +463,8 @@ public class ParserImpl implements Parser {
         }
     }
 
-    private void loadPlaylistContinuation(String continuation, String ctp, List<PlaylistVideoDetails> videos, String clientVersion) throws YoutubeException {        JSONObject content;
+    private void loadPlaylistContinuation(String continuation, String ctp, List<PlaylistVideoDetails> videos, String clientVersion) throws YoutubeException {
+        JSONObject content;
         String url = "https://www.youtube.com/youtubei/v1/browse?key=AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8";
 
         JSONObject body = new JSONObject()
@@ -483,7 +544,7 @@ public class ParserImpl implements Parser {
             while (scan.hasNext()) {
                 String pId = scan.next();
                 if (pId.startsWith("UU")) {
-                    playlistId =  pId.substring(0, 24);
+                    playlistId = pId.substring(0, 24);
                     break;
                 }
             }
