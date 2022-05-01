@@ -32,7 +32,6 @@ public abstract class Format {
         try {
             itag = Itag.valueOf("i" + json.getInteger("itag"));
         } catch (IllegalArgumentException e) {
-            e.printStackTrace();
             itag = Itag.unknown;
             itag.setId(json.getIntValue("itag"));
         }
