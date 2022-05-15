@@ -250,6 +250,69 @@ Response<PlaylistInfo> response = downloader.getChannelUploads(request);
 PlaylistInfo playlistInfo = response.data();
 ```
 
+### Search
+```java
+RequestSearchResult request = new RequestSearchResult("search query")
+    .type(TypeField.VIDEO)                 // Videos only
+    .match(FeatureField._3D,
+        FeatureField.HD,
+        FeatureField.SUBTITLES)            // 3D HD videos with subtitles
+    .during(DurationField.OVER_20_MINUTES) // more than 20 minutes videos
+    .uploadedThis(UploadDateField.MONTH)   // uploaded this month
+    .sortBy(SortField.VIEW_COUNT);         // results sorted by view count
+// or
+RequestSearchResult request = new RequestSearchResult("search query")
+    .select(
+        TypeField.VIDEO,
+        FeatureField.HD,
+        (...)
+        UploadDateField.MONTH)
+    .sortBy(SortField.VIEW_COUNT);
+	
+SearchResult result = downloader.search(request).data();
+
+// Retrieve next page (about 20 items per page)
+if (result.hasNext()) {
+    RequestSearchContinuation nextRequest = new RequestSearchContinuation(result);
+    SearchResult nextResult = downloader.getNextPage(nextRequest).data();
+}
+
+// result details
+System.out.println(result.estimatedResults());
+
+// result items
+List<SearchResultItem> items = result.items();
+List<SearchResultVideoDetails> videos = result.videos();
+List<SearchResultChannelDetails> channels = result.channels();
+List<SearchResultPlaylistDetails> playlists = result.playlists();
+List<SearchResultShelfDetails> shelves = result.shelves();
+
+// item cast
+SearchResultItem item = result.items().get(0);
+if (item.isChannel()) {
+    System.out.println(item.asChannel().author());
+} else if (item.isShelf()) {
+    for(SearchResultVideoDetails video : item.asShelf().videos()) {
+        System.out.println(video.videoId());
+    }
+}
+
+// Base 64 (use another base 64 encoder for search parameters)
+
+// Classic JDK and Android API >= 26
+Base64Encoder.setInstance(bytes -> Base64.getUrlEncoder().encodeToString(bytes));
+// or
+JdkBase64Encoder.setInstance();
+
+// Android API < 26
+Base64Encoder.setInstance(new Base64Encoder() {
+    @Override
+    public String encodeToString(byte[] bytes) {
+        return Base64.encodeToString(bytes, Base64.URL_SAFE);
+    }
+};
+```
+
 Include
 -------
 

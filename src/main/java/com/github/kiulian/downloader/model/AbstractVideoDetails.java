@@ -10,7 +10,7 @@ import com.alibaba.fastjson.JSONObject;
 public abstract class AbstractVideoDetails {
 
     protected String videoId;
-    private int lengthSeconds;
+    protected int lengthSeconds;
     private List<String> thumbnails;
 
     // Subclass specific extraction
@@ -27,7 +27,9 @@ public abstract class AbstractVideoDetails {
 
     public AbstractVideoDetails(JSONObject json) {
         videoId = json.getString("videoId");
-        lengthSeconds = json.getIntValue("lengthSeconds");
+        if (json.containsKey("lengthSeconds")) {
+            lengthSeconds = json.getIntValue("lengthSeconds");
+        }
         JSONArray jsonThumbnails = json.getJSONObject("thumbnail").getJSONArray("thumbnails");
         thumbnails = new ArrayList<>(jsonThumbnails.size());
         for (int i = 0; i < jsonThumbnails.size(); i++) {
