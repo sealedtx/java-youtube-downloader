@@ -1,21 +1,19 @@
 package com.github.kiulian.downloader.downloader.request;
 
-import com.github.kiulian.downloader.model.search.ContinuatedSearchResult;
-import com.github.kiulian.downloader.model.search.SearchResult;
+import com.github.kiulian.downloader.model.search.*;
 
 public class RequestSearchContinuation extends Request<RequestSearchContinuation, SearchResult> {
 
-    private ContinuatedSearchResult result;
+    private final SearchContinuation continuation;
 
     public RequestSearchContinuation(SearchResult result) {
-        super();
-        if (!result.hasNext()) {
-            throw new IllegalArgumentException("Search result must be continuated");
+        if (!result.hasContinuation()) {
+            throw new IllegalArgumentException("Search result must have a continuation");
         }
-        this.result = (ContinuatedSearchResult) result;
+        this.continuation = ((ContinuatedSearchResult) result).continuation();
     }
 
-    public ContinuatedSearchResult result() {
-        return result;
+    public SearchContinuation continuation() {
+        return continuation;
     }
 }

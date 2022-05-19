@@ -74,8 +74,13 @@ public class SearchResultVideoDetails extends AbstractListVideoDetails implement
     }
 
     @Override
-    public boolean isVideo() {
-        return true;
+    public ItemType type() {
+        return ItemType.VIDEO;
+    }
+
+    @Override
+    public SearchResultVideoDetails asVideo() {
+        return this;
     }
 
     public boolean isMovie() {

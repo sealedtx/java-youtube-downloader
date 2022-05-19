@@ -4,6 +4,8 @@ package com.github.kiulian.downloader.model;
 
 
 import java.io.*;
+import java.util.ArrayList;
+import java.util.List;
 
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
@@ -63,14 +65,11 @@ public class Utils {
         if (text == null || text.isEmpty()) {
             return 0;
         }
-        int index = text.lastIndexOf(' ');
-        if (index > 0) {
-            text = text.substring(0, index).replaceAll("[^0-9]", "");
-            if (!text.isEmpty()) {
-                try {
-                    return Long.parseLong(text);
-                } catch (NumberFormatException ignored) {}
-            }
+        String value = text.replaceAll("[^0-9]", "");
+        if (!value.isEmpty()) {
+            try {
+                return Long.parseLong(value);
+            } catch (NumberFormatException ignored) {}
         }
         return 0;
     }
@@ -90,6 +89,25 @@ public class Utils {
                 builder.append(runs.getJSONObject(i).getString("text"));
             }
             return builder.toString();
+        }
+    }
+
+    public static List<String> parseThumbnails(JSONObject container) {
+        if (container == null) {
+            return null;
+        }
+        JSONArray jsonThumbnails = container.getJSONArray("thumbnails");
+        if (jsonThumbnails == null) {
+            return null;
+        } else {
+            List<String> thumbnails = new ArrayList<String>(jsonThumbnails.size());
+            for (int i = 0; i < jsonThumbnails.size(); i++) {
+                JSONObject jsonThumbnail = jsonThumbnails.getJSONObject(i);
+                if (jsonThumbnail.containsKey("url")) {
+                    thumbnails.add(jsonThumbnail.getString("url"));
+                }
+            }
+            return thumbnails;
         }
     }
 }

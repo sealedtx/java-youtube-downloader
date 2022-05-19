@@ -1,17 +1,21 @@
 package com.github.kiulian.downloader.model.search;
 
 import java.util.List;
+import java.util.Map;
+
+import com.github.kiulian.downloader.model.search.query.*;
 
 public class ContinuatedSearchResult extends SearchResult {
 
-    private SearchContinuation continuation;
+    private final SearchContinuation continuation;
 
-    public ContinuatedSearchResult(long estimatedResults, List<SearchResultItem> items, SearchContinuation continuation) {
-        super(estimatedResults, items);
+    public ContinuatedSearchResult(long estimatedResults, List<SearchResultItem> items,
+            Map<QueryElementType, QueryElement> queryElements, SearchContinuation continuation) {
+        super(estimatedResults, items, queryElements);
         this.continuation = continuation;
     }
 
-    public boolean hasNext() {
+    public boolean hasContinuation() {
         return true;
     }
 

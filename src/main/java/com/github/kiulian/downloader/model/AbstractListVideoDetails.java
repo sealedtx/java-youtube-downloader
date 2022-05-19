@@ -5,8 +5,6 @@ import com.alibaba.fastjson.JSONObject;
 // Video item of a list (playlist, or search result).
 public class AbstractListVideoDetails extends AbstractVideoDetails {
 
-    public AbstractListVideoDetails() {}
-
     public AbstractListVideoDetails(JSONObject json) {
         super(json);
         author = Utils.parseRuns(json.getJSONObject("shortBylineText"));

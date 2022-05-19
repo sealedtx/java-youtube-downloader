@@ -63,7 +63,7 @@ public class RequestSearchResult extends Request<RequestSearchResult, SearchResu
         return query;
     }
 
-    public RequestSearchResult select(SearchField... field) {
+    public RequestSearchResult filter(SearchField... field) {
         for (SearchField filter : field) {
             filterFields.put(filter.category(), filter);
         }
@@ -86,7 +86,11 @@ public class RequestSearchResult extends Request<RequestSearchResult, SearchResu
     }
 
     public RequestSearchResult match(FeatureField... featuresField) {
-        return select(featuresField);
+        return filter(featuresField);
+    }
+
+    public RequestSearchResult format(FormatField... formatsField) {
+        return filter(formatsField);
     }
 
     public RequestSearchResult sortBy(SortField sortField) {

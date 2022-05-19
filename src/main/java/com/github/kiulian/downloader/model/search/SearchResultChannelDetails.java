@@ -1,19 +1,14 @@
 package com.github.kiulian.downloader.model.search;
 
-import java.util.ArrayList;
-
-import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.github.kiulian.downloader.model.Utils;
 
 public class SearchResultChannelDetails extends AbstractSearchResultList {
 
-    private String channelId;
-    private String videoCountText;
-    private String subscriberCountText;
-    private String description;
-
-    public SearchResultChannelDetails() {}
+    private final String channelId;
+    private final String videoCountText;
+    private final String subscriberCountText;
+    private final String description;
 
     public SearchResultChannelDetails(JSONObject json) {
         super(json);
@@ -21,22 +16,22 @@ public class SearchResultChannelDetails extends AbstractSearchResultList {
         videoCountText = Utils.parseRuns(json.getJSONObject("videoCountText"));
         if (json.containsKey("subscriberCountText")) {
             subscriberCountText = json.getJSONObject("subscriberCountText").getString("simpleText");
+        } else {
+            subscriberCountText = null;
         }
         description = Utils.parseRuns(json.getJSONObject("descriptionSnippet"));
-        JSONArray jsonThumbnails = json.getJSONObject("thumbnail").getJSONArray("thumbnails");
-        thumbnails = new ArrayList<>(jsonThumbnails.size());
-        for (int i = 0; i < jsonThumbnails.size(); i++) {
-            JSONObject jsonObject = jsonThumbnails.getJSONObject(i);
-            if (jsonObject.containsKey("url"))
-                thumbnails.add(jsonObject.getString("url"));
-        }
+        thumbnails = Utils.parseThumbnails(json.getJSONObject("thumbnail"));
     }
 
     @Override
-    public boolean isChannel() {
-        return true;
+    public ItemType type() {
+        return ItemType.CHANNEL;
     }
 
+    @Override
+    public SearchResultChannelDetails asChannel() {
+        return this;
+    }
     public String channelId() {
         return channelId;
     }

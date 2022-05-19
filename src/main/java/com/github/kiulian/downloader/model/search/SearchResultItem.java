@@ -1,54 +1,22 @@
 package com.github.kiulian.downloader.model.search;
 
-public interface SearchResultItem {
+public interface SearchResultItem extends SearchResultElement {
 
-    String title();
-
-    default boolean isVideo() {
-        return false;
-    }
-
-    default boolean isChannel() {
-        return false;
-    }
-
-    default boolean isPlaylist() {
-        return false;
-    }
-
-    default boolean isShelf() {
-        return false;
-    }
+    ItemType type();
 
     default SearchResultVideoDetails asVideo() {
-        if (isVideo()) {
-            return (SearchResultVideoDetails) this;
-        } else {
-            return null;
-        }
+        throw new UnsupportedOperationException();
     }
 
     default SearchResultChannelDetails asChannel() {
-        if (isChannel()) {
-            return (SearchResultChannelDetails) this;
-        } else {
-            return null;
-        }
+        throw new UnsupportedOperationException();
     }
 
     default SearchResultPlaylistDetails asPlaylist() {
-        if (isChannel()) {
-            return (SearchResultPlaylistDetails) this;
-        } else {
-            return null;
-        }
+        throw new UnsupportedOperationException();
     }
 
-    default SearchResultShelfDetails asShelf() {
-        if (isShelf()) {
-            return (SearchResultShelfDetails) this;
-        } else {
-            return null;
-        }
+    default SearchResultShelf asShelf() {
+        throw new UnsupportedOperationException();
     }
 }

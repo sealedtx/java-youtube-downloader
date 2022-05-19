@@ -2,9 +2,9 @@ package com.github.kiulian.downloader.model.search;
 
 public class SearchContinuation {
 
-    private String token;
-    private String clientVersion;
-    private String clickTrackingParameters;
+    private final String token;
+    private final String clientVersion;
+    private final String clickTrackingParameters;
 
     public SearchContinuation(String token, String clientVersion, String clickTrackingParameters) {
         this.token = token;

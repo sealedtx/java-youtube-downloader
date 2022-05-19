@@ -18,7 +18,7 @@ public class Base64_Tests {
         Random r = new Random();
         Base64.Encoder jdkEncoder = Base64.getUrlEncoder();
         Base64EncoderImpl ownEncoder = new Base64EncoderImpl();
-        for (int i = 0; i < 1000; i++) {
+        for (int i = 1; i < 1000; i++) {
             byte[] bytes = new byte[i];
             r.nextBytes(bytes);
             String expected = jdkEncoder.encodeToString(bytes);
@@ -27,13 +27,4 @@ public class Base64_Tests {
         }
     }
 
-    @Test
-    public void encode() {
-        Random r = new Random();
-        byte[] bytes = new byte[6];
-        r.nextBytes(bytes);
-        String expected = Base64.getUrlEncoder().encodeToString(bytes);
-        String actual = new Base64EncoderImpl().encodeToString(bytes);
-        assertEquals(expected, actual, "JDK and own encodings should be equal");
-    }
 }

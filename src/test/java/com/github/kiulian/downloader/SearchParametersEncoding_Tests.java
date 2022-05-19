@@ -42,22 +42,27 @@ public class SearchParametersEncoding_Tests {
     @DisplayName("Encode one feature parameter")
     void encodeFeature_Success() {
         assertFieldEncoding(FeatureField.LIVE,      "EgJAAQ%253D%253D");
-        assertFieldEncoding(FeatureField._4K,       "EgJwAQ%253D%253D");
-        assertFieldEncoding(FeatureField.HD,        "EgIgAQ%253D%253D");
         assertFieldEncoding(FeatureField.SUBTITLES, "EgIoAQ%253D%253D");
         assertFieldEncoding(
                 FeatureField.CREATIVE_COMMONS,      "EgIwAQ%253D%253D");
-        assertFieldEncoding(FeatureField._360,      "EgJ4AQ%253D%253D");
-        assertFieldEncoding(FeatureField.VR180,     "EgPQAQE%253D");
-        assertFieldEncoding(FeatureField._3D,       "EgI4AQ%253D%253D");
-        assertFieldEncoding(FeatureField.HDR,       "EgPIAQE%253D");
         assertFieldEncoding(FeatureField.LOCATION,  "EgO4AQE%253D");
         assertFieldEncoding(FeatureField.PURCHASED, "EgJIAQ%253D%253D");
     }
 
+    @Test
+    @DisplayName("Encode one format parameter")
+    void encodeFormat_Success() {
+        assertFieldEncoding(FormatField._4K,       "EgJwAQ%253D%253D");
+        assertFieldEncoding(FormatField.HD,        "EgIgAQ%253D%253D");
+        assertFieldEncoding(FormatField._360,      "EgJ4AQ%253D%253D");
+        assertFieldEncoding(FormatField.VR180,     "EgPQAQE%253D");
+        assertFieldEncoding(FormatField._3D,       "EgI4AQ%253D%253D");
+        assertFieldEncoding(FormatField.HDR,       "EgPIAQE%253D");
+    }
+
     private static void assertFieldEncoding(SearchField field, String expected) {
         String actual = new RequestSearchResult("a")
-                .select(field)
+                .filter(field)
                 .encodeParameters();
         assertEquals(expected, actual, "Filter on " + field.name());
     }
@@ -85,14 +90,14 @@ public class SearchParametersEncoding_Tests {
         assertCombinationEncoding(
                 "Video/less than 4 minutes/by upload date",
                 new RequestSearchResult("a")
-                        .select(TypeField.VIDEO, DurationField.UNDER_4_MINUTES)
+                        .filter(TypeField.VIDEO, DurationField.UNDER_4_MINUTES)
                         .sortBy(SortField.UPLOAD_DATE),
                 "CAISBBABGAE%253D");
         
         assertCombinationEncoding(
                 "Video/today/20 minutes +/by view count",
                 new RequestSearchResult("a")
-                        .select(
+                        .filter(
                                 TypeField.VIDEO,
                                 UploadDateField.DAY,
                                 DurationField.OVER_20_MINUTES)
@@ -102,12 +107,12 @@ public class SearchParametersEncoding_Tests {
         assertCombinationEncoding(
                 "Video/4K/360/3D/HDR/by view count",
                 new RequestSearchResult("a")
-                        .select(
+                        .filter(
                                 TypeField.VIDEO,
-                                FeatureField._4K,
-                                FeatureField._360,
-                                FeatureField._3D,
-                                FeatureField.HDR)
+                                FormatField._4K,
+                                FormatField._360,
+                                FormatField._3D,
+                                FormatField.HDR)
                         .sortBy(SortField.VIEW_COUNT),
                 "CAMSCxABOAFwAXgByAEB");
     }

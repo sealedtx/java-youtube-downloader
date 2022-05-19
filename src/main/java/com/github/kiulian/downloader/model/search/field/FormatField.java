@@ -1,16 +1,17 @@
 package com.github.kiulian.downloader.model.search.field;
 
-public enum FeatureField implements SearchField {
+public enum FormatField implements SearchField {
 
-    LIVE(8, 1),
-    SUBTITLES(5, 1),
-    CREATIVE_COMMONS(6, 1),
-    LOCATION(23, 1, 1),
-    PURCHASED(9, 1);
+    _4K(14, 1),
+    HD(4, 1),
+    HDR(25, 1, 1),
+    _360(15, 1),
+    VR180(26, 1, 1),
+    _3D(7, 1);
 
     private final byte[] data;
 
-    private FeatureField(int... data) {
+    private FormatField(int... data) {
         this.data = SearchField.convert(data);
     }
 

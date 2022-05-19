@@ -8,9 +8,6 @@ public class PlaylistVideoDetails extends AbstractListVideoDetails {
     private int index;
     private boolean isPlayable;
 
-    public PlaylistVideoDetails() {
-    }
-
     public PlaylistVideoDetails(JSONObject json) {
         super(json);
         if (!thumbnails().isEmpty()) {

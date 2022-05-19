@@ -2,6 +2,12 @@ package com.github.kiulian.downloader;
 
 
 
+import static com.github.kiulian.downloader.model.Utils.createOutDir;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.List;
+
 import com.github.kiulian.downloader.cipher.CachedCipherFactory;
 import com.github.kiulian.downloader.downloader.Downloader;
 import com.github.kiulian.downloader.downloader.DownloaderImpl;
@@ -15,12 +21,6 @@ import com.github.kiulian.downloader.model.subtitles.SubtitlesInfo;
 import com.github.kiulian.downloader.model.videos.VideoInfo;
 import com.github.kiulian.downloader.parser.Parser;
 import com.github.kiulian.downloader.parser.ParserImpl;
-
-import java.io.File;
-import java.io.IOException;
-import java.util.List;
-
-import static com.github.kiulian.downloader.model.Utils.createOutDir;
 
 public class YoutubeDownloader {
 
@@ -72,8 +72,12 @@ public class YoutubeDownloader {
         return parser.parseSearchResult(request);
     }
 
-    public Response<SearchResult> getNextPage(RequestSearchContinuation request) {
+    public Response<SearchResult> searchContinuation(RequestSearchContinuation request) {
         return parser.parseSearchContinuation(request);
+    }
+
+    public Response<SearchResult> search(RequestSearchable request) {
+        return parser.parseSearcheable(request);
     }
 
     public Response<File> downloadVideoFile(RequestVideoFileDownload request) {

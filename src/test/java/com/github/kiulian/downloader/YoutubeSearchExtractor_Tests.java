@@ -4,12 +4,12 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import org.junit.jupiter.api.*;
 
-import com.github.kiulian.downloader.downloader.request.RequestSearchContinuation;
-import com.github.kiulian.downloader.downloader.request.RequestSearchResult;
+import com.github.kiulian.downloader.downloader.request.*;
 import com.github.kiulian.downloader.downloader.response.Response;
 import com.github.kiulian.downloader.model.search.*;
 import com.github.kiulian.downloader.model.search.field.SortField;
 import com.github.kiulian.downloader.model.search.field.TypeField;
+import com.github.kiulian.downloader.model.search.query.*;
 
 @DisplayName("Tests extracting metadata from search results")
 public class YoutubeSearchExtractor_Tests {
@@ -27,45 +27,49 @@ public class YoutubeSearchExtractor_Tests {
         assertDoesNotThrow(() -> {
             SearchResult result = search(new RequestSearchResult("nasa"));
             assertTrue(result.estimatedResults() > 20_000_000, "Estimated results should be over 20 M");
-            assertTrue(!result.channels().isEmpty(), "Result should contain a channel");
-            assertTrue(!result.shelves().isEmpty(), "Result should contain the channel latest shelf");
-            assertTrue(!result.videos().isEmpty(), "Result should contain at least a video");
+            assertFalse(result.channels().isEmpty(), "Result should contain a channel");
+            assertFalse(result.shelves().isEmpty(), "Result should contain the channel latest shelf");
+            assertFalse(result.videos().isEmpty(), "Result should contain at least one video");
             
-            SearchResult next = downloader.getNextPage(new RequestSearchContinuation(result)).data();
+            // first continuation
+            SearchResult next = downloader.searchContinuation(new RequestSearchContinuation(result)).data();
             assertTrue(next.estimatedResults() > 20_000_000, "Next page results should also be over 20 M");
+            
+            // second continuation, asserts not empty
+            downloader.searchContinuation(new RequestSearchContinuation(next)).data();
         });
     }
 
     @Test
-    @DisplayName("search 'sun' using each type filter and check that items are of the expected type")
-    void searchSunAllTypes_Success() {
+    @DisplayName("search 'lord of the rings' using each type filter and check that items are of the expected type")
+    void searchLordOfTheRingsAllTypes_Success() {
         assertDoesNotThrow(() -> {
-            RequestSearchResult request = new RequestSearchResult("sun");
+            RequestSearchResult request = new RequestSearchResult("lord of the rings");
             SearchResult result;
             
             result = search(request.type(TypeField.VIDEO));
             for (SearchResultItem item : result.items()) {
-                assertTrue(item.isVideo() || item.isShelf(), "Video result should only contain videos and shelves");
+                assertTrue(item.type() == ItemType.VIDEO || item.type() == ItemType.SHELF, "Video result should only contain videos, shelf and query suggestion");
             }
             
             result = search(request.type(TypeField.MOVIE));
-            boolean movieFound = false;
+            int movieCount = 0;
             for (SearchResultItem item : result.items()) {
-                assertTrue(item.isVideo(), "Movie result should only contain videos");
+                assertTrue(item.type() == ItemType.VIDEO, "Movie result should only contain videos");
                 if (item.asVideo().isMovie()) {
-                    movieFound = true;
+                    movieCount++;
                 }
             }
-            assertTrue(movieFound, "Movie result should contain at least one movie");
+            assertTrue(movieCount > 0, "Movie result should contain at least one movie");
             
             result = search(request.type(TypeField.PLAYLIST));
             for (SearchResultItem item : result.items()) {
-                assertTrue(item.isPlaylist(), "Playlist result should only contain playlists");
+                assertTrue(item.type() == ItemType.PLAYLIST, "Playlist result should only contain playlists");
             }
             
             result = search(request.type(TypeField.CHANNEL));
             for (SearchResultItem item : result.items()) {
-                assertTrue(item.isChannel(), "Channel result should only contain channels");
+                assertTrue(item.type() == ItemType.CHANNEL, "Channel result should only contain channels");
             }
         });
     }
@@ -75,7 +79,7 @@ public class YoutubeSearchExtractor_Tests {
     void searchStrangeVideosByViewCount_Success() {
         assertDoesNotThrow(() -> {
             SearchResult result = search(new RequestSearchResult("strange")
-                    .select(TypeField.VIDEO)
+                    .filter(TypeField.VIDEO)
                     .sortBy(SortField.VIEW_COUNT));
             
             SearchResultVideoDetails lastVideo = null;
@@ -90,8 +94,55 @@ public class YoutubeSearchExtractor_Tests {
         });
     }
 
+    @Test
+    @DisplayName("search 'spiderman' and check that the result contains an auto correction or a suggestion")
+    void searchAutoCorrectionOrSuggestion_Success() {
+        assertDoesNotThrow(() -> {
+            SearchResult result;
+            result = search(new RequestSearchResult("spiderman"));
+            QuerySuggestion suggestion = result.suggestion();
+            if (suggestion == null) {
+                assertNotNull(result.autoCorrection(), "Result should contain an auto correction or a suggestion");
+                assertEquals("spider man", result.autoCorrection().query(), "Query replacement");
+                
+                // force initial query
+                result = search(result.autoCorrection());
+                assertNull(result.autoCorrection(), "Forced result should not contain an auto correction");
+                assertNotNull(result.suggestion(), "Forced result should contain a suggestion");
+                assertEquals("spider man", result.suggestion().query(), "Forced result query suggestion");
+            } else {
+                assertEquals("spider man", suggestion.query(), "Query suggestion");
+            }
+        });
+    }
+
+//    @Test
+//    @DisplayName("search 'michael jackson' and follow first refinement")
+//    void searchRefinement_Success() {
+//        assertDoesNotThrow(() -> {
+//            SearchResult result;
+//            result = search(new RequestSearchResult("michael jackson"));
+//            String initialTitle = result.items().get(0).title();
+//            QueryRefinementList list = result.refinementList();
+//            assertNotNull(list, "Result should contain refinements");
+//            assertFalse(list.isEmpty(), "Result refinements should not be empty");
+//
+//            // refinement
+//            result = search(list.get(0));
+//            String refinedTitle = result.items().get(0).title();
+//            assertNotEquals(initialTitle, refinedTitle, "Refined title should be different");
+//        });
+//    }
+
     private SearchResult search(RequestSearchResult request) {
-        Response<SearchResult> response = downloader.search(request);
+        return check(downloader.search(request));
+    }
+
+    private SearchResult search(Searchable searchable) {
+        return check(downloader.search(new RequestSearchable(searchable)));
+    }
+
+    private static SearchResult check(Response<SearchResult> response) {
         if (!response.ok()) {
             response.error().printStackTrace();
         }

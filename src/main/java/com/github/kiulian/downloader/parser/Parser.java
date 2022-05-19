@@ -32,4 +32,7 @@ public interface Parser {
     Response<SearchResult> parseSearchResult(RequestSearchResult request);
 
     Response<SearchResult> parseSearchContinuation(RequestSearchContinuation request);
+
+    Response<SearchResult> parseSearcheable(RequestSearchable request);
+
 }

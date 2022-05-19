@@ -1,19 +1,17 @@
 package com.github.kiulian.downloader.model;
 
 
-import java.util.ArrayList;
 import java.util.List;
 
-import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 
 public abstract class AbstractVideoDetails {
 
     protected String videoId;
-    protected int lengthSeconds;
     private List<String> thumbnails;
 
     // Subclass specific extraction
+    protected int lengthSeconds;
     protected String title;
     protected String author;
     protected boolean isLive;
@@ -30,13 +28,7 @@ public abstract class AbstractVideoDetails {
         if (json.containsKey("lengthSeconds")) {
             lengthSeconds = json.getIntValue("lengthSeconds");
         }
-        JSONArray jsonThumbnails = json.getJSONObject("thumbnail").getJSONArray("thumbnails");
-        thumbnails = new ArrayList<>(jsonThumbnails.size());
-        for (int i = 0; i < jsonThumbnails.size(); i++) {
-            JSONObject jsonObject = jsonThumbnails.getJSONObject(i);
-            if (jsonObject.containsKey("url"))
-                thumbnails.add(jsonObject.getString("url"));
-        }
+        thumbnails = Utils.parseThumbnails(json.getJSONObject("thumbnail"));
     }
 
     public String videoId() {
