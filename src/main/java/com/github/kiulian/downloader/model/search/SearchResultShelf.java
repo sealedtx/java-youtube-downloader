@@ -28,8 +28,8 @@ public class SearchResultShelf implements SearchResultItem {
     }
 
     @Override
-    public ItemType type() {
-        return ItemType.SHELF;
+    public SearchResultItemType type() {
+        return SearchResultItemType.SHELF;
     }
 
     @Override

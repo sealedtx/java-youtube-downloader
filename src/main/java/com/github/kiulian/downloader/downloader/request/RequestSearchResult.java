@@ -8,7 +8,10 @@ import com.github.kiulian.downloader.model.search.field.*;
 
 public class RequestSearchResult extends Request<RequestSearchResult, SearchResult> {
 
+    private static final byte[] FORCED_DATA = new byte[] { 66, 2, 8, 1 };
+
     private final String query;
+    private boolean forceExactQuery;
     private Map<Integer, SearchField> filterFields = new HashMap<>();
     private SortField sortField;
 
@@ -18,6 +21,10 @@ public class RequestSearchResult extends Request<RequestSearchResult, SearchResu
     }
 
     public String encodeParameters() {
+        if (sortField == null && filterFields.isEmpty() && !forceExactQuery) {
+            return null;
+        }
+        
         int filterLength = 0;
         List<SearchField> filters = null;
         if (!filterFields.isEmpty()) {
@@ -28,16 +35,15 @@ public class RequestSearchResult extends Request<RequestSearchResult, SearchResu
             }
         }
         
-        if (sortField == null && filterLength == 0) {
-            return null;
-        }
-        
         int length = filterLength;
         if (sortField != null) {
             length += 2;
         }
         if (filters != null) {
             length += 2;
+        }
+        if (forceExactQuery) {
+            length += FORCED_DATA.length;
         }
         
         final byte[] bytes = new byte[length];
@@ -54,6 +60,9 @@ public class RequestSearchResult extends Request<RequestSearchResult, SearchResu
                 i += filter.length();
             }
         }
+        if (forceExactQuery) {
+            System.arraycopy(FORCED_DATA, 0, bytes, i, FORCED_DATA.length);
+        }
         
         String encoded = Base64Encoder.getInstance().encodeToString(bytes);
         return encoded.replace("=", "%253D");
@@ -61,6 +70,11 @@ public class RequestSearchResult extends Request<RequestSearchResult, SearchResu
 
     public String query() {
         return query;
+    }
+
+    public RequestSearchResult forceExactQuery(boolean forceExactQuery) {
+        this.forceExactQuery = forceExactQuery;
+        return this;
     }
 
     public RequestSearchResult filter(SearchField... field) {

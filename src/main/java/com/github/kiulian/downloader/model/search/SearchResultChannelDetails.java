@@ -24,8 +24,8 @@ public class SearchResultChannelDetails extends AbstractSearchResultList {
     }
 
     @Override
-    public ItemType type() {
-        return ItemType.CHANNEL;
+    public SearchResultItemType type() {
+        return SearchResultItemType.CHANNEL;
     }
 
     @Override

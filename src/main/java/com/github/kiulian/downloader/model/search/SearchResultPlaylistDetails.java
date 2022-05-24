@@ -27,8 +27,8 @@ public class SearchResultPlaylistDetails extends AbstractSearchResultList {
     }
 
     @Override
-    public ItemType type() {
-        return ItemType.PLAYLIST;
+    public SearchResultItemType type() {
+        return SearchResultItemType.PLAYLIST;
     }
 
     @Override

@@ -116,6 +116,24 @@ public class SearchParametersEncoding_Tests {
                         .sortBy(SortField.VIEW_COUNT),
                 "CAMSCxABOAFwAXgByAEB");
     }
+        
+    @Test
+    @DisplayName("Encode combinations with force exact query parameter")
+    void encodeForcedCombinations_Success() {
+        assertCombinationEncoding(
+                "Forced",
+                new RequestSearchResult("a")
+                        .forceExactQuery(true),
+                "QgIIAQ%253D%253D");
+        
+        assertCombinationEncoding(
+                "Forced video by upload date",
+                new RequestSearchResult("a")
+                        .forceExactQuery(true)
+                        .type(TypeField.VIDEO)
+                        .sortBy(SortField.UPLOAD_DATE),
+                "CAISAhABQgIIAQ%253D%253D");
+    }
 
     private static void assertCombinationEncoding(String label, RequestSearchResult request, String expected) {
         String actual = request.encodeParameters();

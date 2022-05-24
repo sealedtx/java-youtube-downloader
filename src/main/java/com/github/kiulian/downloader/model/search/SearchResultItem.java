@@ -2,7 +2,7 @@ package com.github.kiulian.downloader.model.search;
 
 public interface SearchResultItem extends SearchResultElement {
 
-    ItemType type();
+    SearchResultItemType type();
 
     default SearchResultVideoDetails asVideo() {
         throw new UnsupportedOperationException();

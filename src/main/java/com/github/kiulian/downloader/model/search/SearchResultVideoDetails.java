@@ -74,8 +74,8 @@ public class SearchResultVideoDetails extends AbstractListVideoDetails implement
     }
 
     @Override
-    public ItemType type() {
-        return ItemType.VIDEO;
+    public SearchResultItemType type() {
+        return SearchResultItemType.VIDEO;
     }
 
     @Override

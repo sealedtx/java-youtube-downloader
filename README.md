@@ -253,25 +253,28 @@ PlaylistInfo playlistInfo = response.data();
 ### Search
 ```java
 RequestSearchResult request = new RequestSearchResult("search query")
+    // filters
     .type(TypeField.VIDEO)                 // Videos only
-    .format(FeatureField._3D,
-        FeatureField.HD)                   // 3D HD videos
+    .format(FormatField._3D,
+        FormatField.HD)                    // 3D HD videos
     .match(FeatureField.SUBTITLES)         // with subtitles
     .during(DurationField.OVER_20_MINUTES) // more than 20 minutes videos
     .uploadedThis(UploadDateField.MONTH)   // uploaded this month
+
+    // other parameters
+    .forceExactQuery(true)                 // avoid auto correction
     .sortBy(SortField.VIEW_COUNT);         // results sorted by view count
 // or
 RequestSearchResult request = new RequestSearchResult("search query")
     .filter(
         TypeField.VIDEO,
-        FeatureField.HD,
+        FormatField.HD,
         (...)
-        UploadDateField.MONTH)
-    .sortBy(SortField.VIEW_COUNT);
-	
+        UploadDateField.MONTH);
+
 SearchResult result = downloader.search(request).data();
 
-// retrieve next result (about 20 items per result)
+// retrieve next result (20 items max per continuation)
 if (result.hasContinuation()) {
     RequestSearchContinuation nextRequest = new RequestSearchContinuation(result);
     SearchResult continuation = downloader.searchContinuation(nextRequest).data();
@@ -279,26 +282,29 @@ if (result.hasContinuation()) {
 
 // a query is suggested, get its result
 if (result.suggestion() != null) {
-	RequestSearchable suggestedRequest = new RequestSearchable(result.suggestion());
-	SearchResult suggestedResult = downloader.search(suggestedRequest).data();
+    System.out.println(result.suggestion().query()); // suggested query
+    RequestSearchable suggestedRequest = new RequestSearchable(result.suggestion());
+    SearchResult suggestedResult = downloader.search(suggestedRequest).data();
 }
 
-// the query has been auto corrected, force initial query
+// the query has been auto corrected, force original query
 if (result.autoCorrection() != null) {
-	RequestSearchable forcedRequest = new RequestSearchable(result.autoCorrection());
-	SearchResult forcedResult = downloader.search(forcedRequest).data();
+    System.out.println(result.autoCorrection().query()); // corrected query
+    RequestSearchable forcedRequest = new RequestSearchable(result.autoCorrection());
+    SearchResult forcedResult = downloader.search(forcedRequest).data();    
 }
 
 // query refinements
 if (result.refinements() != null) {
-	RequestSearchable refinedRequest = new RequestSearchable(result.refinements().get(0));
-	SearchResult refinedResult = downloader.search(refinedRequest).data();
+    System.out.println(result.refinements().get(0).query()); // refinement query
+    RequestSearchable refinedRequest = new RequestSearchable(result.refinements().get(0));
+    SearchResult refinedResult = downloader.search(refinedRequest).data();
 }
 
 // details
 System.out.println(result.estimatedResults());
 
-// items
+// items, 20 max per result (+ possible shelves on first result)
 List<SearchResultItem> items = result.items();
 List<SearchResultVideoDetails> videos = result.videos();
 List<SearchResultChannelDetails> channels = result.channels();
@@ -309,13 +315,13 @@ List<SearchResultShelf> shelves = result.shelves();
 SearchResultItem item = items.get(0);
 switch (item.type()) {
 case VIDEO:
-	System.out.println(item.asVideo().description());
-	break;
+    System.out.println(item.asVideo().description());
+    break;
 case SHELF:
-	for (SearchResultVideoDetails video : item.asShelf().videos()) {
-	    System.out.println(video.author());
-	}
-	break;
+    for (SearchResultVideoDetails video : item.asShelf().videos()) {
+        System.out.println(video.author());
+    }
+    break;
 (...)
 }
 

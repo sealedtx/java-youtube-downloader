@@ -1,6 +1,6 @@
 package com.github.kiulian.downloader.model.search;
 
-public enum ItemType {
+public enum SearchResultItemType {
     VIDEO,
     CHANNEL,
     PLAYLIST,

@@ -11,7 +11,7 @@ public class SearchResult {
     private final QuerySuggestion suggestion;
     private final QueryAutoCorrection autoCorrection;
     private final QueryRefinementList refinementList;
-    
+
 
     public SearchResult(long estimatedResults, List<SearchResultItem> items,
             Map<QueryElementType, QueryElement> queryElements) {
@@ -22,22 +22,22 @@ public class SearchResult {
         refinementList = (QueryRefinementList) queryElements.get(QueryElementType.REFINEMENT_LIST);
     }
 
-	public QuerySuggestion suggestion() {
-		return suggestion;
-	}
+    public QuerySuggestion suggestion() {
+        return suggestion;
+    }
 
-	public QueryAutoCorrection autoCorrection() {
-		return autoCorrection;
-	}
+    public QueryAutoCorrection autoCorrection() {
+        return autoCorrection;
+    }
 
-	public QueryRefinementList refinements() {
-		return refinementList;
-	}
+    public QueryRefinementList refinements() {
+        return refinementList;
+    }
 
-	public List<SearchResultVideoDetails> videos() {
+    public List<SearchResultVideoDetails> videos() {
         List<SearchResultVideoDetails> videos = new LinkedList<>();
         for (SearchResultItem item : items) {
-            if (item.type() == ItemType.VIDEO) {
+            if (item.type() == SearchResultItemType.VIDEO) {
                 videos.add(item.asVideo());
             }
         }
@@ -47,7 +47,7 @@ public class SearchResult {
     public List<SearchResultChannelDetails> channels() {
         List<SearchResultChannelDetails> channels = new LinkedList<>();
         for (SearchResultItem item : items) {
-            if (item.type() == ItemType.CHANNEL) {
+            if (item.type() == SearchResultItemType.CHANNEL) {
                 channels.add(item.asChannel());
             }
         }
@@ -57,7 +57,7 @@ public class SearchResult {
     public List<SearchResultPlaylistDetails> playlists() {
         List<SearchResultPlaylistDetails> videos = new LinkedList<>();
         for (SearchResultItem item : items) {
-            if (item.type() == ItemType.PLAYLIST) {
+            if (item.type() == SearchResultItemType.PLAYLIST) {
                 videos.add(item.asPlaylist());
             }
         }
@@ -67,7 +67,7 @@ public class SearchResult {
     public List<SearchResultShelf> shelves() {
         List<SearchResultShelf> shelves = new LinkedList<>();
         for (SearchResultItem item : items) {
-            if (item.type() == ItemType.SHELF) {
+            if (item.type() == SearchResultItemType.SHELF) {
                 shelves.add(item.asShelf());
             }
         }
