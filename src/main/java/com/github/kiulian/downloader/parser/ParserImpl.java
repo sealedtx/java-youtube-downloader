@@ -1,35 +1,31 @@
 package com.github.kiulian.downloader.parser;
 
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
+import java.net.URLEncoder;
+import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 
-import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONArray;
-import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson.*;
 import com.github.kiulian.downloader.Config;
 import com.github.kiulian.downloader.YoutubeException;
+import com.github.kiulian.downloader.YoutubeException.BadPageException;
 import com.github.kiulian.downloader.cipher.Cipher;
 import com.github.kiulian.downloader.cipher.CipherFactory;
-import com.github.kiulian.downloader.downloader.*;
+import com.github.kiulian.downloader.downloader.Downloader;
+import com.github.kiulian.downloader.downloader.YoutubeCallback;
 import com.github.kiulian.downloader.downloader.request.*;
 import com.github.kiulian.downloader.downloader.response.Response;
 import com.github.kiulian.downloader.downloader.response.ResponseImpl;
 import com.github.kiulian.downloader.extractor.Extractor;
-import com.github.kiulian.downloader.model.videos.formats.Itag;
+import com.github.kiulian.downloader.model.playlist.*;
+import com.github.kiulian.downloader.model.search.*;
+import com.github.kiulian.downloader.model.search.query.*;
+import com.github.kiulian.downloader.model.subtitles.SubtitlesInfo;
 import com.github.kiulian.downloader.model.videos.VideoDetails;
 import com.github.kiulian.downloader.model.videos.VideoInfo;
-import com.github.kiulian.downloader.model.videos.formats.AudioFormat;
-import com.github.kiulian.downloader.model.videos.formats.VideoWithAudioFormat;
-import com.github.kiulian.downloader.model.videos.formats.Format;
-import com.github.kiulian.downloader.model.videos.formats.VideoFormat;
-import com.github.kiulian.downloader.model.playlist.PlaylistDetails;
-import com.github.kiulian.downloader.model.playlist.PlaylistVideoDetails;
-import com.github.kiulian.downloader.model.playlist.PlaylistInfo;
-import com.github.kiulian.downloader.model.subtitles.SubtitlesInfo;
-
-import java.io.UnsupportedEncodingException;
-import java.net.URLDecoder;
-import java.util.*;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
+import com.github.kiulian.downloader.model.videos.formats.*;
 
 public class ParserImpl implements Parser {
     private static final String ANDROID_APIKEY = "AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8";
@@ -443,7 +439,7 @@ public class ParserImpl implements Parser {
             String ctp = nextContinuationData.getString("clickTrackingParams");
             loadPlaylistContinuation(continuation, ctp, videos, clientVersion);
             return;
-        } else { // noting found
+        } else { // nothing found
             return;
         }
 
@@ -465,7 +461,7 @@ public class ParserImpl implements Parser {
 
     private void loadPlaylistContinuation(String continuation, String ctp, List<PlaylistVideoDetails> videos, String clientVersion) throws YoutubeException {
         JSONObject content;
-        String url = "https://www.youtube.com/youtubei/v1/browse?key=AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8";
+        String url = "https://www.youtube.com/youtubei/v1/browse?key=" + ANDROID_APIKEY;
 
         JSONObject body = new JSONObject()
                 .fluentPut("context", new JSONObject()
@@ -606,4 +602,230 @@ public class ParserImpl implements Parser {
         return subtitlesInfo;
     }
 
+    @Override
+    public Response<SearchResult> parseSearchResult(RequestSearchResult request) {
+        if (request.isAsync()) {
+            ExecutorService executorService = config.getExecutorService();
+            Future<SearchResult> result = executorService.submit(() -> parseSearchResult(request.query(), request.encodeParameters(), request.getCallback()));
+            return ResponseImpl.fromFuture(result);
+        }
+        try {
+            SearchResult result = parseSearchResult(request.query(), request.encodeParameters(), request.getCallback());
+            return ResponseImpl.from(result);
+        } catch (YoutubeException e) {
+            return ResponseImpl.error(e);
+        }
+    }
+
+    @Override
+    public Response<SearchResult> parseSearchContinuation(RequestSearchContinuation request) {
+        if (request.isAsync()) {
+            ExecutorService executorService = config.getExecutorService();
+            Future<SearchResult> result = executorService.submit(() -> parseSearchContinuation(request.continuation(), request.getCallback()));
+            return ResponseImpl.fromFuture(result);
+        }
+        try {
+            SearchResult result = parseSearchContinuation(request.continuation(), request.getCallback());
+            return ResponseImpl.from(result);
+        } catch (YoutubeException e) {
+            return ResponseImpl.error(e);
+        }
+    }
+
+    @Override
+    public Response<SearchResult> parseSearcheable(RequestSearchable request) {
+        if (request.isAsync()) {
+            ExecutorService executorService = config.getExecutorService();
+            Future<SearchResult> result = executorService.submit(() -> parseSearchable(request.searchPath(), request.getCallback()));
+            return ResponseImpl.fromFuture(result);
+        }
+        try {
+            SearchResult result = parseSearchable(request.searchPath(), request.getCallback());
+            return ResponseImpl.from(result);
+        } catch (YoutubeException e) {
+            return ResponseImpl.error(e);
+        }
+    }
+
+    private SearchResult parseSearchResult(String query, String parameters, YoutubeCallback<SearchResult> callback) throws YoutubeException {
+        String searchQuery;
+        try {
+            searchQuery = URLEncoder.encode(query, "UTF-8");
+        } catch (UnsupportedEncodingException e) {
+            searchQuery = query;
+            e.printStackTrace();
+        }
+        String url = "https://www.youtube.com/results?search_query=" + searchQuery;
+        if (parameters != null) {
+            url += "&sp=" + parameters;
+        }
+        try {
+            return parseHtmlSearchResult(url);
+        } catch (YoutubeException e) {
+            if (callback != null) {
+                callback.onError(e);
+            }
+            throw e;
+        }
+    }
+
+    private SearchResult parseSearchable(String searchPath, YoutubeCallback<SearchResult> callback) throws YoutubeException {
+        String url = "https://www.youtube.com" + searchPath;
+        try {
+            return parseHtmlSearchResult(url);
+        } catch (YoutubeException e) {
+            if (callback != null) {
+                callback.onError(e);
+            }
+            throw e;
+        }
+    }
+
+    private SearchResult parseHtmlSearchResult(String url) throws YoutubeException {
+        Response<String> response = downloader.downloadWebpage(new RequestWebpage(url));
+        if (!response.ok()) {
+            throw new YoutubeException.DownloadException(String.format("Could not load url: %s, exception: %s", url, response.error().getMessage()));
+        }
+
+        String html = response.data();
+        
+        JSONObject initialData = extractor.extractInitialDataFromHtml(html);
+        JSONArray rootContents;
+        try {
+            rootContents = initialData.getJSONObject("contents")
+                    .getJSONObject("twoColumnSearchResultsRenderer")
+                    .getJSONObject("primaryContents")
+                    .getJSONObject("sectionListRenderer")
+                    .getJSONArray("contents");
+        } catch (NullPointerException e) {
+            throw new YoutubeException.BadPageException("Search result root contents not found");
+        }
+        
+        int estimatedCount = extractor.extractIntegerFromText(initialData.getString("estimatedResults"));
+        String clientVersion = extractor.extractClientVersionFromContext(initialData.getJSONObject("responseContext"));
+        SearchContinuation continuation = getSearchContinuation(rootContents, clientVersion);
+        return parseSearchResult(estimatedCount, rootContents, continuation);
+    }
+
+    private SearchResult parseSearchContinuation(SearchContinuation continuation, YoutubeCallback<SearchResult> callback) throws YoutubeException {
+        String url = "https://www.youtube.com/youtubei/v1/search?key=" + ANDROID_APIKEY + "&prettyPrint=false";
+
+        JSONObject body = new JSONObject()
+                .fluentPut("context", new JSONObject()
+                        .fluentPut("client", new JSONObject()
+                                .fluentPut("clientName", "WEB")
+                                .fluentPut("clientVersion", "2.20201021.03.00")))
+                .fluentPut("continuation", continuation.token())
+                .fluentPut("clickTracking", new JSONObject()
+                        .fluentPut("clickTrackingParams", continuation.clickTrackingParameters()));
+
+        RequestWebpage request = new RequestWebpage(url, "POST", body.toJSONString())
+                .header("X-YouTube-Client-Name", "1")
+                .header("X-YouTube-Client-Version", continuation.clientVersion())
+                .header("Content-Type", "application/json");
+
+        Response<String> response = downloader.downloadWebpage(request);
+        if (!response.ok()) {
+            YoutubeException e = new YoutubeException.DownloadException(String.format("Could not load url: %s, exception: %s", url, response.error().getMessage()));
+            if (callback != null) {
+                callback.onError(e);
+            }
+            throw e;
+        }
+        String html = response.data();
+
+        JSONObject jsonResponse;
+        JSONArray rootContents;
+        try {
+            jsonResponse = JSON.parseObject(html);
+            if (jsonResponse.containsKey("onResponseReceivedCommands")) {
+                rootContents = jsonResponse.getJSONArray("onResponseReceivedCommands")
+                        .getJSONObject(0)
+                        .getJSONObject("appendContinuationItemsAction")
+                        .getJSONArray("continuationItems");
+            } else {
+                throw new YoutubeException.BadPageException("Could not find continuation data");
+            }
+        } catch (YoutubeException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new YoutubeException.BadPageException("Could not parse search continuation json");
+        }
+        
+        int estimatedResults = extractor.extractIntegerFromText(jsonResponse.getString("estimatedResults"));
+        SearchContinuation nextContinuation = getSearchContinuation(rootContents, continuation.clientVersion());
+        return parseSearchResult(estimatedResults, rootContents, nextContinuation);
+    }
+
+    private SearchContinuation getSearchContinuation(JSONArray rootContents, String clientVersion) {
+        if (rootContents.size() > 1) {
+            if (rootContents.getJSONObject(1).containsKey("continuationItemRenderer")) {
+                JSONObject endPoint = rootContents.getJSONObject(1)
+                        .getJSONObject("continuationItemRenderer")
+                        .getJSONObject("continuationEndpoint");
+                String token = endPoint.getJSONObject("continuationCommand").getString("token");
+                String ctp = endPoint.getString("clickTrackingParams");
+                return new SearchContinuation(token, clientVersion, ctp);
+            }
+        }
+        return null;
+    }
+
+    private SearchResult parseSearchResult(long estimatedResults, JSONArray rootContents, SearchContinuation continuation) throws BadPageException {
+        JSONArray contents;
+
+        try {
+            contents = rootContents.getJSONObject(0)
+                    .getJSONObject("itemSectionRenderer")
+                    .getJSONArray("contents");
+        } catch (NullPointerException e) {
+            throw new YoutubeException.BadPageException("Search result contents not found");
+        }
+
+        List<SearchResultItem> items = new ArrayList<>(contents.size());
+        Map<QueryElementType, QueryElement> queryElements = new HashMap<>();
+        for (int i = 0; i < contents.size(); i++) {
+            final SearchResultElement element = parseSearchResultElement(contents.getJSONObject(i));
+            if (element != null) {
+                if (element instanceof SearchResultItem) {
+                    items.add((SearchResultItem) element);
+                } else {
+                    QueryElement queryElement = (QueryElement) element;
+                    queryElements.put(queryElement.type(), queryElement);
+                }
+            }
+        }
+        if (continuation == null) {
+            return new SearchResult(estimatedResults, items, queryElements);
+        } else {
+            return new ContinuatedSearchResult(estimatedResults, items, queryElements, continuation);
+        }
+    }
+
+    private static SearchResultElement parseSearchResultElement(JSONObject jsonItem) {
+        String rendererKey = jsonItem.keySet().iterator().next();
+        JSONObject jsonRenderer = jsonItem.getJSONObject(rendererKey);
+        switch (rendererKey) {
+        case "videoRenderer":
+            return new SearchResultVideoDetails(jsonRenderer, false);
+        case "movieRenderer":
+            return new SearchResultVideoDetails(jsonRenderer, true);
+        case "playlistRenderer":
+            return new SearchResultPlaylistDetails(jsonRenderer);
+        case "channelRenderer":
+            return new SearchResultChannelDetails(jsonRenderer);
+        case "shelfRenderer":
+            return new SearchResultShelf(jsonRenderer);
+        case "showingResultsForRenderer":
+            return new QueryAutoCorrection(jsonRenderer);
+        case "didYouMeanRenderer":
+            return new QuerySuggestion(jsonRenderer);
+        case "horizontalCardListRenderer":
+            return new QueryRefinementList(jsonRenderer);
+       default:
+           System.out.println("Unknown search result element type " + rendererKey);
+           System.out.println(jsonItem);
+           return null;
+        }
+    }
 }

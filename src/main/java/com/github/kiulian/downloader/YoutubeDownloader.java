@@ -2,24 +2,25 @@ package com.github.kiulian.downloader;
 
 
 
-
-import com.github.kiulian.downloader.cipher.CachedCipherFactory;
-import com.github.kiulian.downloader.downloader.*;
-import com.github.kiulian.downloader.downloader.request.*;
-import com.github.kiulian.downloader.downloader.response.Response;
-import com.github.kiulian.downloader.downloader.response.ResponseImpl;
-import com.github.kiulian.downloader.extractor.ExtractorImpl;
-import com.github.kiulian.downloader.model.videos.VideoInfo;
-import com.github.kiulian.downloader.model.playlist.PlaylistInfo;
-import com.github.kiulian.downloader.model.subtitles.SubtitlesInfo;
-import com.github.kiulian.downloader.parser.ParserImpl;
-import com.github.kiulian.downloader.parser.Parser;
+import static com.github.kiulian.downloader.model.Utils.createOutDir;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
 
-import static com.github.kiulian.downloader.model.Utils.createOutDir;
+import com.github.kiulian.downloader.cipher.CachedCipherFactory;
+import com.github.kiulian.downloader.downloader.Downloader;
+import com.github.kiulian.downloader.downloader.DownloaderImpl;
+import com.github.kiulian.downloader.downloader.request.*;
+import com.github.kiulian.downloader.downloader.response.Response;
+import com.github.kiulian.downloader.downloader.response.ResponseImpl;
+import com.github.kiulian.downloader.extractor.ExtractorImpl;
+import com.github.kiulian.downloader.model.playlist.PlaylistInfo;
+import com.github.kiulian.downloader.model.search.SearchResult;
+import com.github.kiulian.downloader.model.subtitles.SubtitlesInfo;
+import com.github.kiulian.downloader.model.videos.VideoInfo;
+import com.github.kiulian.downloader.parser.Parser;
+import com.github.kiulian.downloader.parser.ParserImpl;
 
 public class YoutubeDownloader {
 
@@ -65,6 +66,18 @@ public class YoutubeDownloader {
 
     public Response<PlaylistInfo> getPlaylistInfo(RequestPlaylistInfo request) {
         return parser.parsePlaylist(request);
+    }
+
+    public Response<SearchResult> search(RequestSearchResult request) {
+        return parser.parseSearchResult(request);
+    }
+
+    public Response<SearchResult> searchContinuation(RequestSearchContinuation request) {
+        return parser.parseSearchContinuation(request);
+    }
+
+    public Response<SearchResult> search(RequestSearchable request) {
+        return parser.parseSearcheable(request);
     }
 
     public Response<File> downloadVideoFile(RequestVideoFileDownload request) {
