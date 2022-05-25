@@ -9,8 +9,8 @@ public class SearchResult {
     private final long estimatedResults;
     private final List<SearchResultItem> items;
     private final QuerySuggestion suggestion;
-    private final QueryAutoCorrection autoCorrection;
     private final QueryRefinementList refinementList;
+    private final String autoCorrectedQuery;
 
 
     public SearchResult(long estimatedResults, List<SearchResultItem> items,
@@ -18,20 +18,28 @@ public class SearchResult {
         this.estimatedResults = estimatedResults;
         this.items = items;
         suggestion = (QuerySuggestion) queryElements.get(QueryElementType.SUGGESTION);
-        autoCorrection = (QueryAutoCorrection) queryElements.get(QueryElementType.AUTO_CORRECTION);
         refinementList = (QueryRefinementList) queryElements.get(QueryElementType.REFINEMENT_LIST);
+        if (queryElements.containsKey(QueryElementType.AUTO_CORRECTION)) {
+            autoCorrectedQuery = ((QueryAutoCorrection) queryElements.get(QueryElementType.AUTO_CORRECTION)).query();
+        } else {
+            autoCorrectedQuery = null;
+        }
     }
 
     public QuerySuggestion suggestion() {
         return suggestion;
     }
 
-    public QueryAutoCorrection autoCorrection() {
-        return autoCorrection;
-    }
-
     public QueryRefinementList refinements() {
         return refinementList;
+    }
+
+    public boolean isAutoCorrected() {
+        return autoCorrectedQuery != null;
+    }
+
+    public String autoCorrectedQuery() {
+        return autoCorrectedQuery;
     }
 
     public List<SearchResultVideoDetails> videos() {

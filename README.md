@@ -287,18 +287,17 @@ if (result.suggestion() != null) {
     SearchResult suggestedResult = downloader.search(suggestedRequest).data();
 }
 
-// the query has been auto corrected, force original query
-if (result.autoCorrection() != null) {
-    System.out.println(result.autoCorrection().query()); // corrected query
-    RequestSearchable forcedRequest = new RequestSearchable(result.autoCorrection());
-    SearchResult forcedResult = downloader.search(forcedRequest).data();    
-}
-
 // query refinements
 if (result.refinements() != null) {
     System.out.println(result.refinements().get(0).query()); // refinement query
     RequestSearchable refinedRequest = new RequestSearchable(result.refinements().get(0));
     SearchResult refinedResult = downloader.search(refinedRequest).data();
+}
+
+// the query has been auto corrected, force original query
+if (result.isAutoCorrected()) {
+	System.out.println(result.autoCorrectedQuery()); // corrected query
+	SearchResult forcedResult = downloader.search(request.forceExactQuery(true)).data();    
 }
 
 // details

@@ -41,10 +41,10 @@ public class YoutubeSearchExtractor_Tests {
     }
 
     @Test
-    @DisplayName("search 'lord of the rings' using each type filter and check that items are of the expected type")
+    @DisplayName("search 'star wars' using each type filter and check that items are of the expected type")
     void searchAllTypes_Success() {
         assertDoesNotThrow(() -> {
-            RequestSearchResult request = new RequestSearchResult("lord of the rings");
+            RequestSearchResult request = new RequestSearchResult("star wars");
             SearchResult result;
             
             result = search(request.type(TypeField.VIDEO));
@@ -96,27 +96,24 @@ public class YoutubeSearchExtractor_Tests {
     }
 
     @Test
-    @DisplayName("search 'spiderman' and check that the result contains an auto correction or a suggestion")
+    @DisplayName("search 'lord of the rngs' and check that the result contains an auto correction or a suggestion")
     void searchAutoCorrectionOrSuggestion_Success() {
+        final String expectedCorrection = "lord of the rings";
         assertDoesNotThrow(() -> {
-            SearchResult result;
-            result = search(new RequestSearchResult("spiderman"));
+            RequestSearchResult request = new RequestSearchResult("lord of the rngs");
+            SearchResult result = search(request);
             QuerySuggestion suggestion = result.suggestion();
             if (suggestion == null) {
-                if (result.autoCorrection() != null) {
-                    assertNotNull(result.autoCorrection(), "Result should contain an auto correction or a suggestion");
-                    assertEquals("spider man", result.autoCorrection().query(), "Query replacement");
-                    
-                    // force initial query
-                    result = search(result.autoCorrection());
-                    assertNull(result.autoCorrection(), "Forced result should not contain an auto correction");
-                    assertNotNull(result.suggestion(), "Forced result should contain a suggestion");
-                    assertEquals("spider man", result.suggestion().query(), "Forced result query suggestion");
-                } else {
-                    System.out.println("No auto correction nor suggestion found");
-                }
+                assertTrue(result.isAutoCorrected(), "Result should be auto corrected or contain a suggestion");
+                assertEquals(expectedCorrection, result.autoCorrectedQuery(), "Auto corrected query");
+                
+                // force initial query
+                result = search(request.forceExactQuery(true));
+                assertFalse(result.isAutoCorrected(), "Forced result should not be auto corrected");
+                assertNotNull(result.suggestion(), "Forced result should contain a suggestion");
+                assertEquals(expectedCorrection, result.suggestion().query(), "Forced result query suggestion");
             } else {
-                assertEquals("spider man", suggestion.query(), "Query suggestion");
+                assertEquals(expectedCorrection, suggestion.query(), "Query suggestion");
             }
         });
     }
