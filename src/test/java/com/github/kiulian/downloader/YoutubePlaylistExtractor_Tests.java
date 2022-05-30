@@ -29,12 +29,12 @@ public class YoutubePlaylistExtractor_Tests extends YoutubePlaylistTest {
     @DisplayName("getShortPlaylist should be successful")
     void getShortPlaylist_Success() {
         assertDoesNotThrow(() -> {
-            PlaylistInfo playlist = getPlaylist(BRUCE_PLAYLIST_ID);
-            testPlaylist(playlist, BRUCE_PLAYLIST_ID, "Bruce lee", "dragonoragéedenuit", 10);
-            testVideo(getVideo(playlist, "xML-j6NsGwM", 1),
-                    "legend of bruce lee - Enemy.mp4", "andreaboni1", true);
-            testVideo(getVideo(playlist, "DE3er3wDAik", 10),
-                    "legend of bruce lee - From Heaven.mp4", "andreaboni1", true);
+            PlaylistInfo playlist = getPlaylist(ASK_NASA_PLAYLIST_ID);
+            testPlaylist(playlist, ASK_NASA_PLAYLIST_ID, "#AskNASA", "NASA", 22);
+            testVideo(getVideo(playlist, "t2AgFb4jL1M", 1),
+                    "#AskNASA​​┃ What’s Out There?", "NASA", true);
+            testVideo(getVideo(playlist, "DpXxdSr1FWs", 10),
+                    "#AskNASA┃ How Will Astronauts Dig on the Moon?", "NASA", true);
         });
     }
 
@@ -68,7 +68,7 @@ public class YoutubePlaylistExtractor_Tests extends YoutubePlaylistTest {
             PlaylistInfo playlist = getPlaylist(ELECTRO_PLAYLIST_ID);
             testPlaylist(playlist, ELECTRO_PLAYLIST_ID,
                     "Electronic Music Playlist :D",
-                    "NuttyMrBubbles",
+                    "Brent Parker",
                     -1); // > 2800 videos, unstable
         });
     }
@@ -95,6 +95,14 @@ public class YoutubePlaylistExtractor_Tests extends YoutubePlaylistTest {
     @DisplayName("get playlist should throw exception for unavailable playlist")
     void getPlaylist_Unavailable_ThrowsException() {
         Response<PlaylistInfo> response = downloader.getPlaylistInfo(new RequestPlaylistInfo("12345678901"));
+        assertFalse(response.ok());
+        assertTrue(response.error() instanceof YoutubeException.BadPageException);
+    }
+
+    @Test
+    @DisplayName("get removed playlist should throw exception")
+    void getPlaylist_Removed_ThrowsException() {
+        Response<PlaylistInfo> response = downloader.getPlaylistInfo(new RequestPlaylistInfo(REMOVED_PLAYLIST_ID));
         assertFalse(response.ok());
         assertTrue(response.error() instanceof YoutubeException.BadPageException);
     }
