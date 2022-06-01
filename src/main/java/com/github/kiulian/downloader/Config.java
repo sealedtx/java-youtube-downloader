@@ -34,12 +34,14 @@ public class Config {
 
     private Map<String, String> headers;
     private int maxRetries;
+    private boolean compressionEnabled;
     private ExecutorService executorService;
     private Proxy proxy;
 
     private Config(Builder builder) {
         this.headers = builder.headers;
         this.maxRetries = builder.maxRetries;
+        this.compressionEnabled = builder.compressionEnabled;
         this.executorService = builder.executorService;
         this.proxy = builder.proxy;
     }
@@ -47,6 +49,7 @@ public class Config {
     private Config() {
         this.headers = new HashMap<>();
         this.maxRetries = DEFAULT_RETRY_ON_FAILURE;
+        this.compressionEnabled = true;
         this.executorService = Executors.newCachedThreadPool(threadFactory);
 
         setHeader("User-Agent", DEFAULT_USER_AGENT);
@@ -59,6 +62,10 @@ public class Config {
 
     public void setMaxRetries(int maxRetries) {
         this.maxRetries = maxRetries;
+    }
+
+    public void setCompressionEnabled(boolean enabled) {
+        this.compressionEnabled = enabled;
     }
 
     public void setHeader(String key, String value) {
@@ -93,6 +100,10 @@ public class Config {
         return maxRetries;
     }
 
+    public boolean isCompressionEnabled() {
+        return compressionEnabled;
+    }
+
     public Proxy getProxy() {
         return proxy;
     }
@@ -104,11 +115,17 @@ public class Config {
     public static class Builder {
         private Map<String, String> headers = new HashMap<>();
         private int maxRetries = DEFAULT_RETRY_ON_FAILURE;
+        private boolean compressionEnabled = true;
         private ExecutorService executorService;
         private Proxy proxy;
 
         public Builder maxRetries(int maxRetries) {
             this.maxRetries = maxRetries;
+            return this;
+        }
+
+        public Builder enableCompression(boolean enable) {
+            this.compressionEnabled = enable;
             return this;
         }
 

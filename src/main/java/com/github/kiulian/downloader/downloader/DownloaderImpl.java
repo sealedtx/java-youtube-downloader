@@ -10,6 +10,7 @@ import java.io.*;
 import java.net.*;
 import java.util.Map;
 import java.util.concurrent.*;
+import java.util.zip.GZIPInputStream;
 
 import static com.github.kiulian.downloader.model.Utils.closeSilently;
 
@@ -50,7 +51,7 @@ public class DownloaderImpl implements Downloader {
         StringBuilder result = new StringBuilder();
         do {
             try {
-                HttpURLConnection urlConnection = openConnection(downloadUrl, headers, proxy);
+                HttpURLConnection urlConnection = openConnection(downloadUrl, headers, proxy, config.isCompressionEnabled());
                 urlConnection.setRequestMethod(request.getMethod());
                 if (request.getBody() != null) {
                     urlConnection.setDoOutput(true);
@@ -79,7 +80,11 @@ public class DownloaderImpl implements Downloader {
 
                 BufferedReader br = null;
                 try {
-                    br = new BufferedReader(new InputStreamReader(urlConnection.getInputStream(), "UTF-8"));
+                    InputStream in = urlConnection.getInputStream();
+                    if (config.isCompressionEnabled() && "gzip".equals(urlConnection.getHeaderField("content-encoding"))) {
+                        in = new GZIPInputStream(in);
+                    }
+                    br = new BufferedReader(new InputStreamReader(in, "UTF-8"));
                     String inputLine;
                     while ((inputLine = br.readLine()) != null)
                         result.append(inputLine).append('\n');
@@ -196,7 +201,7 @@ public class DownloaderImpl implements Downloader {
 
     // Downloads the format in one single request
     private void downloadStraight(Format format, OutputStream os, Map<String, String> headers, Proxy proxy, YoutubeCallback<?> callback) throws IOException {
-        HttpURLConnection urlConnection = openConnection(format.url(), headers, proxy);
+        HttpURLConnection urlConnection = openConnection(format.url(), headers, proxy, false);
         int responseCode = urlConnection.getResponseCode();
         if (responseCode != 200) {
             throw new RuntimeException("Failed to download: HTTP " + responseCode);
@@ -232,7 +237,7 @@ public class DownloaderImpl implements Downloader {
                     + done + "-" + (done + toRead - 1)    // range first-last byte positions
                     + "&rn=" + partNumber;                // part number
 
-            HttpURLConnection urlConnection = openConnection(partUrl, headers, proxy);
+            HttpURLConnection urlConnection = openConnection(partUrl, headers, proxy, false);
             int responseCode = urlConnection.getResponseCode();
             if (responseCode != 200) {
                 throw new RuntimeException("Failed to download: HTTP " + responseCode);
@@ -294,7 +299,7 @@ public class DownloaderImpl implements Downloader {
     }
 
 
-    private HttpURLConnection openConnection(String httpUrl, Map<String, String> headers, Proxy proxy) throws IOException {
+    private HttpURLConnection openConnection(String httpUrl, Map<String, String> headers, Proxy proxy, boolean acceptCompression) throws IOException {
         URL url = new URL(httpUrl);
 
         HttpURLConnection urlConnection;
@@ -307,6 +312,9 @@ public class DownloaderImpl implements Downloader {
         }
         for (Map.Entry<String, String> entry : config.getHeaders().entrySet()) {
             urlConnection.setRequestProperty(entry.getKey(), entry.getValue());
+        }
+        if (acceptCompression) {
+            urlConnection.setRequestProperty("Accept-Encoding", "gzip");
         }
         if (headers != null) {
             for (Map.Entry<String, String> entry : headers.entrySet()) {
