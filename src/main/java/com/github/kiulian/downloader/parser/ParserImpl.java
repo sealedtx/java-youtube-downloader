@@ -19,6 +19,8 @@ import com.github.kiulian.downloader.downloader.request.*;
 import com.github.kiulian.downloader.downloader.response.Response;
 import com.github.kiulian.downloader.downloader.response.ResponseImpl;
 import com.github.kiulian.downloader.extractor.Extractor;
+import com.github.kiulian.downloader.extractor.ExtractorFix;
+import com.github.kiulian.downloader.extractor.ExtractorFixImpl;
 import com.github.kiulian.downloader.model.playlist.*;
 import com.github.kiulian.downloader.model.search.*;
 import com.github.kiulian.downloader.model.search.query.*;
@@ -33,6 +35,7 @@ public class ParserImpl implements Parser {
     private final Config config;
     private final Downloader downloader;
     private final Extractor extractor;
+    private final ExtractorFix extractorFix = new ExtractorFixImpl();
     private final CipherFactory cipherFactory;
 
     public ParserImpl(Config config, Downloader downloader, Extractor extractor, CipherFactory cipherFactory) {
@@ -701,7 +704,7 @@ public class ParserImpl implements Parser {
             throw new YoutubeException.BadPageException("Search result root contents not found");
         }
         
-        int estimatedCount = extractor.extractIntegerFromText(initialData.getString("estimatedResults"));
+        long estimatedCount = extractorFix.extractIntegerFromText(initialData.getString("estimatedResults"));
         String clientVersion = extractor.extractClientVersionFromContext(initialData.getJSONObject("responseContext"));
         SearchContinuation continuation = getSearchContinuation(rootContents, clientVersion);
         return parseSearchResult(estimatedCount, rootContents, continuation);
