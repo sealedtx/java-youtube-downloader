@@ -1,7 +1,7 @@
 java-youtube-downloader
 ============
 
-[![](https://jitpack.io/v/sealedtx/java-youtube-downloader.svg)](https://jitpack.io/#sealedtx/java-youtube-downloader)
+[![](https://jitpack.io/v/playjim/java-youtube-downloader.svg)](https://jitpack.io/#playjim/java-youtube-downloader)
 
 Simple java parser for retrieving youtube video metadata.
 
