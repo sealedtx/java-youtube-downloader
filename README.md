@@ -5,7 +5,7 @@ java-youtube-downloader
 
 Simple java parser for retrieving youtube video metadata.
 
-Library is **not stable**, because Youtube often changes web structure of its pages. I don't use this library regularly to find the errors. Thats why errors are fixed as soon as someone finds it and opens an issue. Feel free to report an error or sumbit a PR.
+Library is **not stable**, because Youtube often changes web structure of its pages. I don't use this library regularly to find the errors. Thats why errors are fixed as soon as someone finds it and opens an issue. Feel free to report an error or submit a PR.
 
 **WARNING**: Youtube API does not support a video download. In fact, it is prohibited - [Terms of Service - II. Prohibitions](https://developers.google.com/youtube/terms/api-services-terms-of-service).
 <br>**WARNING**: Downloading videos may violate copyrights!
