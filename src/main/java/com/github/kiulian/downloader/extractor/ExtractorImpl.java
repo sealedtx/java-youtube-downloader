@@ -152,4 +152,13 @@ public class ExtractorImpl implements Extractor {
         return 0;
     }
 
+    @Override
+    public long extractLongFromText(String text) {
+        Matcher matcher = TEXT_NUMBER_REGEX.matcher(text);
+        if (matcher.find()) {
+            return Long.parseLong(matcher.group(0).replaceAll("[, ']", ""));
+        }
+        return 0;
+    }
+
 }

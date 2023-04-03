@@ -701,7 +701,7 @@ public class ParserImpl implements Parser {
             throw new YoutubeException.BadPageException("Search result root contents not found");
         }
         
-        int estimatedCount = extractor.extractIntegerFromText(initialData.getString("estimatedResults"));
+        long estimatedCount = extractor.extractLongFromText(initialData.getString("estimatedResults"));
         String clientVersion = extractor.extractClientVersionFromContext(initialData.getJSONObject("responseContext"));
         SearchContinuation continuation = getSearchContinuation(rootContents, clientVersion);
         return parseSearchResult(estimatedCount, rootContents, continuation);
@@ -752,7 +752,7 @@ public class ParserImpl implements Parser {
             throw new YoutubeException.BadPageException("Could not parse search continuation json");
         }
         
-        int estimatedResults = extractor.extractIntegerFromText(jsonResponse.getString("estimatedResults"));
+        long estimatedResults = extractor.extractLongFromText(jsonResponse.getString("estimatedResults"));
         SearchContinuation nextContinuation = getSearchContinuation(rootContents, continuation.clientVersion());
         return parseSearchResult(estimatedResults, rootContents, nextContinuation);
     }
