@@ -389,7 +389,7 @@ public class ParserImpl implements Parser {
                 .getJSONObject("playlistSidebarPrimaryInfoRenderer")
                 .getJSONArray("stats");
         int videoCount = extractor.extractIntegerFromText(stats.getJSONObject(0).getJSONArray("runs").getJSONObject(0).getString("text"));
-        int viewCount = extractor.extractIntegerFromText(stats.getJSONObject(1).getString("simpleText"));
+        long viewCount = extractor.extractLongFromText(stats.getJSONObject(1).getString("simpleText"));
 
         return new PlaylistDetails(playlistId, title, author, videoCount, viewCount);
     }
