@@ -6,10 +6,10 @@ public class PlaylistDetails {
     private String playlistId;
     private String title;
     private String author;
-    private long videoCount;
-    private long viewCount;
+    private int videoCount;
+    private int viewCount;
 
-    public PlaylistDetails(String playlistId, String title, String author, long videoCount, long viewCount) {
+    public PlaylistDetails(String playlistId, String title, String author, int videoCount, int viewCount) {
         super();
         this.playlistId = playlistId;
         this.title = title;
@@ -30,11 +30,11 @@ public class PlaylistDetails {
         return author;
     }
 
-    public long videoCount() {
+    public int videoCount() {
         return videoCount;
     }
 
-    public long viewCount() {
+    public int viewCount() {
         return viewCount;
     }
 }

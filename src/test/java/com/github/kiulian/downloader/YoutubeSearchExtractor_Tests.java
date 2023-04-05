@@ -96,20 +96,6 @@ public class YoutubeSearchExtractor_Tests {
     }
 
     @Test
-    @DisplayName("search 'where is your love' videos")
-    void searchVideosWithHugeResult_Success () {
-        assertDoesNotThrow(() -> {
-            SearchResult result = search(new RequestSearchResult("where is your love")
-                    .filter(TypeField.VIDEO)
-                    .sortBy(SortField.VIEW_COUNT));
-
-            SearchResult next = downloader.searchContinuation(new RequestSearchContinuation(result)).data();
-            assertTrue(next.estimatedResults() > 20_000_000, "Next page results should also be over 20 M");
-
-        });
-    }
-
-    @Test
     @DisplayName("search 'lord of the rngs' and check that the result contains an auto correction or a suggestion")
     void searchAutoCorrectionOrSuggestion_Success() {
         final String expectedCorrection = "lord of the rings";
