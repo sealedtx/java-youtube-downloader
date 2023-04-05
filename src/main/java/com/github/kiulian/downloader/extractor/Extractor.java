@@ -22,4 +22,6 @@ public interface Extractor {
 
     int extractIntegerFromText(String text);
 
+    long extractLongFromText(String text);
+
 }
