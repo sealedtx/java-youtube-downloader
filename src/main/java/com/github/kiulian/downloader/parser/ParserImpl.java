@@ -388,13 +388,13 @@ public class ParserImpl implements Parser {
         JSONArray stats = sideBarItems.getJSONObject(0)
                 .getJSONObject("playlistSidebarPrimaryInfoRenderer")
                 .getJSONArray("stats");
-        int videoCount = extractor.extractIntegerFromText(stats.getJSONObject(0).getJSONArray("runs").getJSONObject(0).getString("text"));
-        int viewCount = extractor.extractIntegerFromText(stats.getJSONObject(1).getString("simpleText"));
+        long videoCount = extractor.extractLongFromText(stats.getJSONObject(0).getJSONArray("runs").getJSONObject(0).getString("text"));
+        long viewCount = extractor.extractLongFromText(stats.getJSONObject(1).getString("simpleText"));
 
         return new PlaylistDetails(playlistId, title, author, videoCount, viewCount);
     }
 
-    private List<PlaylistVideoDetails> parsePlaylistVideos(JSONObject initialData, int videoCount) throws YoutubeException {
+    private List<PlaylistVideoDetails> parsePlaylistVideos(JSONObject initialData, long videoCount) throws YoutubeException {
         JSONObject content;
 
         try {
@@ -413,8 +413,8 @@ public class ParserImpl implements Parser {
         }
 
         List<PlaylistVideoDetails> videos;
-        if (videoCount > 0) {
-            videos = new ArrayList<>(videoCount);
+        if (videoCount > 0 && videoCount < Integer.MAX_VALUE) {
+            videos = new ArrayList<>((int) videoCount);
         } else {
             videos = new LinkedList<>();
         }
@@ -688,7 +688,7 @@ public class ParserImpl implements Parser {
         }
 
         String html = response.data();
-        
+
         JSONObject initialData = extractor.extractInitialDataFromHtml(html);
         JSONArray rootContents;
         try {
@@ -700,7 +700,7 @@ public class ParserImpl implements Parser {
         } catch (NullPointerException e) {
             throw new YoutubeException.BadPageException("Search result root contents not found");
         }
-        
+
         long estimatedCount = extractor.extractLongFromText(initialData.getString("estimatedResults"));
         String clientVersion = extractor.extractClientVersionFromContext(initialData.getJSONObject("responseContext"));
         SearchContinuation continuation = getSearchContinuation(rootContents, clientVersion);
@@ -751,7 +751,7 @@ public class ParserImpl implements Parser {
         } catch (Exception e) {
             throw new YoutubeException.BadPageException("Could not parse search continuation json");
         }
-        
+
         long estimatedResults = extractor.extractLongFromText(jsonResponse.getString("estimatedResults"));
         SearchContinuation nextContinuation = getSearchContinuation(rootContents, continuation.clientVersion());
         return parseSearchResult(estimatedResults, rootContents, nextContinuation);
