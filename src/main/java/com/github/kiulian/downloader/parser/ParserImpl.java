@@ -142,7 +142,11 @@ public class ParserImpl implements Parser {
         JSONObject playerResponse = args.getJSONObject("player_response");
 
         if (!playerResponse.containsKey("streamingData") && !playerResponse.containsKey("videoDetails")) {
-            throw new YoutubeException.BadPageException("streamingData and videoDetails not found");
+            YoutubeException e = new YoutubeException.BadPageException("streamingData and videoDetails not found");
+            if (callback != null) {
+                callback.onError(e);
+            }
+            throw e;
         }
 
         VideoDetails videoDetails = parseVideoDetails(videoId, playerResponse);
@@ -158,8 +162,15 @@ public class ParserImpl implements Parser {
             }
             JSONObject context = playerConfig.getJSONObject("args").getJSONObject("player_response").getJSONObject("responseContext");
             String clientVersion = extractor.extractClientVersionFromContext(context);
-            List<Format> formats = parseFormats(playerResponse, jsUrl, clientVersion);
-
+            List<Format> formats;
+            try {
+                formats = parseFormats(playerResponse, jsUrl, clientVersion);
+            } catch (YoutubeException e) {
+                if (callback != null) {
+                    callback.onError(e);
+                }
+                throw e;
+            }
             List<SubtitlesInfo> subtitlesInfo = parseCaptions(playerResponse);
             return new VideoInfo(videoDetails, formats, subtitlesInfo);
         } else {
