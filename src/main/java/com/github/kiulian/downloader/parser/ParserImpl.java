@@ -60,7 +60,7 @@ public class ParserImpl implements Parser {
     private VideoInfo parseVideo(String videoId, YoutubeCallback<VideoInfo> callback) throws YoutubeException {
         // try to spoof android
         // workaround for issue https://github.com/sealedtx/java-youtube-downloader/issues/97
-        VideoInfo videoInfo = parseVideoAndroid(videoId);
+        VideoInfo videoInfo = parseVideoAndroid(videoId, callback);
         if (videoInfo == null) {
             videoInfo = parseVideoWeb(videoId, callback);
         }
@@ -70,7 +70,7 @@ public class ParserImpl implements Parser {
         return videoInfo;
     }
 
-    private VideoInfo parseVideoAndroid(String videoId) throws YoutubeException {
+    private VideoInfo parseVideoAndroid(String videoId, YoutubeCallback<VideoInfo> callback) throws YoutubeException {
         String url = "https://youtubei.googleapis.com/youtubei/v1/player?key=" + ANDROID_APIKEY;
 
         String body =
@@ -105,7 +105,15 @@ public class ParserImpl implements Parser {
         if (videoDetails.isDownloadable()) {
             JSONObject context = playerResponse.getJSONObject("responseContext");
             String clientVersion = extractor.extractClientVersionFromContext(context);
-            List<Format> formats = parseFormats(playerResponse, null, clientVersion);
+            List<Format> formats;
+            try {
+                formats = parseFormats(playerResponse, null, clientVersion);
+            } catch (YoutubeException e) {
+                if (callback != null) {
+                    callback.onError(e);
+                }
+                throw e;
+            }
 
             List<SubtitlesInfo> subtitlesInfo = parseCaptions(playerResponse);
             return new VideoInfo(videoDetails, formats, subtitlesInfo);
