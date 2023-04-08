@@ -355,7 +355,7 @@ Include
 <dependency>
   <groupId>com.github.sealedtx</groupId>
   <artifactId>java-youtube-downloader</artifactId>
-  <version>3.2.0</version>
+  <version>3.2.1</version>
 </dependency>
 ```
 
@@ -371,7 +371,7 @@ allprojects {
 ```
 ```gradle 
 dependencies {
-  implementation 'com.github.sealedtx:java-youtube-downloader:3.2.0'
+  implementation 'com.github.sealedtx:java-youtube-downloader:3.2.1'
 }
 ```
 ### Android
