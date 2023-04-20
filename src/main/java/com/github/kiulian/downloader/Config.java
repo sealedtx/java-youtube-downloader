@@ -6,7 +6,9 @@ import com.github.kiulian.downloader.downloader.proxy.ProxyCredentialsImpl;
 
 import java.net.InetSocketAddress;
 import java.net.Proxy;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -14,6 +16,10 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class Config {
+
+    public static final String ANDROID_CLIENT = "android";
+    public static final String WEB_CLIENT = "web";
+
     private static final ThreadFactory threadFactory = new ThreadFactory() {
         private static final String NAME_PREFIX = "yt-downloader-";
         private final AtomicInteger threadNumber = new AtomicInteger(1);
@@ -31,12 +37,14 @@ public class Config {
     private static final String DEFAULT_USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.121 Safari/537.36";
     private static final String DEFAULT_ACCEPT_LANG = "en-US,en;";
     private static final int DEFAULT_RETRY_ON_FAILURE = 0;
+    private static final List<String> DEFAULT_CLIENTS_PRIORITY = Arrays.asList(ANDROID_CLIENT, WEB_CLIENT);
 
     private Map<String, String> headers;
     private int maxRetries;
     private boolean compressionEnabled;
     private ExecutorService executorService;
     private Proxy proxy;
+    private List<String> clientsPriority;
 
     private Config(Builder builder) {
         this.headers = builder.headers;
@@ -44,6 +52,7 @@ public class Config {
         this.compressionEnabled = builder.compressionEnabled;
         this.executorService = builder.executorService;
         this.proxy = builder.proxy;
+        this.clientsPriority = builder.clientsPriority;
     }
 
     private Config() {
@@ -51,6 +60,7 @@ public class Config {
         this.maxRetries = DEFAULT_RETRY_ON_FAILURE;
         this.compressionEnabled = true;
         this.executorService = Executors.newCachedThreadPool(threadFactory);
+        this.clientsPriority = DEFAULT_CLIENTS_PRIORITY;
 
         setHeader("User-Agent", DEFAULT_USER_AGENT);
         setHeader("Accept-language", DEFAULT_ACCEPT_LANG);
@@ -92,6 +102,15 @@ public class Config {
         ProxyAuthenticator.setDefault(new ProxyAuthenticator(credentials));
     }
 
+    public void setClientsPriority(List<String> clientsPriority) {
+        for (String client : clientsPriority) {
+            if (!DEFAULT_CLIENTS_PRIORITY.contains(client)) {
+                throw new IllegalArgumentException("Supported clients: " + DEFAULT_CLIENTS_PRIORITY);
+            }
+        }
+        this.clientsPriority = clientsPriority;
+    }
+
     public ExecutorService getExecutorService() {
         return executorService;
     }
@@ -112,12 +131,17 @@ public class Config {
         return headers;
     }
 
+    public List<String> getClientsPriority() {
+        return clientsPriority;
+    }
+
     public static class Builder {
         private Map<String, String> headers = new HashMap<>();
         private int maxRetries = DEFAULT_RETRY_ON_FAILURE;
         private boolean compressionEnabled = true;
         private ExecutorService executorService;
         private Proxy proxy;
+        private List<String> clientsPriority = DEFAULT_CLIENTS_PRIORITY;
 
         public Builder maxRetries(int maxRetries) {
             this.maxRetries = maxRetries;
@@ -155,6 +179,16 @@ public class Config {
 
         public Builder proxyCredentialsManager(ProxyCredentials credentials) {
             ProxyAuthenticator.setDefault(new ProxyAuthenticator(credentials));
+            return this;
+        }
+
+        public Builder setClientsPriority(List<String> clientsPriority) {
+            for (String client : clientsPriority) {
+                if (!DEFAULT_CLIENTS_PRIORITY.contains(client)) {
+                    throw new IllegalArgumentException("Supported clients: " + DEFAULT_CLIENTS_PRIORITY);
+                }
+            }
+            this.clientsPriority = clientsPriority;
             return this;
         }
 

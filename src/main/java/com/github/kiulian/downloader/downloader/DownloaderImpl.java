@@ -62,7 +62,8 @@ public class DownloaderImpl implements Downloader {
                 }
                 int responseCode = urlConnection.getResponseCode();
                 if (responseCode != 200) {
-                    YoutubeException.DownloadException e = new YoutubeException.DownloadException("Failed to download: HTTP " + responseCode);
+                    String message = String.format("Failed to download url: %s, response code: %s", downloadUrl, responseCode);
+                    YoutubeException.DownloadException e = new YoutubeException.DownloadException(message);
                     if (callback != null) {
                         callback.onError(e);
                     }
@@ -71,7 +72,8 @@ public class DownloaderImpl implements Downloader {
 
                 int contentLength = urlConnection.getContentLength();
                 if (contentLength == 0) {
-                    YoutubeException.DownloadException e = new YoutubeException.DownloadException("Failed to download: Response is empty");
+                    String message = String.format("Failed to download url: %s, response is empty", downloadUrl);
+                    YoutubeException.DownloadException e = new YoutubeException.DownloadException(message);
                     if (callback != null) {
                         callback.onError(e);
                     }

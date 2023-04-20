@@ -10,6 +10,7 @@ import com.github.kiulian.downloader.model.videos.quality.AudioQuality;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.util.Collections;
 import java.util.List;
 
 import static com.github.kiulian.downloader.TestUtils.*;
@@ -19,6 +20,31 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @DisplayName("Tests extracting metadata for youtube videos")
 public class YoutubeVideoExtractor_Tests {
+
+    @Test
+    void getVideo_Test() {
+        YoutubeDownloader downloader = new YoutubeDownloader();
+        downloader.getConfig().setClientsPriority(Collections.singletonList(Config.WEB_CLIENT));
+
+        assertDoesNotThrow(() -> {
+            Response<VideoInfo> response = downloader.getVideoInfo(new RequestVideoInfo("GmG4X9PGOXs"));
+            if (!response.ok()) {
+                if (response.error() instanceof YoutubeException) {
+                    YoutubeException ytE = (YoutubeException) response.error();
+                    String additionalData = ytE.getAdditionalData();
+                    String step = ytE.getStep();
+                    String message = ytE.getMessage();
+                    System.out.println(message);
+                    System.out.println(step);
+                    System.out.println(additionalData);
+                }
+            } else {
+                final VideoInfo data = response.data();
+                System.out.println(data.details().title());
+            }
+            assertTrue(response.ok());
+        });
+    }
 
     @Test
     @DisplayName("getVideo should be successful for default videos without signature")

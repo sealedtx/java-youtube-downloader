@@ -14,6 +14,8 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static com.github.kiulian.downloader.YoutubeException.STEP_EMBED_CLIENT_PLAYER_REQUEST;
+
 public class ExtractorImpl implements Extractor {
     private static final String DEFAULT_CLIENT_VERSION = "2.20200720.00.02";
 
@@ -49,12 +51,14 @@ public class ExtractorImpl implements Extractor {
             }
         }
         if (ytInitialData == null) {
-            throw new YoutubeException.BadPageException("Could not find initial data on web page");
+            String message = "Could not find initial data on web page";
+            throw new YoutubeException.ExtractionException(message, html);
         }
         try {
             return JSON.parseObject(ytInitialData);
         } catch (Exception e) {
-            throw new YoutubeException.BadPageException("Initial data contains invalid json");
+            String message = "Initial data contains invalid json";
+            throw new YoutubeException.ExtractionException(message, ytInitialData);
         }
     }
 
@@ -70,7 +74,8 @@ public class ExtractorImpl implements Extractor {
             }
         }
         if (ytPlayerConfig == null) {
-            throw new YoutubeException.BadPageException("Could not find player config on web page");
+            String message = "Could not find player config on web page";
+            throw new YoutubeException.ExtractionException(message, html);
         }
 
         try {
@@ -81,7 +86,8 @@ public class ExtractorImpl implements Extractor {
                 return new JSONObject().fluentPut("args", new JSONObject().fluentPut("player_response", config));
             }
         } catch (Exception e) {
-            throw new YoutubeException.BadPageException("Player config contains invalid json");
+            String message = "Player config contains invalid json";
+            throw new YoutubeException.ExtractionException(message, ytPlayerConfig);
         }
     }
 
@@ -90,7 +96,8 @@ public class ExtractorImpl implements Extractor {
         Matcher matcher = SUBTITLES_LANG_CODE_PATTERN.matcher(xml);
 
         if (!matcher.find()) {
-            throw new YoutubeException.BadPageException("Could not find any language code in subtitles xml");
+            String message = "Could not find any language code in subtitles xml";
+            throw new YoutubeException.ExtractionException(message, xml);
         }
 
         List<String> languages = new ArrayList<>();
@@ -108,7 +115,13 @@ public class ExtractorImpl implements Extractor {
             js = config.getJSONObject("assets").getString("js");
         } else {
             // if assets not found - download embed webpage and search there
-            Response<String> response = downloader.downloadWebpage(new RequestWebpage("https://www.youtube.com/embed/" + videoId));
+            String embedUrl = "https://www.youtube.com/embed/" + videoId;
+            Response<String> response = downloader.downloadWebpage(new RequestWebpage(embedUrl));
+            if (!response.ok()) {
+                String message = String.format("Could not load url: %s, exception: %s", embedUrl, response.error().getMessage());
+                throw new YoutubeException.DownloadException(message, STEP_EMBED_CLIENT_PLAYER_REQUEST, message);
+            }
+
             String html = response.data();
             Matcher matcher = ASSETS_JS_REGEX.matcher(html);
             if (matcher.find()) {
@@ -121,7 +134,8 @@ public class ExtractorImpl implements Extractor {
             }
         }
         if (js == null) {
-            throw new YoutubeException.BadPageException("Could not extract js url: assets not found");
+            String message = "Could not extract js url: assets not found";
+            throw new YoutubeException.ExtractionException(message, config.toJSONString());
         }
         return "https://youtube.com" + js;
     }

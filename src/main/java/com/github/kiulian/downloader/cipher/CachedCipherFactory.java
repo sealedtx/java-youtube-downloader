@@ -2,6 +2,7 @@ package com.github.kiulian.downloader.cipher;
 
 
 import com.github.kiulian.downloader.YoutubeException;
+import com.github.kiulian.downloader.YoutubeException.*;
 import com.github.kiulian.downloader.downloader.Downloader;
 import com.github.kiulian.downloader.downloader.request.RequestWebpage;
 import com.github.kiulian.downloader.downloader.response.Response;
@@ -9,6 +10,8 @@ import com.github.kiulian.downloader.downloader.response.Response;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import static com.github.kiulian.downloader.YoutubeException.STEP_DOWNLOAD_JS_REQUEST;
 
 public class CachedCipherFactory implements CipherFactory {
 
@@ -76,7 +79,7 @@ public class CachedCipherFactory implements CipherFactory {
         if (cipher == null) {
             Response<String> response = downloader.downloadWebpage(new RequestWebpage(jsUrl));
             if (!response.ok()) {
-                throw new YoutubeException.DownloadException(String.format("Could not load url: %s, exception: %s", jsUrl, response.error().getMessage()));
+                throw new DownloadException(response.error().getMessage(), STEP_DOWNLOAD_JS_REQUEST, response.data());
             }
             String js = response.data();
 
@@ -125,7 +128,7 @@ public class CachedCipherFactory implements CipherFactory {
             }
             return transformFunctions;
         }
-        throw new YoutubeException.CipherException("Transformation functions not found");
+        throw new CipherException("Transformation functions not found");
     }
 
     /**
@@ -163,7 +166,7 @@ public class CachedCipherFactory implements CipherFactory {
                 return new JsFunction(var, name, argument);
             }
         }
-        throw new YoutubeException.CipherException("Could not parse js function");
+        throw new CipherException("Could not parse js function");
     }
 
     /**
@@ -182,7 +185,7 @@ public class CachedCipherFactory implements CipherFactory {
             }
         }
 
-        throw new YoutubeException.CipherException("Initial function name not found");
+        throw new CipherException("Initial function name not found");
     }
 
     /**
@@ -211,7 +214,7 @@ public class CachedCipherFactory implements CipherFactory {
             return matcher.group(1).replaceAll("\n", " ").split(", ");
         }
 
-        throw new YoutubeException.CipherException("Transform object not found");
+        throw new CipherException("Transform object not found");
     }
 
     /**
@@ -248,7 +251,7 @@ public class CachedCipherFactory implements CipherFactory {
                 return entry.getValue();
             }
         }
-        throw new YoutubeException.CipherException("Map function not found");
+        throw new CipherException("Map function not found");
     }
 
 }
