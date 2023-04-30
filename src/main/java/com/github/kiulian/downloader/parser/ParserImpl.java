@@ -80,8 +80,12 @@ public class ParserImpl implements Parser {
                 "    \"client\": {" +
                 "      \"hl\": \"en\"," +
                 "      \"gl\": \"US\"," +
-                "      \"clientName\": \"ANDROID\"," +
-                "      \"clientVersion\": \"16.02\"" +
+                "      \"clientName\": \"TV_UNPLUGGED_ANDROID\"," +
+                "      \"clientVersion\": \"1.37\"," +
+                "      \"androidSdkVersion\": 31," +
+                "      \"osName\": \"Android\"," +
+                "      \"osVersion\": \"12\"," +
+                "      \"platform\": \"MOBILE\"" +
                 "    }" +
                 "  }" +
                 "}";
