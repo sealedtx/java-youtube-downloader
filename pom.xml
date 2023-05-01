@@ -6,7 +6,7 @@
 
     <groupId>com.github.ikiulian</groupId>
     <artifactId>java-youtube-downloader</artifactId>
-    <version>3.2.2</version>
+    <version>3.2.3</version>
 
     <name>Java youtube video downloader</name>
     <description>Java parser for retrieving youtube video meta info</description>
