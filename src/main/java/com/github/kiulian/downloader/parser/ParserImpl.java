@@ -80,8 +80,9 @@ public class ParserImpl implements Parser {
                 "    \"client\": {" +
                 "      \"hl\": \"en\"," +
                 "      \"gl\": \"US\"," +
-                "      \"clientName\": \"ANDROID\"," +
-                "      \"clientVersion\": \"16.02\"" +
+                "      \"clientName\": \"ANDROID_TESTSUITE\"," +
+                "      \"clientVersion\": \"1.9\"," +
+                "      \"androidSdkVersion\": 31" +
                 "    }" +
                 "  }" +
                 "}";
