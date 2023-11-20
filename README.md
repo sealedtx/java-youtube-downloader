@@ -1,7 +1,7 @@
 java-youtube-downloader
 ============
 
-[![](https://jitpack.io/v/sealedtx/java-youtube-downloader.svg)](https://jitpack.io/#sealedtx/java-youtube-downloader)
+[![](https://jitpack.io/v/heisfibi/java-youtube-downloader.svg)](https://jitpack.io/#heisfibi/java-youtube-downloader)
 
 Simple java parser for retrieving youtube video metadata.
 
@@ -353,9 +353,9 @@ Include
 ```
 ```xml
 <dependency>
-  <groupId>com.github.sealedtx</groupId>
+  <groupId>com.github.heisfibi</groupId>
   <artifactId>java-youtube-downloader</artifactId>
-  <version>3.2.3</version>
+  <version>1.0.0</version>
 </dependency>
 ```
 
@@ -371,7 +371,7 @@ allprojects {
 ```
 ```gradle 
 dependencies {
-  implementation 'com.github.sealedtx:java-youtube-downloader:3.2.3'
+  implementation 'com.github.heisfibi:java-youtube-downloader:1.0.0'
 }
 ```
 ### Android
