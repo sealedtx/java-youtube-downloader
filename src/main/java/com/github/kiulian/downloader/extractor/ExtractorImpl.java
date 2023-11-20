@@ -9,6 +9,7 @@ import com.github.kiulian.downloader.YoutubeException;
 import com.github.kiulian.downloader.downloader.Downloader;
 import com.github.kiulian.downloader.downloader.request.RequestWebpage;
 import com.github.kiulian.downloader.downloader.response.Response;
+import org.apache.commons.text.StringEscapeUtils;
 
 import java.util.*;
 import java.util.regex.Matcher;
@@ -99,6 +100,22 @@ public class ExtractorImpl implements Extractor {
             languages.add(language);
         } while (matcher.find());
         return languages;
+    }
+
+    @Override
+    public String extractSubtitleUrlfromHtml(String html, String videoId) throws YoutubeException {
+        String pattern = "https://www\\.youtube\\.com/api/timedtext\\?v=" + videoId + "[^\"']+";
+        Pattern regex = Pattern.compile(pattern);
+        Matcher matcher = regex.matcher(html); 
+
+        if (!matcher.find()) {
+            throw new YoutubeException.BadPageException("Could not any subtitle url in the html");
+        }
+
+        String escapeUrl = matcher.group(0);
+        String url = StringEscapeUtils.unescapeJava(escapeUrl);
+
+        return url;
     }
 
     @Override
