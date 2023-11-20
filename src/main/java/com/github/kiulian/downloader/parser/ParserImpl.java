@@ -590,21 +590,26 @@ public class ParserImpl implements Parser {
         }
     }
 
-    private List<SubtitlesInfo> parseSubtitlesInfo(String videoId, YoutubeCallback<List<SubtitlesInfo>> callback) throws YoutubeException {
-        String xmlUrl = "https://video.google.com/timedtext?hl=en&type=list&v=" + videoId;
+       private List<SubtitlesInfo> parseSubtitlesInfo(String videoId, YoutubeCallback<List<SubtitlesInfo>> callback)
+            throws YoutubeException {
+        String xmlUrl = "https://www.youtube.com/watch?v=" + videoId;
 
         Response<String> response = downloader.downloadWebpage(new RequestWebpage(xmlUrl));
         if (!response.ok()) {
-            YoutubeException e = new YoutubeException.DownloadException(String.format("Could not load url: %s, exception: %s", xmlUrl, response.error().getMessage()));
+            YoutubeException e = new YoutubeException.DownloadException(
+                    String.format("Could not load url: %s, exception: %s", xmlUrl, response.error().getMessage()));
             if (callback != null) {
                 callback.onError(e);
             }
             throw e;
         }
-        String xml = response.data();
+        String html = response.data();
         List<String> languages;
+
+        String url = "";
         try {
-            languages = extractor.extractSubtitlesLanguagesFromXml(xml);
+            url = extractor.extractSubtitleUrlfromHtml(html, videoId);
+            languages = extractor.extractSubtitlesLanguagesFromXml(url);
         } catch (YoutubeException e) {
             if (callback != null) {
                 callback.onError(e);
@@ -614,14 +619,12 @@ public class ParserImpl implements Parser {
 
         List<SubtitlesInfo> subtitlesInfo = new ArrayList<>();
         for (String language : languages) {
-            String url = String.format("https://www.youtube.com/api/timedtext?lang=%s&v=%s",
-                    language, videoId);
             subtitlesInfo.add(new SubtitlesInfo(url, language, false));
         }
 
         return subtitlesInfo;
     }
-
+    
     @Override
     public Response<SearchResult> parseSearchResult(RequestSearchResult request) {
         if (request.isAsync()) {
