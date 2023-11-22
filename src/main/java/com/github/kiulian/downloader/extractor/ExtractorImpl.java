@@ -28,7 +28,7 @@ public class ExtractorImpl implements Extractor {
             Pattern.compile("ytInitialData = (\\{.*?\\});")
     );
 
-    private static final Pattern SUBTITLES_LANG_CODE_PATTERN = Pattern.compile("lang_code=\"(.{2,3})\"");
+    private static final Pattern SUBTITLES_LANG_CODE_PATTERN = Pattern.compile("lang=(.{2,3})");
     private static final Pattern TEXT_NUMBER_REGEX = Pattern.compile("[0-9]+[0-9, ']*");
     private static final Pattern ASSETS_JS_REGEX = Pattern.compile("\"assets\":.+?\"js\":\\s*\"([^\"]+)\"");
     private static final Pattern EMB_JS_REGEX = Pattern.compile("\"jsUrl\":\\s*\"([^\"]+)\"");
@@ -103,7 +103,7 @@ public class ExtractorImpl implements Extractor {
     }
 
     @Override
-    public String extractSubtitleUrlfromHtml(String html, String videoId) throws YoutubeException {
+    public String extractSubtitleUrlFromHtml(String html, String videoId) throws YoutubeException {
         String pattern = "https://www\\.youtube\\.com/api/timedtext\\?v=" + videoId + "[^\"']+";
         Pattern regex = Pattern.compile(pattern);
         Matcher matcher = regex.matcher(html); 
