@@ -613,10 +613,8 @@ public class ParserImpl implements Parser {
     private List<SubtitlesInfo> parseSubtitlesInfo(String videoId, YoutubeCallback<List<SubtitlesInfo>> callback)
             throws YoutubeException {
         String xmlUrl = "https://www.youtube.com/watch?v=" + videoId;
-
-        System.out.print("ssssssssss" + xmlUrl);
+        
         Response<String> response = downloader.downloadWebpage(new RequestWebpage(xmlUrl));
-        System.out.print("ssssssssss" + response);
         if (!response.ok()) {
             YoutubeException e = new YoutubeException.DownloadException(
                     String.format("Could not load url: %s, exception: %s", xmlUrl, response.error().getMessage()));
@@ -628,26 +626,22 @@ public class ParserImpl implements Parser {
         String html = response.data();
         List<String> languages;
 
-        String url = "";
+        String url;
         try {
-            url = extractor.extractSubtitleUrlfromHtml(html, videoId);
-            System.out.print("ssssssssss" + url);
+            url = extractor.extractSubtitleUrlFromHtml(html, videoId);
             languages = extractor.extractSubtitlesLanguagesFromXml(url);
-            System.out.print("ssssssssss" + languages);
+
         } catch (YoutubeException e) {
             if (callback != null) {
                 callback.onError(e);
             }
             throw e;
         }
-        System.out.print("ssssssssss" + url);
 
         List<SubtitlesInfo> subtitlesInfo = new ArrayList<>();
         for (String language : languages) {
             subtitlesInfo.add(new SubtitlesInfo(url, language, false));
         }
-
-        System.out.print("ssssssssss" + subtitlesInfo);
         return subtitlesInfo;
     }
 
