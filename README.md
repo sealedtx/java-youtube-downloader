@@ -355,7 +355,7 @@ Include
 <dependency>
   <groupId>com.github.heisfibi</groupId>
   <artifactId>java-youtube-downloader</artifactId>
-  <version>1.0.0</version>
+  <version>1.0.1</version>
 </dependency>
 ```
 
@@ -371,7 +371,7 @@ allprojects {
 ```
 ```gradle 
 dependencies {
-  implementation 'com.github.heisfibi:java-youtube-downloader:1.0.0'
+  implementation 'com.github.heisfibi:java-youtube-downloader:1.0.1'
 }
 ```
 ### Android
