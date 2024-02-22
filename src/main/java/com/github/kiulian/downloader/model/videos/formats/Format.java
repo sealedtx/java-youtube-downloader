@@ -32,7 +32,6 @@ public abstract class Format {
         try {
             itag = Itag.valueOf("i" + json.getInteger("itag"));
         } catch (IllegalArgumentException e) {
-            e.printStackTrace();
             itag = Itag.unknown;
             itag.setId(json.getIntValue("itag"));
         }
@@ -52,6 +51,8 @@ public abstract class Format {
                 extension = Extension.M4A;
             else
                 extension = Extension.MPEG4;
+        } else if (mimeType.contains(Extension.MPEG3.value())) {
+            extension = Extension.MPEG3;
         } else if (mimeType.contains(Extension.WEBM.value())) {
             if (this instanceof AudioFormat)
                 extension = Extension.WEBA;

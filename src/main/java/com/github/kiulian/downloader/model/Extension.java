@@ -9,6 +9,7 @@ public class Extension {
     public static final Extension FLV = new Extension("flv");
 
     // audio
+    public static final Extension MPEG3 = new Extension("mp3");
     public static final Extension M4A = new Extension("m4a");
     public static final Extension WEBA = new Extension("weba");
 

@@ -8,6 +8,7 @@ public enum VideoQuality {
     small(2), // 240p
     medium(3), // 360p
     large(4), // 480p
+    normal(5), // 540p
     hd720(5),
     hd1080(6),
     hd1440(7),

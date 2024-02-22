@@ -3,11 +3,15 @@ package com.github.kiulian.downloader.downloader;
 import com.github.kiulian.downloader.Config;
 import com.github.kiulian.downloader.YoutubeException;
 import com.github.kiulian.downloader.downloader.request.*;
+import com.github.kiulian.downloader.downloader.response.Response;
 import com.github.kiulian.downloader.downloader.response.ResponseImpl;
+import com.github.kiulian.downloader.downloader.response.Webpage;
 import com.github.kiulian.downloader.model.videos.formats.Format;
 
 import java.io.*;
 import java.net.*;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.*;
 import java.util.zip.GZIPInputStream;
@@ -29,18 +33,37 @@ public class DownloaderImpl implements Downloader {
     public ResponseImpl<String> downloadWebpage(RequestWebpage request) {
         if (request.isAsync()) {
             ExecutorService executorService = config.getExecutorService();
-            Future<String> result = executorService.submit(() -> download(request));
+            Future<String> result = executorService.submit(() -> downloadAsString(request));
             return ResponseImpl.fromFuture(result);
         }
         try {
-            String result = download(request);
+            String result = downloadAsString(request);
             return ResponseImpl.from(result);
         } catch (IOException | YoutubeException e) {
             return ResponseImpl.error(e);
         }
     }
 
-    private String download(RequestWebpage request) throws IOException, YoutubeException {
+    @Override
+    public Response<Webpage> downloadWebpageFull(RequestWebpage request) {
+        if (request.isAsync()) {
+            ExecutorService executorService = config.getExecutorService();
+            Future<Webpage> result = executorService.submit(() -> downloadAsWebpage(request));
+            return ResponseImpl.fromFuture(result);
+        }
+        try {
+            Webpage result = downloadAsWebpage(request);
+            return ResponseImpl.from(result);
+        } catch (IOException | YoutubeException e) {
+            return ResponseImpl.error(e);
+        }
+    }
+
+    private String downloadAsString(RequestWebpage request) throws IOException, YoutubeException {
+        return downloadAsWebpage(request).getPayload();
+    }
+
+    private Webpage downloadAsWebpage(RequestWebpage request) throws IOException, YoutubeException {
         String downloadUrl = request.getDownloadUrl();
         Map<String, String> headers = request.getHeaders();
         YoutubeCallback<String> callback = request.getCallback();
@@ -49,13 +72,14 @@ public class DownloaderImpl implements Downloader {
 
         IOException exception;
         StringBuilder result = new StringBuilder();
+        List<String> cookies = Collections.emptyList();
         do {
             try {
                 HttpURLConnection urlConnection = openConnection(downloadUrl, headers, proxy, config.isCompressionEnabled());
                 urlConnection.setRequestMethod(request.getMethod());
                 if (request.getBody() != null) {
                     urlConnection.setDoOutput(true);
-                    try (OutputStreamWriter outputWriter = new OutputStreamWriter(urlConnection.getOutputStream(), "UTF-8")){
+                    try (OutputStreamWriter outputWriter = new OutputStreamWriter(urlConnection.getOutputStream(), "UTF-8")) {
                         outputWriter.write(request.getBody());
                         outputWriter.flush();
                     }
@@ -91,7 +115,12 @@ public class DownloaderImpl implements Downloader {
                 } finally {
                     closeSilently(br);
                 }
-                // reset error in case of successful retry
+
+                Map<String, List<String>> headerFields = urlConnection.getHeaderFields();
+                headerFields.get("Set-Cookie");
+                if (headerFields.get("Set-Cookie") != null) {
+                    cookies = headerFields.get("Set-Cookie");
+                }
                 exception = null;
             } catch (IOException e) {
                 exception = e;
@@ -110,18 +139,19 @@ public class DownloaderImpl implements Downloader {
         if (callback != null) {
             callback.onFinished(resultString);
         }
-        return resultString;
+        return new Webpage(resultString, cookies);
     }
+
 
     @Override
     public ResponseImpl<File> downloadVideoAsFile(RequestVideoFileDownload request) {
         if (request.isAsync()) {
             ExecutorService executorService = config.getExecutorService();
-            Future<File> result = executorService.submit(() -> download(request));
+            Future<File> result = executorService.submit(() -> downloadAsFile(request));
             return ResponseImpl.fromFuture(result);
         }
         try {
-            File result = download(request);
+            File result = downloadAsFile(request);
             return ResponseImpl.from(result);
         } catch (IOException e) {
             return ResponseImpl.error(e);
@@ -132,43 +162,43 @@ public class DownloaderImpl implements Downloader {
     public ResponseImpl<Void> downloadVideoAsStream(RequestVideoStreamDownload request) {
         if (request.isAsync()) {
             ExecutorService executorService = config.getExecutorService();
-            Future<Void> result = executorService.submit(() -> download(request));
+            Future<Void> result = executorService.submit(() -> downloadAsStream(request));
             return ResponseImpl.fromFuture(result);
         }
         try {
-            download(request);
+            downloadAsStream(request);
             return ResponseImpl.from(null);
         } catch (IOException e) {
             return ResponseImpl.error(e);
         }
     }
 
-    private File download(RequestVideoFileDownload request) throws IOException {
+    private File downloadAsFile(RequestVideoFileDownload request) throws IOException {
         Format format = request.getFormat();
         File outputFile = request.getOutputFile();
         YoutubeCallback<File> callback = request.getCallback();
         OutputStream os = new FileOutputStream(outputFile);
 
-        download(request, format, os);
+        downloadFormatToStream(request, format, os);
         if (callback != null) {
             callback.onFinished(outputFile);
         }
         return outputFile;
     }
 
-    private Void download(RequestVideoStreamDownload request) throws IOException {
+    private Void downloadAsStream(RequestVideoStreamDownload request) throws IOException {
         Format format = request.getFormat();
         YoutubeCallback<Void> callback = request.getCallback();
         OutputStream os = request.getOutputStream();
 
-        download(request, format, os);
+        downloadFormatToStream(request, format, os);
         if (callback != null) {
             callback.onFinished(null);
         }
         return null;
     }
 
-    private void download(Request<?, ?> request, Format format, OutputStream os) throws IOException {
+    private void downloadFormatToStream(Request<?, ?> request, Format format, OutputStream os) throws IOException {
         Map<String, String> headers = request.getHeaders();
         YoutubeCallback<?> callback = request.getCallback();
         int maxRetries = request.getMaxRetries() != null ? request.getMaxRetries() : config.getMaxRetries();

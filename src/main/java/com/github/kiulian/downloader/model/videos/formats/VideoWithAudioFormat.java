@@ -1,8 +1,6 @@
 package com.github.kiulian.downloader.model.videos.formats;
 
 
-
-
 import com.alibaba.fastjson.JSONObject;
 import com.github.kiulian.downloader.model.videos.quality.AudioQuality;
 
@@ -11,6 +9,10 @@ public class VideoWithAudioFormat extends VideoFormat {
     private final Integer averageBitrate;
     private final Integer audioSampleRate;
     private final AudioQuality audioQuality;
+
+    public VideoWithAudioFormat(JSONObject json) {
+        this(json, false, null);
+    }
 
     public VideoWithAudioFormat(JSONObject json, boolean isAdaptive, String clientVersion) {
         super(json, isAdaptive, clientVersion);

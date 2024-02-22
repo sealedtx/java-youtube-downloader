@@ -16,7 +16,7 @@ public class VideoFormat extends Format {
 
     public VideoFormat(JSONObject json, boolean isAdaptive, String clientVersion) {
         super(json, isAdaptive, clientVersion);
-        fps = json.getInteger("fps");
+        fps = json.getIntValue("fps");
         qualityLabel = json.getString("qualityLabel");
         if (json.containsKey("size")) {
             String[] split = json.getString("size").split("x");

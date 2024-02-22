@@ -7,6 +7,7 @@ public enum AudioQuality {
     noAudio(0),
     low(1),
     medium(2),
+    normal(2),
     high(3);
 
     private final Integer order;

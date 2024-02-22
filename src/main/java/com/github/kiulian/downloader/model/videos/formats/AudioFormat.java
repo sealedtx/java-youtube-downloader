@@ -10,6 +10,10 @@ public class AudioFormat extends Format {
     private final Integer audioSampleRate;
     private final AudioQuality audioQuality;
 
+    public AudioFormat(JSONObject json) {
+        this(json, false, null);
+    }
+
     public AudioFormat(JSONObject json, boolean isAdaptive, String clientVersion) {
         super(json, isAdaptive, clientVersion);
         audioSampleRate = json.getInteger("audioSampleRate");
