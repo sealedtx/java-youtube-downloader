@@ -56,7 +56,7 @@ public class Config {
         setHeader("Accept-language", DEFAULT_ACCEPT_LANG);
     }
 
-    static Config buildDefault() {
+    public static Config buildDefault() {
         return new Config();
     }
 
