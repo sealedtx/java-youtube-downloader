@@ -46,7 +46,8 @@ public class ParserImpl implements Parser {
     public Response<VideoInfo> parseVideo(RequestVideoInfo request) {
         if (request.isAsync()) {
             ExecutorService executorService = config.getExecutorService();
-            Future<VideoInfo> result = executorService.submit(() -> parseVideo(request.getVideoId(), request.getCallback()));
+            Future<VideoInfo> result = executorService
+                    .submit(() -> parseVideo(request.getVideoId(), request.getCallback()));
             return ResponseImpl.fromFuture(result);
         }
         try {
@@ -59,7 +60,8 @@ public class ParserImpl implements Parser {
 
     private VideoInfo parseVideo(String videoId, YoutubeCallback<VideoInfo> callback) throws YoutubeException {
         // try to spoof android
-        // workaround for issue https://github.com/sealedtx/java-youtube-downloader/issues/97
+        // workaround for issue
+        // https://github.com/sealedtx/java-youtube-downloader/issues/97
         VideoInfo videoInfo = parseVideoAndroid(videoId, callback);
         if (videoInfo == null) {
             videoInfo = parseVideoWeb(videoId, callback);
@@ -73,8 +75,7 @@ public class ParserImpl implements Parser {
     private VideoInfo parseVideoAndroid(String videoId, YoutubeCallback<VideoInfo> callback) throws YoutubeException {
         String url = "https://youtubei.googleapis.com/youtubei/v1/player?key=" + ANDROID_APIKEY;
 
-        String body =
-                "{" +
+        String body = "{" +
                 "  \"videoId\": \"" + videoId + "\"," +
                 "  \"context\": {" +
                 "    \"client\": {" +
@@ -129,7 +130,8 @@ public class ParserImpl implements Parser {
 
         Response<String> response = downloader.downloadWebpage(new RequestWebpage(htmlUrl));
         if (!response.ok()) {
-            YoutubeException e = new YoutubeException.DownloadException(String.format("Could not load url: %s, exception: %s", htmlUrl, response.error().getMessage()));
+            YoutubeException e = new YoutubeException.DownloadException(
+                    String.format("Could not load url: %s, exception: %s", htmlUrl, response.error().getMessage()));
             if (callback != null) {
                 callback.onError(e);
             }
@@ -169,7 +171,8 @@ public class ParserImpl implements Parser {
                 }
                 throw e;
             }
-            JSONObject context = playerConfig.getJSONObject("args").getJSONObject("player_response").getJSONObject("responseContext");
+            JSONObject context = playerConfig.getJSONObject("args").getJSONObject("player_response")
+                    .getJSONObject("responseContext");
             String clientVersion = extractor.extractClientVersionFromContext(context);
             List<Format> formats;
             try {
@@ -202,7 +205,8 @@ public class ParserImpl implements Parser {
         return new VideoDetails(videoDetails, liveHLSUrl);
     }
 
-    private List<Format> parseFormats(JSONObject playerResponse, String jsUrl, String clientVersion) throws YoutubeException {
+    private List<Format> parseFormats(JSONObject playerResponse, String jsUrl, String clientVersion)
+            throws YoutubeException {
         if (!playerResponse.containsKey("streamingData")) {
             throw new YoutubeException.BadPageException("streamingData not found");
         }
@@ -223,7 +227,8 @@ public class ParserImpl implements Parser {
         return formats;
     }
 
-    private void populateFormats(List<Format> formats, JSONArray jsonFormats, String jsUrl, boolean isAdaptive, String clientVersion) throws YoutubeException.CipherException {
+    private void populateFormats(List<Format> formats, JSONArray jsonFormats, String jsUrl, boolean isAdaptive,
+            String clientVersion) throws YoutubeException.CipherException {
         for (int i = 0; i < jsonFormats.size(); i++) {
             JSONObject json = jsonFormats.getJSONObject(i);
             if ("FORMAT_STREAM_TYPE_OTF".equals(json.getString("type")))
@@ -251,7 +256,8 @@ public class ParserImpl implements Parser {
         }
     }
 
-    private Format parseFormat(JSONObject json, String jsUrl, Itag itag, boolean isAdaptive, String clientVersion) throws YoutubeException {
+    private Format parseFormat(JSONObject json, String jsUrl, Itag itag, boolean isAdaptive, String clientVersion)
+            throws YoutubeException {
         if (json.containsKey("signatureCipher")) {
             JSONObject jsonCipher = new JSONObject();
             String[] cipherData = json.getString("signatureCipher").replace("\\u0026", "&").split("&");
@@ -270,7 +276,8 @@ public class ParserImpl implements Parser {
             }
 
             if (urlWithSig.contains("signature")
-                    || (!jsonCipher.containsKey("s") && (urlWithSig.contains("&sig=") || urlWithSig.contains("&lsig=")))) {
+                    || (!jsonCipher.containsKey("s")
+                            && (urlWithSig.contains("&sig=") || urlWithSig.contains("&lsig=")))) {
                 // do nothing, this is pre-signed videos with signature
             } else if (jsUrl != null) {
                 String s = jsonCipher.getString("s");
@@ -334,7 +341,8 @@ public class ParserImpl implements Parser {
     public Response<PlaylistInfo> parsePlaylist(RequestPlaylistInfo request) {
         if (request.isAsync()) {
             ExecutorService executorService = config.getExecutorService();
-            Future<PlaylistInfo> result = executorService.submit(() -> parsePlaylist(request.getPlaylistId(), request.getCallback()));
+            Future<PlaylistInfo> result = executorService
+                    .submit(() -> parsePlaylist(request.getPlaylistId(), request.getCallback()));
             return ResponseImpl.fromFuture(result);
         }
         try {
@@ -346,12 +354,14 @@ public class ParserImpl implements Parser {
 
     }
 
-    private PlaylistInfo parsePlaylist(String playlistId, YoutubeCallback<PlaylistInfo> callback) throws YoutubeException {
+    private PlaylistInfo parsePlaylist(String playlistId, YoutubeCallback<PlaylistInfo> callback)
+            throws YoutubeException {
         String htmlUrl = "https://www.youtube.com/playlist?list=" + playlistId;
 
         Response<String> response = downloader.downloadWebpage(new RequestWebpage(htmlUrl));
         if (!response.ok()) {
-            YoutubeException e = new YoutubeException.DownloadException(String.format("Could not load url: %s, exception: %s", htmlUrl, response.error().getMessage()));
+            YoutubeException e = new YoutubeException.DownloadException(
+                    String.format("Could not load url: %s, exception: %s", htmlUrl, response.error().getMessage()));
             if (callback != null) {
                 callback.onError(e);
             }
@@ -391,7 +401,8 @@ public class ParserImpl implements Parser {
         String title = initialData.getJSONObject("metadata")
                 .getJSONObject("playlistMetadataRenderer")
                 .getString("title");
-        JSONArray sideBarItems = initialData.getJSONObject("sidebar").getJSONObject("playlistSidebarRenderer").getJSONArray("items");
+        JSONArray sideBarItems = initialData.getJSONObject("sidebar").getJSONObject("playlistSidebarRenderer")
+                .getJSONArray("items");
         String author = null;
         try {
             // try to retrieve author, some playlists may have no author
@@ -408,13 +419,15 @@ public class ParserImpl implements Parser {
         JSONArray stats = sideBarItems.getJSONObject(0)
                 .getJSONObject("playlistSidebarPrimaryInfoRenderer")
                 .getJSONArray("stats");
-        int videoCount = extractor.extractIntegerFromText(stats.getJSONObject(0).getJSONArray("runs").getJSONObject(0).getString("text"));
+        int videoCount = extractor
+                .extractIntegerFromText(stats.getJSONObject(0).getJSONArray("runs").getJSONObject(0).getString("text"));
         long viewCount = extractor.extractLongFromText(stats.getJSONObject(1).getString("simpleText"));
 
         return new PlaylistDetails(playlistId, title, author, videoCount, viewCount);
     }
 
-    private List<PlaylistVideoDetails> parsePlaylistVideos(JSONObject initialData, int videoCount) throws YoutubeException {
+    private List<PlaylistVideoDetails> parsePlaylistVideos(JSONObject initialData, int videoCount)
+            throws YoutubeException {
         JSONObject content;
 
         try {
@@ -445,7 +458,8 @@ public class ParserImpl implements Parser {
         return videos;
     }
 
-    private void populatePlaylist(JSONObject content, List<PlaylistVideoDetails> videos, String clientVersion) throws YoutubeException {
+    private void populatePlaylist(JSONObject content, List<PlaylistVideoDetails> videos, String clientVersion)
+            throws YoutubeException {
         JSONArray contents;
         if (content.containsKey("contents")) { // parse first items (up to 100)
             contents = content.getJSONArray("contents");
@@ -479,7 +493,8 @@ public class ParserImpl implements Parser {
         }
     }
 
-    private void loadPlaylistContinuation(String continuation, String ctp, List<PlaylistVideoDetails> videos, String clientVersion) throws YoutubeException {
+    private void loadPlaylistContinuation(String continuation, String ctp, List<PlaylistVideoDetails> videos,
+            String clientVersion) throws YoutubeException {
         JSONObject content;
         String url = "https://www.youtube.com/youtubei/v1/browse?key=" + ANDROID_APIKEY;
 
@@ -499,7 +514,8 @@ public class ParserImpl implements Parser {
 
         Response<String> response = downloader.downloadWebpage(request);
         if (!response.ok()) {
-            throw new YoutubeException.DownloadException(String.format("Could not load url: %s, exception: %s", url, response.error().getMessage()));
+            throw new YoutubeException.DownloadException(
+                    String.format("Could not load url: %s, exception: %s", url, response.error().getMessage()));
         }
         String html = response.data();
 
@@ -527,7 +543,8 @@ public class ParserImpl implements Parser {
     public Response<PlaylistInfo> parseChannelsUploads(RequestChannelUploads request) {
         if (request.isAsync()) {
             ExecutorService executorService = config.getExecutorService();
-            Future<PlaylistInfo> result = executorService.submit(() -> parseChannelsUploads(request.getChannelId(), request.getCallback()));
+            Future<PlaylistInfo> result = executorService
+                    .submit(() -> parseChannelsUploads(request.getChannelId(), request.getCallback()));
             return ResponseImpl.fromFuture(result);
         }
         try {
@@ -538,7 +555,8 @@ public class ParserImpl implements Parser {
         }
     }
 
-    private PlaylistInfo parseChannelsUploads(String channelId, YoutubeCallback<PlaylistInfo> callback) throws YoutubeException {
+    private PlaylistInfo parseChannelsUploads(String channelId, YoutubeCallback<PlaylistInfo> callback)
+            throws YoutubeException {
         String playlistId = null;
         if (channelId.length() == 24 && channelId.startsWith("UC")) { // channel id pattern
             playlistId = "UU" + channelId.substring(2); // replace "UC" with "UU"
@@ -547,7 +565,8 @@ public class ParserImpl implements Parser {
 
             Response<String> response = downloader.downloadWebpage(new RequestWebpage(channelLink));
             if (!response.ok()) {
-                YoutubeException e = new YoutubeException.DownloadException(String.format("Could not load url: %s, exception: %s", channelLink, response.error().getMessage()));
+                YoutubeException e = new YoutubeException.DownloadException(String
+                        .format("Could not load url: %s, exception: %s", channelLink, response.error().getMessage()));
                 if (callback != null) {
                     callback.onError(e);
                 }
@@ -579,7 +598,8 @@ public class ParserImpl implements Parser {
     public Response<List<SubtitlesInfo>> parseSubtitlesInfo(RequestSubtitlesInfo request) {
         if (request.isAsync()) {
             ExecutorService executorService = config.getExecutorService();
-            Future<List<SubtitlesInfo>> result = executorService.submit(() -> parseSubtitlesInfo(request.getVideoId(), request.getCallback()));
+            Future<List<SubtitlesInfo>> result = executorService
+                    .submit(() -> parseSubtitlesInfo(request.getVideoId(), request.getCallback()));
             return ResponseImpl.fromFuture(result);
         }
         try {
@@ -590,21 +610,27 @@ public class ParserImpl implements Parser {
         }
     }
 
-    private List<SubtitlesInfo> parseSubtitlesInfo(String videoId, YoutubeCallback<List<SubtitlesInfo>> callback) throws YoutubeException {
-        String xmlUrl = "https://video.google.com/timedtext?hl=en&type=list&v=" + videoId;
-
+    private List<SubtitlesInfo> parseSubtitlesInfo(String videoId, YoutubeCallback<List<SubtitlesInfo>> callback)
+            throws YoutubeException {
+        String xmlUrl = "https://www.youtube.com/watch?v=" + videoId;
+        
         Response<String> response = downloader.downloadWebpage(new RequestWebpage(xmlUrl));
         if (!response.ok()) {
-            YoutubeException e = new YoutubeException.DownloadException(String.format("Could not load url: %s, exception: %s", xmlUrl, response.error().getMessage()));
+            YoutubeException e = new YoutubeException.DownloadException(
+                    String.format("Could not load url: %s, exception: %s", xmlUrl, response.error().getMessage()));
             if (callback != null) {
                 callback.onError(e);
             }
             throw e;
         }
-        String xml = response.data();
+        String html = response.data();
         List<String> languages;
+
+        String url;
         try {
-            languages = extractor.extractSubtitlesLanguagesFromXml(xml);
+            url = extractor.extractSubtitleUrlFromHtml(html, videoId);
+            languages = extractor.extractSubtitlesLanguagesFromXml(url);
+
         } catch (YoutubeException e) {
             if (callback != null) {
                 callback.onError(e);
@@ -614,11 +640,8 @@ public class ParserImpl implements Parser {
 
         List<SubtitlesInfo> subtitlesInfo = new ArrayList<>();
         for (String language : languages) {
-            String url = String.format("https://www.youtube.com/api/timedtext?lang=%s&v=%s",
-                    language, videoId);
             subtitlesInfo.add(new SubtitlesInfo(url, language, false));
         }
-
         return subtitlesInfo;
     }
 
@@ -626,7 +649,8 @@ public class ParserImpl implements Parser {
     public Response<SearchResult> parseSearchResult(RequestSearchResult request) {
         if (request.isAsync()) {
             ExecutorService executorService = config.getExecutorService();
-            Future<SearchResult> result = executorService.submit(() -> parseSearchResult(request.query(), request.encodeParameters(), request.getCallback()));
+            Future<SearchResult> result = executorService.submit(
+                    () -> parseSearchResult(request.query(), request.encodeParameters(), request.getCallback()));
             return ResponseImpl.fromFuture(result);
         }
         try {
@@ -641,7 +665,8 @@ public class ParserImpl implements Parser {
     public Response<SearchResult> parseSearchContinuation(RequestSearchContinuation request) {
         if (request.isAsync()) {
             ExecutorService executorService = config.getExecutorService();
-            Future<SearchResult> result = executorService.submit(() -> parseSearchContinuation(request.continuation(), request.getCallback()));
+            Future<SearchResult> result = executorService
+                    .submit(() -> parseSearchContinuation(request.continuation(), request.getCallback()));
             return ResponseImpl.fromFuture(result);
         }
         try {
@@ -656,7 +681,8 @@ public class ParserImpl implements Parser {
     public Response<SearchResult> parseSearcheable(RequestSearchable request) {
         if (request.isAsync()) {
             ExecutorService executorService = config.getExecutorService();
-            Future<SearchResult> result = executorService.submit(() -> parseSearchable(request.searchPath(), request.getCallback()));
+            Future<SearchResult> result = executorService
+                    .submit(() -> parseSearchable(request.searchPath(), request.getCallback()));
             return ResponseImpl.fromFuture(result);
         }
         try {
@@ -667,7 +693,8 @@ public class ParserImpl implements Parser {
         }
     }
 
-    private SearchResult parseSearchResult(String query, String parameters, YoutubeCallback<SearchResult> callback) throws YoutubeException {
+    private SearchResult parseSearchResult(String query, String parameters, YoutubeCallback<SearchResult> callback)
+            throws YoutubeException {
         String searchQuery;
         try {
             searchQuery = URLEncoder.encode(query, "UTF-8");
@@ -689,7 +716,8 @@ public class ParserImpl implements Parser {
         }
     }
 
-    private SearchResult parseSearchable(String searchPath, YoutubeCallback<SearchResult> callback) throws YoutubeException {
+    private SearchResult parseSearchable(String searchPath, YoutubeCallback<SearchResult> callback)
+            throws YoutubeException {
         String url = "https://www.youtube.com" + searchPath;
         try {
             return parseHtmlSearchResult(url);
@@ -704,11 +732,12 @@ public class ParserImpl implements Parser {
     private SearchResult parseHtmlSearchResult(String url) throws YoutubeException {
         Response<String> response = downloader.downloadWebpage(new RequestWebpage(url));
         if (!response.ok()) {
-            throw new YoutubeException.DownloadException(String.format("Could not load url: %s, exception: %s", url, response.error().getMessage()));
+            throw new YoutubeException.DownloadException(
+                    String.format("Could not load url: %s, exception: %s", url, response.error().getMessage()));
         }
 
         String html = response.data();
-        
+
         JSONObject initialData = extractor.extractInitialDataFromHtml(html);
         JSONArray rootContents;
         try {
@@ -720,14 +749,15 @@ public class ParserImpl implements Parser {
         } catch (NullPointerException e) {
             throw new YoutubeException.BadPageException("Search result root contents not found");
         }
-        
+
         long estimatedCount = extractor.extractLongFromText(initialData.getString("estimatedResults"));
         String clientVersion = extractor.extractClientVersionFromContext(initialData.getJSONObject("responseContext"));
         SearchContinuation continuation = getSearchContinuation(rootContents, clientVersion);
         return parseSearchResult(estimatedCount, rootContents, continuation);
     }
 
-    private SearchResult parseSearchContinuation(SearchContinuation continuation, YoutubeCallback<SearchResult> callback) throws YoutubeException {
+    private SearchResult parseSearchContinuation(SearchContinuation continuation,
+            YoutubeCallback<SearchResult> callback) throws YoutubeException {
         String url = "https://www.youtube.com/youtubei/v1/search?key=" + ANDROID_APIKEY + "&prettyPrint=false";
 
         JSONObject body = new JSONObject()
@@ -746,7 +776,8 @@ public class ParserImpl implements Parser {
 
         Response<String> response = downloader.downloadWebpage(request);
         if (!response.ok()) {
-            YoutubeException e = new YoutubeException.DownloadException(String.format("Could not load url: %s, exception: %s", url, response.error().getMessage()));
+            YoutubeException e = new YoutubeException.DownloadException(
+                    String.format("Could not load url: %s, exception: %s", url, response.error().getMessage()));
             if (callback != null) {
                 callback.onError(e);
             }
@@ -771,7 +802,7 @@ public class ParserImpl implements Parser {
         } catch (Exception e) {
             throw new YoutubeException.BadPageException("Could not parse search continuation json");
         }
-        
+
         long estimatedResults = extractor.extractLongFromText(jsonResponse.getString("estimatedResults"));
         SearchContinuation nextContinuation = getSearchContinuation(rootContents, continuation.clientVersion());
         return parseSearchResult(estimatedResults, rootContents, nextContinuation);
@@ -791,7 +822,8 @@ public class ParserImpl implements Parser {
         return null;
     }
 
-    private SearchResult parseSearchResult(long estimatedResults, JSONArray rootContents, SearchContinuation continuation) throws BadPageException {
+    private SearchResult parseSearchResult(long estimatedResults, JSONArray rootContents,
+            SearchContinuation continuation) throws BadPageException {
         JSONArray contents;
 
         try {
@@ -826,26 +858,26 @@ public class ParserImpl implements Parser {
         String rendererKey = jsonItem.keySet().iterator().next();
         JSONObject jsonRenderer = jsonItem.getJSONObject(rendererKey);
         switch (rendererKey) {
-        case "videoRenderer":
-            return new SearchResultVideoDetails(jsonRenderer, false);
-        case "movieRenderer":
-            return new SearchResultVideoDetails(jsonRenderer, true);
-        case "playlistRenderer":
-            return new SearchResultPlaylistDetails(jsonRenderer);
-        case "channelRenderer":
-            return new SearchResultChannelDetails(jsonRenderer);
-        case "shelfRenderer":
-            return new SearchResultShelf(jsonRenderer);
-        case "showingResultsForRenderer":
-            return new QueryAutoCorrection(jsonRenderer);
-        case "didYouMeanRenderer":
-            return new QuerySuggestion(jsonRenderer);
-        case "horizontalCardListRenderer":
-            return new QueryRefinementList(jsonRenderer);
-       default:
-           System.out.println("Unknown search result element type " + rendererKey);
-           System.out.println(jsonItem);
-           return null;
+            case "videoRenderer":
+                return new SearchResultVideoDetails(jsonRenderer, false);
+            case "movieRenderer":
+                return new SearchResultVideoDetails(jsonRenderer, true);
+            case "playlistRenderer":
+                return new SearchResultPlaylistDetails(jsonRenderer);
+            case "channelRenderer":
+                return new SearchResultChannelDetails(jsonRenderer);
+            case "shelfRenderer":
+                return new SearchResultShelf(jsonRenderer);
+            case "showingResultsForRenderer":
+                return new QueryAutoCorrection(jsonRenderer);
+            case "didYouMeanRenderer":
+                return new QuerySuggestion(jsonRenderer);
+            case "horizontalCardListRenderer":
+                return new QueryRefinementList(jsonRenderer);
+            default:
+                System.out.println("Unknown search result element type " + rendererKey);
+                System.out.println(jsonItem);
+                return null;
         }
     }
 }

@@ -9,6 +9,7 @@ import com.github.kiulian.downloader.YoutubeException;
 import com.github.kiulian.downloader.downloader.Downloader;
 import com.github.kiulian.downloader.downloader.request.RequestWebpage;
 import com.github.kiulian.downloader.downloader.response.Response;
+import org.apache.commons.text.StringEscapeUtils;
 
 import java.util.*;
 import java.util.regex.Matcher;
@@ -27,7 +28,7 @@ public class ExtractorImpl implements Extractor {
             Pattern.compile("ytInitialData = (\\{.*?\\});")
     );
 
-    private static final Pattern SUBTITLES_LANG_CODE_PATTERN = Pattern.compile("lang_code=\"(.{2,3})\"");
+    private static final Pattern SUBTITLES_LANG_CODE_PATTERN = Pattern.compile("lang=(.{2,3})");
     private static final Pattern TEXT_NUMBER_REGEX = Pattern.compile("[0-9]+[0-9, ']*");
     private static final Pattern ASSETS_JS_REGEX = Pattern.compile("\"assets\":.+?\"js\":\\s*\"([^\"]+)\"");
     private static final Pattern EMB_JS_REGEX = Pattern.compile("\"jsUrl\":\\s*\"([^\"]+)\"");
@@ -99,6 +100,22 @@ public class ExtractorImpl implements Extractor {
             languages.add(language);
         } while (matcher.find());
         return languages;
+    }
+
+    @Override
+    public String extractSubtitleUrlFromHtml(String html, String videoId) throws YoutubeException {
+        String pattern = "https://www\\.youtube\\.com/api/timedtext\\?v=" + videoId + "[^\"']+";
+        Pattern regex = Pattern.compile(pattern);
+        Matcher matcher = regex.matcher(html); 
+
+        if (!matcher.find()) {
+            throw new YoutubeException.BadPageException("Could not any subtitle url in the html");
+        }
+
+        String escapeUrl = matcher.group(0);
+        String url = StringEscapeUtils.unescapeJava(escapeUrl);
+
+        return url;
     }
 
     @Override
