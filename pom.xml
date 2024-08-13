@@ -4,7 +4,7 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>com.github.ikiulian</groupId>
+    <groupId>com.github.kiulian</groupId>
     <artifactId>java-youtube-downloader</artifactId>
     <version>3.2.4</version>
 
@@ -64,7 +64,13 @@
             <version>1.2.83</version>
         </dependency>
 
-    </dependencies>
+        <!-- text -->
+      <dependency>
+        <groupId>org.apache.commons</groupId>
+        <artifactId>commons-text</artifactId>
+        <version>1.7</version>
+      </dependency>
 
+    </dependencies>
 
 </project>

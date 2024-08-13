@@ -15,6 +15,8 @@ public interface Extractor {
     JSONObject extractPlayerConfigFromHtml(String html) throws YoutubeException;
 
     List<String> extractSubtitlesLanguagesFromXml(String xml) throws YoutubeException;
+    
+    String extractSubtitleUrlFromHtml(String html, String videoId) throws YoutubeException;
 
     String extractJsUrlFromConfig(JSONObject config, String videoId) throws YoutubeException;
 
