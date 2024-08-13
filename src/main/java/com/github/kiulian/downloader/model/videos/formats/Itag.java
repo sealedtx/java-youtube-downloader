@@ -105,6 +105,9 @@ public enum Itag {
     i250(AudioQuality.low),
     i251(AudioQuality.medium),
 
+    // audio mp4 acc
+    i327(AudioQuality.medium),
+
     // Dash webm hdr video
     i330(VideoQuality.tiny),
     i331(VideoQuality.small),
@@ -115,6 +118,9 @@ public enum Itag {
     i336(VideoQuality.hd1440),
     i337(VideoQuality.hd2160),
 
+    // audio webm opus
+    i338(AudioQuality.medium),
+
     // av01 video only formats
     i394(VideoQuality.tiny),
     i395(VideoQuality.small),
@@ -124,7 +130,9 @@ public enum Itag {
     i399(VideoQuality.hd1080),
     i400(VideoQuality.hd1440),
     i401(VideoQuality.hd2160),
-    i402(VideoQuality.hd2880p);
+    i402(VideoQuality.hd2880p),
+    i571(VideoQuality.ultrahighres)
+    ;
 
     protected int id;
     private VideoQuality videoQuality;

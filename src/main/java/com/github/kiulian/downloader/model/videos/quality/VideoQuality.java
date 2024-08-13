@@ -13,7 +13,8 @@ public enum VideoQuality {
     hd1440(7),
     hd2160(8),
     hd2880p(9),
-    highres(10); // 3072p
+    highres(10), // 3072p
+    ultrahighres(11);  // 4320p
 
     private final Integer order;
 
