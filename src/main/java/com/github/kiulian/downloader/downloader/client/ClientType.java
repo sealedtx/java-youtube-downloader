@@ -44,7 +44,7 @@ public class ClientType {
     public String getVersion() {
         return version;
     }
-
+    public String getBodyString(){return body;}
     public JSONObject getBody() {
         return JSON.parseObject(body);
     }

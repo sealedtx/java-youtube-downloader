@@ -11,7 +11,7 @@ public class ClientTraits {
     private final AudioQuality minAudioQuality;
     private final AudioQuality maxAudioQuality;
     private final int clientPriority;
-    private final String body;
+
 
     public ClientTraits(TraitBuilder builder){
         this.type=builder.type;
@@ -21,10 +21,10 @@ public class ClientTraits {
         this.maxAudioQuality=builder.maxAudioQuality;
         this.minVideoQuality=builder.minVideoQuality;
         this.maxVideoQuality=builder.maxVideoQuality;
-        this.body=type.getBody().toJSONString();
+
     }
     public String bodyString(){
-        return body;
+        return type.getBodyString();
     }
 
     public JSONObject bodyJson(){
