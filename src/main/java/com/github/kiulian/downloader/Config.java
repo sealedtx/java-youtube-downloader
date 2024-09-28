@@ -1,11 +1,13 @@
 package com.github.kiulian.downloader;
 
+import com.github.kiulian.downloader.downloader.client.ClientTraits;
 import com.github.kiulian.downloader.downloader.proxy.ProxyAuthenticator;
 import com.github.kiulian.downloader.downloader.proxy.ProxyCredentials;
 import com.github.kiulian.downloader.downloader.proxy.ProxyCredentialsImpl;
 
 import java.net.InetSocketAddress;
 import java.net.Proxy;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
@@ -118,6 +120,7 @@ public class Config {
         private boolean compressionEnabled = true;
         private ExecutorService executorService;
         private Proxy proxy;
+        private Collection<ClientTraits> backupClients;
 
         public Builder maxRetries(int maxRetries) {
             this.maxRetries = maxRetries;

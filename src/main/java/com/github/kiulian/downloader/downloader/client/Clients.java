@@ -9,20 +9,30 @@ import java.util.*;
 public class Clients {
 
  private static final Map<ClientType,ClientTraits> clientTraits;
+ private static ClientTraits HIGHEST_PRIORITY_CLIENT;
 
+ private static void makeClient(ClientTraits.TraitBuilder builder){
+  ClientTraits trait = new ClientTraits(builder);
+
+ putTrait(new ClientTraits(builder));
+ if(HIGHEST_PRIORITY_CLIENT==null ||trait.getClientPriority() > HIGHEST_PRIORITY_CLIENT.getClientPriority()){
+  HIGHEST_PRIORITY_CLIENT=trait;
+ }
+ }
  private static void putTrait(ClientTraits trait){
   clientTraits.put(trait.getType(),trait);
  }
  static{
   clientTraits = new EnumMap<>(ClientType.class);
-  putTrait(new ClientTraits(ClientType.WEB)
+  makeClient(new ClientTraits.TraitBuilder(ClientType.WEB)
           .minAudioQuality(AudioQuality.low)
           .maxAudioQuality(AudioQuality.high)
           .minVideoQuality(VideoQuality.tiny)
           .maxVideoQuality(VideoQuality.ultrahighres)
           .priority(1));
 
-  putTrait(new ClientTraits(ClientType.ANDROID)
+
+  makeClient(new ClientTraits.TraitBuilder(ClientType.ANDROID)
           .minAudioQuality(AudioQuality.low)
           .maxAudioQuality(AudioQuality.high)
           .minVideoQuality(VideoQuality.tiny)
@@ -39,6 +49,9 @@ public class Clients {
   List<ClientTraits> traits = new ArrayList<>(clientTraits.values());
   traits.sort(Comparator.comparingInt(ClientTraits::getClientPriority));
   return traits;
+ }
+ public static ClientTraits highestPriorityClient(){
+  return HIGHEST_PRIORITY_CLIENT;
  }
 
 
