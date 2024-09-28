@@ -15,8 +15,6 @@ import com.github.kiulian.downloader.cipher.Cipher;
 import com.github.kiulian.downloader.cipher.CipherFactory;
 import com.github.kiulian.downloader.downloader.Downloader;
 import com.github.kiulian.downloader.downloader.YoutubeCallback;
-import com.github.kiulian.downloader.downloader.client.ClientTraits;
-import com.github.kiulian.downloader.downloader.client.Clients;
 import com.github.kiulian.downloader.downloader.request.*;
 import com.github.kiulian.downloader.downloader.response.Response;
 import com.github.kiulian.downloader.downloader.response.ResponseImpl;
@@ -37,7 +35,6 @@ public class ParserImpl implements Parser {
     private final Extractor extractor;
     private final CipherFactory cipherFactory;
 
-
     public ParserImpl(Config config, Downloader downloader, Extractor extractor, CipherFactory cipherFactory) {
         this.config = config;
         this.downloader = downloader;
@@ -49,21 +46,21 @@ public class ParserImpl implements Parser {
     public Response<VideoInfo> parseVideo(RequestVideoInfo request) {
         if (request.isAsync()) {
             ExecutorService executorService = config.getExecutorService();
-            Future<VideoInfo> result = executorService.submit(() -> parseVideo(request.getVideoId(), request.getCallback(),request.getClient()));
+            Future<VideoInfo> result = executorService.submit(() -> parseVideo(request.getVideoId(), request.getCallback()));
             return ResponseImpl.fromFuture(result);
         }
         try {
-            VideoInfo result = parseVideo(request.getVideoId(), request.getCallback(),request.getClient());
+            VideoInfo result = parseVideo(request.getVideoId(), request.getCallback());
             return ResponseImpl.from(result);
         } catch (YoutubeException e) {
             return ResponseImpl.error(e);
         }
     }
 
-    private VideoInfo parseVideo(String videoId, YoutubeCallback<VideoInfo> callback, ClientTraits client) throws YoutubeException {
+    private VideoInfo parseVideo(String videoId, YoutubeCallback<VideoInfo> callback) throws YoutubeException {
         // try to spoof android
         // workaround for issue https://github.com/sealedtx/java-youtube-downloader/issues/97
-        VideoInfo videoInfo = parseVideoAndroid(videoId, callback,client);
+        VideoInfo videoInfo = parseVideoAndroid(videoId, callback);
         if (videoInfo == null) {
             videoInfo = parseVideoWeb(videoId, callback);
         }
@@ -73,12 +70,23 @@ public class ParserImpl implements Parser {
         return videoInfo;
     }
 
-    private VideoInfo parseVideoAndroid(String videoId, YoutubeCallback<VideoInfo> callback,ClientTraits client) throws YoutubeException {
+    private VideoInfo parseVideoAndroid(String videoId, YoutubeCallback<VideoInfo> callback) throws YoutubeException {
         String url = "https://youtubei.googleapis.com/youtubei/v1/player?key=" + ANDROID_APIKEY;
 
+        String body =
+                "{" +
+                        "  \"videoId\": \"" + videoId + "\"," +
+                        "  \"context\": {" +
+                        "    \"client\": {" +
+                        "      \"hl\": \"en\"," +
+                        "      \"gl\": \"US\"," +
+                        "      \"clientName\": \"WEB\"," +
+                        "      \"clientVersion\": \"2.20220918\"," +
+                        "    }" +
+                        "  }" +
+                        "}";
 
-
-        RequestWebpage request = new RequestWebpage(url, "POST", client.bodyJson().fluentPut("videoId",videoId).toJSONString())
+        RequestWebpage request = new RequestWebpage(url, "POST", body)
                 .header("Content-Type", "application/json");
 
         Response<String> response = downloader.downloadWebpage(request);
@@ -100,7 +108,6 @@ public class ParserImpl implements Parser {
             List<Format> formats;
             try {
                 formats = parseFormats(playerResponse, null, clientVersion);
-
             } catch (YoutubeException e) {
                 if (callback != null) {
                     callback.onError(e);
