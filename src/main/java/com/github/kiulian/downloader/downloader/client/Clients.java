@@ -62,7 +62,7 @@ public class Clients {
  }
  public static List<ClientTraits> byPriority(){
   List<ClientTraits> traits = new ArrayList<>(clientTraits.values());
-  traits.sort(Comparator.comparingInt(ClientTraits::getClientPriority));
+  traits.sort(Comparator.comparingInt(ClientTraits::getClientPriority).reversed());
   return traits;
  }
  public static ClientTraits highestPriorityClient(){
