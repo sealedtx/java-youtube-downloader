@@ -23,7 +23,7 @@ public class Clients {
   clientTraits.put(trait.getType(),trait);
  }
  static{
-  clientTraits = new EnumMap<>(ClientType.class);
+  clientTraits = new HashMap<>();
   makeClient(new ClientTraits.TraitBuilder(ClientType.WEB)
           .minAudioQuality(AudioQuality.low)
           .maxAudioQuality(AudioQuality.high)

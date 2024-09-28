@@ -3,40 +3,40 @@ package com.github.kiulian.downloader.downloader.client;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 
-public enum ClientType {
+public class ClientType {
 
-
-
-    WEB("2.20210714",base_json()),
-    ANDROID("17.36.4",base_json(),
+    public static final ClientType WEB = new ClientType("WEB","2.20210714",base_json());
+    public static final ClientType ANDROID = new ClientType("ANDROID","17.36.4",base_json(),
             queryParam("context/client","androidSdkVersion","30"));
-
 
     private final String body;
     private final String version;
+    ClientType(String name, String version, JSONObject body, QueryParameter... parameters){
 
-
-    ClientType(String version, JSONObject body, QueryParameter... parameters){
-        //assert version!=null;
-    this.version=version;
-    JSONObject client = body.getJSONObject("context").getJSONObject("client");
-    client.fluentPut("clientName",name());
-    client.fluentPut("clientVersion",version);
-    JSONObject cur=body;
+        this.version=version;
+        JSONObject client = body.getJSONObject("context").getJSONObject("client");
+        client.fluentPut("clientName",name);
+        client.fluentPut("clientVersion",version);
+        JSONObject cur=body;
         for (QueryParameter param:parameters) {
             for (String p:param.path) {
                 cur=cur.getJSONObject(p);
-
             }
-
             cur.fluentPut(param.key,param.value);
 
         }
-    this.body = body.toJSONString();
+        this.body = body.toJSONString();
 
     }
+    ClientType(String name, String version, JSONObject body){
 
+        this.version=version;
+        JSONObject client = body.getJSONObject("context").getJSONObject("client");
+        client.fluentPut("clientName",name);
+        client.fluentPut("clientVersion",version);
+        this.body = body.toJSONString();
 
+    }
     public String getVersion() {
         return version;
     }
@@ -44,9 +44,7 @@ public enum ClientType {
     public JSONObject getBody() {
         return JSON.parseObject(body);
     }
-
-
-    private static JSONObject base_json(){
+    public static JSONObject base_json(){
         /*
 {
     "context": {
@@ -61,13 +59,13 @@ public enum ClientType {
         JSONObject context = new JSONObject().fluentPut("client", client);
         return new JSONObject().fluentPut("context", context);
     }
-    private static QueryParameter queryParam(String path,String key, String value){
+    public static QueryParameter queryParam(String path, String key, String value){
         return new QueryParameter(path,key,value);
     }
-    private static QueryParameter queryParam(String key,String value){
+    public static QueryParameter queryParam(String key, String value){
         return new QueryParameter(key,value);
     }
-    private static class QueryParameter{
+    public static class QueryParameter{
         final String[] path;
         final String value;
         final String key;
@@ -81,9 +79,4 @@ public enum ClientType {
 
         }
     }
-
-
-
-
-
 }
