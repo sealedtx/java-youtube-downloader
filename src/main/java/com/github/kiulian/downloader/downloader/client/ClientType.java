@@ -15,7 +15,7 @@ public class ClientType {
 
     private final String body;
     private final String version;
-    ClientType(String name, String version, JSONObject body, QueryParameter... parameters){
+    public ClientType(String name, String version, JSONObject body, QueryParameter... parameters){
 
         this.version=version;
         JSONObject client = body.getJSONObject("context").getJSONObject("client");
@@ -32,7 +32,7 @@ public class ClientType {
         this.body = body.toJSONString();
 
     }
-    ClientType(String name, String version, JSONObject body){
+    public ClientType(String name, String version, JSONObject body){
 
         this.version=version;
         JSONObject client = body.getJSONObject("context").getJSONObject("client");
