@@ -31,6 +31,7 @@ import com.github.kiulian.downloader.model.videos.formats.*;
 
 public class ParserImpl implements Parser {
     private static final String ANDROID_APIKEY = "AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8";
+    private static final String BASE_API_URL= "https://www.youtube.com/youtubei/v1";
 
     private final Config config;
     private final Downloader downloader;
@@ -74,8 +75,7 @@ public class ParserImpl implements Parser {
     }
 
     private VideoInfo parseVideoAndroid(String videoId, YoutubeCallback<VideoInfo> callback,ClientTraits client) throws YoutubeException {
-        String url = "https://youtubei.googleapis.com/youtubei/v1/player?key=" + ANDROID_APIKEY;
-
+        String url = BASE_API_URL+"/player?key=" + ANDROID_APIKEY;
 
 
         RequestWebpage request = new RequestWebpage(url, "POST", client.bodyJson().fluentPut("videoId",videoId).toJSONString())
@@ -326,11 +326,11 @@ public class ParserImpl implements Parser {
     public Response<PlaylistInfo> parsePlaylist(RequestPlaylistInfo request) {
         if (request.isAsync()) {
             ExecutorService executorService = config.getExecutorService();
-            Future<PlaylistInfo> result = executorService.submit(() -> parsePlaylist(request.getPlaylistId(), request.getCallback()));
+            Future<PlaylistInfo> result = executorService.submit(() -> parsePlaylist(request.getPlaylistId(), request.getCallback(),request.getClient()));
             return ResponseImpl.fromFuture(result);
         }
         try {
-            PlaylistInfo result = parsePlaylist(request.getPlaylistId(), request.getCallback());
+            PlaylistInfo result = parsePlaylist(request.getPlaylistId(), request.getCallback(),request.getClient());
             return ResponseImpl.from(result);
         } catch (YoutubeException e) {
             return ResponseImpl.error(e);
@@ -338,7 +338,7 @@ public class ParserImpl implements Parser {
 
     }
 
-    private PlaylistInfo parsePlaylist(String playlistId, YoutubeCallback<PlaylistInfo> callback) throws YoutubeException {
+    private PlaylistInfo parsePlaylist(String playlistId, YoutubeCallback<PlaylistInfo> callback,ClientTraits client) throws YoutubeException {
         String htmlUrl = "https://www.youtube.com/playlist?list=" + playlistId;
 
         Response<String> response = downloader.downloadWebpage(new RequestWebpage(htmlUrl));
@@ -369,7 +369,7 @@ public class ParserImpl implements Parser {
 
         List<PlaylistVideoDetails> videos;
         try {
-            videos = parsePlaylistVideos(initialData, playlistDetails.videoCount());
+            videos = parsePlaylistVideos(initialData, playlistDetails.videoCount(),client);
         } catch (YoutubeException e) {
             if (callback != null) {
                 callback.onError(e);
@@ -406,7 +406,7 @@ public class ParserImpl implements Parser {
         return new PlaylistDetails(playlistId, title, author, videoCount, viewCount);
     }
 
-    private List<PlaylistVideoDetails> parsePlaylistVideos(JSONObject initialData, int videoCount) throws YoutubeException {
+    private List<PlaylistVideoDetails> parsePlaylistVideos(JSONObject initialData, int videoCount,ClientTraits client) throws YoutubeException {
         JSONObject content;
 
         try {
@@ -431,13 +431,13 @@ public class ParserImpl implements Parser {
             videos = new LinkedList<>();
         }
         JSONObject context = initialData.getJSONObject("responseContext");
-        String clientVersion = extractor.extractClientVersionFromContext(context);
+        //String clientVersion = extractor.extractClientVersionFromContext(context);
 
-        populatePlaylist(content, videos, clientVersion);
+        populatePlaylist(content, videos, client);
         return videos;
     }
 
-    private void populatePlaylist(JSONObject content, List<PlaylistVideoDetails> videos, String clientVersion) throws YoutubeException {
+    private void populatePlaylist(JSONObject content, List<PlaylistVideoDetails> videos, ClientTraits client) throws YoutubeException {
         JSONArray contents;
         if (content.containsKey("contents")) { // parse first items (up to 100)
             contents = content.getJSONArray("contents");
@@ -449,7 +449,7 @@ public class ParserImpl implements Parser {
                     .getJSONObject("nextContinuationData");
             String continuation = nextContinuationData.getString("continuation");
             String ctp = nextContinuationData.getString("clickTrackingParams");
-            loadPlaylistContinuation(continuation, ctp, videos, clientVersion);
+            loadPlaylistContinuation(continuation, ctp, videos, client);
             return;
         } else { // nothing found
             return;
@@ -465,28 +465,33 @@ public class ParserImpl implements Parser {
                             .getJSONObject("continuationEndpoint");
                     String continuation = continuationEndpoint.getJSONObject("continuationCommand").getString("token");
                     String ctp = continuationEndpoint.getString("clickTrackingParams");
-                    loadPlaylistContinuation(continuation, ctp, videos, clientVersion);
+                    loadPlaylistContinuation(continuation, ctp, videos, client);
                 }
             }
         }
     }
 
-    private void loadPlaylistContinuation(String continuation, String ctp, List<PlaylistVideoDetails> videos, String clientVersion) throws YoutubeException {
+    private void loadPlaylistContinuation(String continuation, String ctp, List<PlaylistVideoDetails> videos, ClientTraits client) throws YoutubeException {
         JSONObject content;
-        String url = "https://www.youtube.com/youtubei/v1/browse?key=" + ANDROID_APIKEY;
-
-        JSONObject body = new JSONObject()
-                .fluentPut("context", new JSONObject()
-                        .fluentPut("client", new JSONObject()
-                                .fluentPut("clientName", "WEB")
-                                .fluentPut("clientVersion", "2.20201021.03.00")))
-                .fluentPut("continuation", continuation)
-                .fluentPut("clickTracking", new JSONObject()
+        String url = BASE_API_URL+"/browse?key=" + ANDROID_APIKEY;
+        JSONObject body = client.bodyJson()
+                .fluentPut("continuation",continuation)
+                .fluentPut("clickTracking",new JSONObject()
                         .fluentPut("clickTrackingParams", ctp));
+
+
+//        JSONObject body = new JSONObject()
+//                .fluentPut("context", new JSONObject()
+//                        .fluentPut("client", new JSONObject()
+//                                .fluentPut("clientName", "WEB")
+//                                .fluentPut("clientVersion", "2.20201021.03.00")))
+//                .fluentPut("continuation", continuation)
+//                .fluentPut("clickTracking", new JSONObject()
+//                        .fluentPut("clickTrackingParams", ctp));
 
         RequestWebpage request = new RequestWebpage(url, "POST", body.toJSONString())
                 .header("X-YouTube-Client-Name", "1")
-                .header("X-YouTube-Client-Version", clientVersion)
+                .header("X-YouTube-Client-Version", client.getType().getVersion())
                 .header("Content-Type", "application/json");
 
         Response<String> response = downloader.downloadWebpage(request);
@@ -507,7 +512,7 @@ public class ParserImpl implements Parser {
                         .getJSONObject(0)
                         .getJSONObject("appendContinuationItemsAction");
             }
-            populatePlaylist(content, videos, clientVersion);
+            populatePlaylist(content, videos, client);
         } catch (YoutubeException e) {
             throw e;
         } catch (Exception e) {
@@ -519,18 +524,18 @@ public class ParserImpl implements Parser {
     public Response<PlaylistInfo> parseChannelsUploads(RequestChannelUploads request) {
         if (request.isAsync()) {
             ExecutorService executorService = config.getExecutorService();
-            Future<PlaylistInfo> result = executorService.submit(() -> parseChannelsUploads(request.getChannelId(), request.getCallback()));
+            Future<PlaylistInfo> result = executorService.submit(() -> parseChannelsUploads(request.getChannelId(), request.getCallback(),request.getClient()));
             return ResponseImpl.fromFuture(result);
         }
         try {
-            PlaylistInfo result = parseChannelsUploads(request.getChannelId(), request.getCallback());
+            PlaylistInfo result = parseChannelsUploads(request.getChannelId(), request.getCallback(),request.getClient());
             return ResponseImpl.from(result);
         } catch (YoutubeException e) {
             return ResponseImpl.error(e);
         }
     }
 
-    private PlaylistInfo parseChannelsUploads(String channelId, YoutubeCallback<PlaylistInfo> callback) throws YoutubeException {
+    private PlaylistInfo parseChannelsUploads(String channelId, YoutubeCallback<PlaylistInfo> callback,ClientTraits client) throws YoutubeException {
         String playlistId = null;
         if (channelId.length() == 24 && channelId.startsWith("UC")) { // channel id pattern
             playlistId = "UU" + channelId.substring(2); // replace "UC" with "UU"
@@ -564,7 +569,7 @@ public class ParserImpl implements Parser {
             }
             throw e;
         }
-        return parsePlaylist(playlistId, callback);
+        return parsePlaylist(playlistId, callback,client);
     }
 
     @Override
@@ -633,11 +638,11 @@ public class ParserImpl implements Parser {
     public Response<SearchResult> parseSearchContinuation(RequestSearchContinuation request) {
         if (request.isAsync()) {
             ExecutorService executorService = config.getExecutorService();
-            Future<SearchResult> result = executorService.submit(() -> parseSearchContinuation(request.continuation(), request.getCallback()));
+            Future<SearchResult> result = executorService.submit(() -> parseSearchContinuation(request.continuation(), request.getCallback(),request.getClient()));
             return ResponseImpl.fromFuture(result);
         }
         try {
-            SearchResult result = parseSearchContinuation(request.continuation(), request.getCallback());
+            SearchResult result = parseSearchContinuation(request.continuation(), request.getCallback(),request.getClient());
             return ResponseImpl.from(result);
         } catch (YoutubeException e) {
             return ResponseImpl.error(e);
@@ -719,17 +724,21 @@ public class ParserImpl implements Parser {
         return parseSearchResult(estimatedCount, rootContents, continuation);
     }
 
-    private SearchResult parseSearchContinuation(SearchContinuation continuation, YoutubeCallback<SearchResult> callback) throws YoutubeException {
-        String url = "https://www.youtube.com/youtubei/v1/search?key=" + ANDROID_APIKEY + "&prettyPrint=false";
-
-        JSONObject body = new JSONObject()
-                .fluentPut("context", new JSONObject()
-                        .fluentPut("client", new JSONObject()
-                                .fluentPut("clientName", "WEB")
-                                .fluentPut("clientVersion", "2.20201021.03.00")))
-                .fluentPut("continuation", continuation.token())
+    private SearchResult parseSearchContinuation(SearchContinuation continuation, YoutubeCallback<SearchResult> callback,ClientTraits client) throws YoutubeException {
+        String url = BASE_API_URL+"/search?key=" + ANDROID_APIKEY + "&prettyPrint=false";
+        JSONObject body = client.bodyJson()
+                .fluentPut("continuation",continuation.token())
                 .fluentPut("clickTracking", new JSONObject()
                         .fluentPut("clickTrackingParams", continuation.clickTrackingParameters()));
+
+//        JSONObject body = new JSONObject()
+//                .fluentPut("context", new JSONObject()
+//                        .fluentPut("client", new JSONObject()
+//                                .fluentPut("clientName", "WEB")
+//                                .fluentPut("clientVersion", "2.20201021.03.00")))
+//                .fluentPut("continuation", continuation.token())
+//                .fluentPut("clickTracking", new JSONObject()
+//                        .fluentPut("clickTrackingParams", continuation.clickTrackingParameters()));
 
         RequestWebpage request = new RequestWebpage(url, "POST", body.toJSONString())
                 .header("X-YouTube-Client-Name", "1")
