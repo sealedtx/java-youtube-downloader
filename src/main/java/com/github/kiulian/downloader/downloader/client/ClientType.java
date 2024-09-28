@@ -15,8 +15,9 @@ public class ClientType {
 
     private final String body;
     private final String version;
+    private final String name;
     public ClientType(String name, String version, JSONObject body, QueryParameter... parameters){
-
+        this.name =name;
         this.version=version;
         JSONObject client = body.getJSONObject("context").getJSONObject("client");
         client.fluentPut("clientName",name);
@@ -33,7 +34,7 @@ public class ClientType {
 
     }
     public ClientType(String name, String version, JSONObject body){
-
+        this.name=name;
         this.version=version;
         JSONObject client = body.getJSONObject("context").getJSONObject("client");
         client.fluentPut("clientName",name);
@@ -44,6 +45,7 @@ public class ClientType {
     public String getVersion() {
         return version;
     }
+    public String getName(){return name;}
     public String getBodyString(){return body;}
     public JSONObject getBody() {
         return JSON.parseObject(body);
