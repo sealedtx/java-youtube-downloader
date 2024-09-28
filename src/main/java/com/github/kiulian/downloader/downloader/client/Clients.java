@@ -24,13 +24,26 @@ public class Clients {
  }
  static{
   clientTraits = new HashMap<>();
+
+  makeClient(new ClientTraits.TraitBuilder(ClientType.ANDROID_TV)
+          .minAudioQuality(AudioQuality.low)
+          .maxAudioQuality(AudioQuality.medium)
+          .minVideoQuality(VideoQuality.tiny)
+          .maxVideoQuality(VideoQuality.hd1080)
+          .priority(2));
+
   makeClient(new ClientTraits.TraitBuilder(ClientType.WEB)
           .minAudioQuality(AudioQuality.low)
           .maxAudioQuality(AudioQuality.high)
           .minVideoQuality(VideoQuality.tiny)
           .maxVideoQuality(VideoQuality.ultrahighres)
           .priority(1));
-
+  makeClient(new ClientTraits.TraitBuilder(ClientType.MWEB)
+          .minAudioQuality(AudioQuality.low)
+          .maxAudioQuality(AudioQuality.high)
+          .minVideoQuality(VideoQuality.tiny)
+          .maxVideoQuality(VideoQuality.ultrahighres)
+          .priority(1));
 
   makeClient(new ClientTraits.TraitBuilder(ClientType.ANDROID)
           .minAudioQuality(AudioQuality.low)
@@ -38,6 +51,8 @@ public class Clients {
           .minVideoQuality(VideoQuality.tiny)
           .maxVideoQuality(VideoQuality.ultrahighres)
           .priority(0));
+
+
 
 
  }

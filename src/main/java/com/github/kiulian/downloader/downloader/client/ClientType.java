@@ -6,8 +6,12 @@ import com.alibaba.fastjson.JSONObject;
 public class ClientType {
 
     public static final ClientType WEB = new ClientType("WEB","2.20210714",base_json());
+    public static final ClientType MWEB = new ClientType("MWEB","2.20220918",base_json());
     public static final ClientType ANDROID = new ClientType("ANDROID","17.36.4",base_json(),
             queryParam("context/client","androidSdkVersion","30"));
+    public static final ClientType ANDROID_TV = new ClientType("ANDROID_TV","2.19.1.303051424",base_json(),
+            queryParam("context/client","androidSdkVersion","30"));
+
 
     private final String body;
     private final String version;
