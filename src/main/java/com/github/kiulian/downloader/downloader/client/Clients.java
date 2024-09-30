@@ -8,77 +8,47 @@ import java.util.*;
 
 public class Clients {
 
- private static final Map<ClientType,ClientTraits> clientTraits;
- private static ClientTraits HIGHEST_PRIORITY_CLIENT;
 
- private static void makeClient(ClientTraits.TraitBuilder builder){
-  ClientTraits trait = new ClientTraits(builder);
+ private static final List<Client> defaultClients;
+ private static Client HIGHEST_PRIORITY_CLIENT;
 
- putTrait(new ClientTraits(builder));
- if(HIGHEST_PRIORITY_CLIENT==null ||trait.getClientPriority() > HIGHEST_PRIORITY_CLIENT.getClientPriority()){
-  HIGHEST_PRIORITY_CLIENT=trait;
- }
- }
- private static void putTrait(ClientTraits trait){
-  clientTraits.put(trait.getType(),trait);
- }
+
  static{
-  clientTraits = new HashMap<>();
-  makeClient(new ClientTraits.TraitBuilder(ClientType.IOS)
-          .minAudioQuality(AudioQuality.low)
-          .maxAudioQuality(AudioQuality.medium)
-          .minVideoQuality(VideoQuality.tiny)
-          .maxVideoQuality(VideoQuality.hd1080)
-          .priority(4));
-  makeClient(new ClientTraits.TraitBuilder(ClientType.ANDROID_MUSIC)
-          .minAudioQuality(AudioQuality.low)
-          .maxAudioQuality(AudioQuality.medium)
-          .minVideoQuality(VideoQuality.tiny)
-          .maxVideoQuality(VideoQuality.hd2160)
-          .priority(3));
-  makeClient(new ClientTraits.TraitBuilder(ClientType.ANDROID_TV)
-          .minAudioQuality(AudioQuality.low)
-          .maxAudioQuality(AudioQuality.medium)
-          .minVideoQuality(VideoQuality.tiny)
-          .maxVideoQuality(VideoQuality.hd1080)
-          .priority(2));
-
-  makeClient(new ClientTraits.TraitBuilder(ClientType.WEB)
-          .minAudioQuality(AudioQuality.low)
-          .maxAudioQuality(AudioQuality.high)
-          .minVideoQuality(VideoQuality.tiny)
-          .maxVideoQuality(VideoQuality.ultrahighres)
-          .priority(1));
-  makeClient(new ClientTraits.TraitBuilder(ClientType.MWEB)
-          .minAudioQuality(AudioQuality.low)
-          .maxAudioQuality(AudioQuality.high)
-          .minVideoQuality(VideoQuality.tiny)
-          .maxVideoQuality(VideoQuality.ultrahighres)
-          .priority(1));
-
-  makeClient(new ClientTraits.TraitBuilder(ClientType.ANDROID)
-          .minAudioQuality(AudioQuality.low)
-          .maxAudioQuality(AudioQuality.high)
-          .minVideoQuality(VideoQuality.tiny)
-          .maxVideoQuality(VideoQuality.ultrahighres)
-          .priority(0));
+  List<Client> clients = new ArrayList<Client>(){
+   @Override
+  public boolean add(Client client) {
+   if(HIGHEST_PRIORITY_CLIENT==null ||client.getPriority() > HIGHEST_PRIORITY_CLIENT.getPriority()){
+    HIGHEST_PRIORITY_CLIENT=client;
+   }
+   return super.add(client);
+  }};
 
 
+
+  clients.add(new Client(ClientType.IOS,4));
+  clients.add(new Client(ClientType.ANDROID_MUSIC,3));
+  clients.add(new Client(ClientType.ANDROID_TV,2));
+  clients.add(new Client(ClientType.WEB,1));
+  clients.add(new Client(ClientType.MWEB,1));
+  clients.add(new Client(ClientType.ANDROID,0));
+  clients.sort(Comparator.comparingInt(Client::getPriority).reversed());
+
+
+ defaultClients= Collections.unmodifiableList(clients);
 
 
 
  }
- public static ClientTraits defaultTraitsFor(ClientType type){
-  return clientTraits.get(type);
 
+ /**Gets a list of all the default clients.
+  * @return an unmodifiable list of all pre-initialized clients ordered by their priority.
+  * The priority of a client is generally determined by its reliability, although said reliability has a
+  * volatile nature and a given client can, at any time, become unreliable.*/
+ public static List<Client> defaultClients(){
+ return defaultClients;
  }
- public static List<ClientTraits> byPriority(){
-  List<ClientTraits> traits = new ArrayList<>(clientTraits.values());
-  traits.sort(Comparator.comparingInt(ClientTraits::getClientPriority).reversed());
-  return traits;
- }
- public static ClientTraits highestPriorityClient(){
-  return HIGHEST_PRIORITY_CLIENT;
+ public static ClientType highestPriorityClient(){
+  return HIGHEST_PRIORITY_CLIENT.getType();
  }
 
 

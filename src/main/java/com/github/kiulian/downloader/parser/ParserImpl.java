@@ -1,13 +1,8 @@
 package com.github.kiulian.downloader.parser;
 
-import java.io.UnsupportedEncodingException;
-import java.net.URLDecoder;
-import java.net.URLEncoder;
-import java.util.*;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
-
-import com.alibaba.fastjson.*;
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.JSONObject;
 import com.github.kiulian.downloader.Config;
 import com.github.kiulian.downloader.YoutubeException;
 import com.github.kiulian.downloader.YoutubeException.BadPageException;
@@ -15,19 +10,28 @@ import com.github.kiulian.downloader.cipher.Cipher;
 import com.github.kiulian.downloader.cipher.CipherFactory;
 import com.github.kiulian.downloader.downloader.Downloader;
 import com.github.kiulian.downloader.downloader.YoutubeCallback;
-import com.github.kiulian.downloader.downloader.client.ClientTraits;
-import com.github.kiulian.downloader.downloader.client.Clients;
+import com.github.kiulian.downloader.downloader.client.Client;
+import com.github.kiulian.downloader.downloader.client.ClientType;
 import com.github.kiulian.downloader.downloader.request.*;
 import com.github.kiulian.downloader.downloader.response.Response;
 import com.github.kiulian.downloader.downloader.response.ResponseImpl;
 import com.github.kiulian.downloader.extractor.Extractor;
-import com.github.kiulian.downloader.model.playlist.*;
+import com.github.kiulian.downloader.model.playlist.PlaylistDetails;
+import com.github.kiulian.downloader.model.playlist.PlaylistInfo;
+import com.github.kiulian.downloader.model.playlist.PlaylistVideoDetails;
 import com.github.kiulian.downloader.model.search.*;
 import com.github.kiulian.downloader.model.search.query.*;
 import com.github.kiulian.downloader.model.subtitles.SubtitlesInfo;
 import com.github.kiulian.downloader.model.videos.VideoDetails;
 import com.github.kiulian.downloader.model.videos.VideoInfo;
 import com.github.kiulian.downloader.model.videos.formats.*;
+
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
+import java.net.URLEncoder;
+import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 
 public class ParserImpl implements Parser {
     private static final String ANDROID_APIKEY = "AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8";
@@ -61,7 +65,7 @@ public class ParserImpl implements Parser {
         }
     }
 
-    private VideoInfo parseVideo(String videoId, YoutubeCallback<VideoInfo> callback, ClientTraits client) throws YoutubeException {
+    private VideoInfo parseVideo(String videoId, YoutubeCallback<VideoInfo> callback, ClientType client) throws YoutubeException {
         // try to spoof android
         // workaround for issue https://github.com/sealedtx/java-youtube-downloader/issues/97
         VideoInfo videoInfo = parseVideoAndroid(videoId, callback,client);
@@ -74,11 +78,11 @@ public class ParserImpl implements Parser {
         return videoInfo;
     }
 
-    private VideoInfo parseVideoAndroid(String videoId, YoutubeCallback<VideoInfo> callback,ClientTraits client) throws YoutubeException {
+    private VideoInfo parseVideoAndroid(String videoId, YoutubeCallback<VideoInfo> callback,ClientType client) throws YoutubeException {
         String url = BASE_API_URL+"/player?key=" + ANDROID_APIKEY;
 
 
-        RequestWebpage request = new RequestWebpage(url, "POST", client.bodyJson().fluentPut("videoId",videoId).toJSONString())
+        RequestWebpage request = new RequestWebpage(url, "POST", client.getBody().fluentPut("videoId",videoId).toJSONString())
                 .header("Content-Type", "application/json");
 
         Response<String> response = downloader.downloadWebpage(request);
@@ -338,7 +342,7 @@ public class ParserImpl implements Parser {
 
     }
 
-    private PlaylistInfo parsePlaylist(String playlistId, YoutubeCallback<PlaylistInfo> callback,ClientTraits client) throws YoutubeException {
+    private PlaylistInfo parsePlaylist(String playlistId, YoutubeCallback<PlaylistInfo> callback,ClientType client) throws YoutubeException {
         String htmlUrl = "https://www.youtube.com/playlist?list=" + playlistId;
 
         Response<String> response = downloader.downloadWebpage(new RequestWebpage(htmlUrl));
@@ -406,7 +410,7 @@ public class ParserImpl implements Parser {
         return new PlaylistDetails(playlistId, title, author, videoCount, viewCount);
     }
 
-    private List<PlaylistVideoDetails> parsePlaylistVideos(JSONObject initialData, int videoCount,ClientTraits client) throws YoutubeException {
+    private List<PlaylistVideoDetails> parsePlaylistVideos(JSONObject initialData, int videoCount,ClientType client) throws YoutubeException {
         JSONObject content;
 
         try {
@@ -430,14 +434,13 @@ public class ParserImpl implements Parser {
         } else {
             videos = new LinkedList<>();
         }
-        JSONObject context = initialData.getJSONObject("responseContext");
-        //String clientVersion = extractor.extractClientVersionFromContext(context);
+
 
         populatePlaylist(content, videos, client);
         return videos;
     }
 
-    private void populatePlaylist(JSONObject content, List<PlaylistVideoDetails> videos, ClientTraits client) throws YoutubeException {
+    private void populatePlaylist(JSONObject content, List<PlaylistVideoDetails> videos, ClientType client) throws YoutubeException {
         JSONArray contents;
         if (content.containsKey("contents")) { // parse first items (up to 100)
             contents = content.getJSONArray("contents");
@@ -471,27 +474,20 @@ public class ParserImpl implements Parser {
         }
     }
 
-    private void loadPlaylistContinuation(String continuation, String ctp, List<PlaylistVideoDetails> videos, ClientTraits client) throws YoutubeException {
+    private void loadPlaylistContinuation(String continuation, String ctp, List<PlaylistVideoDetails> videos, ClientType client) throws YoutubeException {
         JSONObject content;
         String url = BASE_API_URL+"/browse?key=" + ANDROID_APIKEY;
-        JSONObject body = client.bodyJson()
+        JSONObject body = client.getBody()
                 .fluentPut("continuation",continuation)
                 .fluentPut("clickTracking",new JSONObject()
                         .fluentPut("clickTrackingParams", ctp));
 
 
-//        JSONObject body = new JSONObject()
-//                .fluentPut("context", new JSONObject()
-//                        .fluentPut("client", new JSONObject()
-//                                .fluentPut("clientName", "WEB")
-//                                .fluentPut("clientVersion", "2.20201021.03.00")))
-//                .fluentPut("continuation", continuation)
-//                .fluentPut("clickTracking", new JSONObject()
-//                        .fluentPut("clickTrackingParams", ctp));
+
 
         RequestWebpage request = new RequestWebpage(url, "POST", body.toJSONString())
                 .header("X-YouTube-Client-Name", "1")
-                .header("X-YouTube-Client-Version", client.getType().getVersion())
+                .header("X-YouTube-Client-Version", client.getVersion())
                 .header("Content-Type", "application/json");
 
         Response<String> response = downloader.downloadWebpage(request);
@@ -535,7 +531,7 @@ public class ParserImpl implements Parser {
         }
     }
 
-    private PlaylistInfo parseChannelsUploads(String channelId, YoutubeCallback<PlaylistInfo> callback,ClientTraits client) throws YoutubeException {
+    private PlaylistInfo parseChannelsUploads(String channelId, YoutubeCallback<PlaylistInfo> callback,ClientType client) throws YoutubeException {
         String playlistId = null;
         if (channelId.length() == 24 && channelId.startsWith("UC")) { // channel id pattern
             playlistId = "UU" + channelId.substring(2); // replace "UC" with "UU"
@@ -724,21 +720,14 @@ public class ParserImpl implements Parser {
         return parseSearchResult(estimatedCount, rootContents, continuation);
     }
 
-    private SearchResult parseSearchContinuation(SearchContinuation continuation, YoutubeCallback<SearchResult> callback,ClientTraits client) throws YoutubeException {
+    private SearchResult parseSearchContinuation(SearchContinuation continuation, YoutubeCallback<SearchResult> callback,ClientType client) throws YoutubeException {
         String url = BASE_API_URL+"/search?key=" + ANDROID_APIKEY + "&prettyPrint=false";
-        JSONObject body = client.bodyJson()
+        JSONObject body = client.getBody()
                 .fluentPut("continuation",continuation.token())
                 .fluentPut("clickTracking", new JSONObject()
                         .fluentPut("clickTrackingParams", continuation.clickTrackingParameters()));
 
-//        JSONObject body = new JSONObject()
-//                .fluentPut("context", new JSONObject()
-//                        .fluentPut("client", new JSONObject()
-//                                .fluentPut("clientName", "WEB")
-//                                .fluentPut("clientVersion", "2.20201021.03.00")))
-//                .fluentPut("continuation", continuation.token())
-//                .fluentPut("clickTracking", new JSONObject()
-//                        .fluentPut("clickTrackingParams", continuation.clickTrackingParameters()));
+
 
         RequestWebpage request = new RequestWebpage(url, "POST", body.toJSONString())
                 .header("X-YouTube-Client-Name", "1")
