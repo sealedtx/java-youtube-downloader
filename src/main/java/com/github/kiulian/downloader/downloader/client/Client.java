@@ -2,6 +2,8 @@ package com.github.kiulian.downloader.downloader.client;
 
 import com.alibaba.fastjson.JSONObject;
 
+import java.util.Objects;
+
 public class Client{
     private final ClientType type;
     private final int priority;
@@ -23,4 +25,8 @@ public class Client{
     public int getPriority() {
         return priority;
     }
+
+
+
+
 }
