@@ -132,6 +132,13 @@ public enum Itag {
     i401(VideoQuality.hd2160),
     i402(VideoQuality.hd2880p),
     i571(VideoQuality.ultrahighres),
+
+    i597(VideoQuality.tiny),//avc1
+    i598(VideoQuality.tiny),//vp9
+    i599(AudioQuality.low), //mp4a
+    i600(AudioQuality.low), // audio webm opus
+
+    // av01 video only formats
     i694(VideoQuality.tiny),
     i695(VideoQuality.small),
     i696(VideoQuality.medium),
