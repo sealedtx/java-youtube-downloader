@@ -138,7 +138,7 @@ public class ParserImpl implements Parser {
                 formats = parseFormats(playerResponse, null, clientVersion);
 
             }catch (InvalidJsUrlException e){
-                JSONObject playerConfig = downloadPlayerConfig("HHbt6rPuC3M",callback);
+                JSONObject playerConfig = downloadPlayerConfig(videoId,callback);
                 String jsUrl;
                 try {
                     jsUrl = extractor.extractJsUrlFromConfig(playerConfig, videoId);
