@@ -8,6 +8,7 @@ import com.github.kiulian.downloader.YoutubeException;
 import com.github.kiulian.downloader.YoutubeException.BadPageException;
 import com.github.kiulian.downloader.cipher.Cipher;
 import com.github.kiulian.downloader.cipher.CipherFactory;
+import com.github.kiulian.downloader.cipher.CipherFunction;
 import com.github.kiulian.downloader.downloader.Downloader;
 import com.github.kiulian.downloader.downloader.YoutubeCallback;
 import com.github.kiulian.downloader.downloader.client.Client;
@@ -36,18 +37,49 @@ import java.util.concurrent.Future;
 public class ParserImpl implements Parser {
     private static final String ANDROID_APIKEY = "AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8";
     private static final String BASE_API_URL= "https://www.youtube.com/youtubei/v1";
+        static class InvalidJsUrlException extends YoutubeException.CipherException{
+            public InvalidJsUrlException(String message) {
+                super(message);
+            }
+        }
 
+    private static class DelegatedCipherFactory implements CipherFactory{
+        Cipher lastCipher;
+        final CipherFactory factory;
+        DelegatedCipherFactory(CipherFactory factory){this.factory= factory;}
+        @Override
+        public Cipher createCipher(String jsUrl) throws YoutubeException {
+            if(jsUrl==null)
+                return lastCipher;
+            return lastCipher=factory.createCipher(jsUrl);
+
+        }
+
+        @Override
+        public void addInitialFunctionPattern(int priority, String regex) {
+         factory.addInitialFunctionPattern(priority,regex);
+        }
+
+        @Override
+        public void addFunctionEquivalent(String regex, CipherFunction function) {
+        factory.addFunctionEquivalent(regex,function);
+        }
+        Cipher getLastCipher(){return lastCipher;}
+        void invalidateLastCipher(){this.lastCipher=null;}
+    }
     private final Config config;
     private final Downloader downloader;
     private final Extractor extractor;
-    private final CipherFactory cipherFactory;
+    private final DelegatedCipherFactory cipherFactory;
 
 
     public ParserImpl(Config config, Downloader downloader, Extractor extractor, CipherFactory cipherFactory) {
         this.config = config;
         this.downloader = downloader;
         this.extractor = extractor;
-        this.cipherFactory = cipherFactory;
+        this.cipherFactory = new DelegatedCipherFactory(cipherFactory);
+
+
     }
 
     @Override
@@ -105,7 +137,21 @@ public class ParserImpl implements Parser {
             try {
                 formats = parseFormats(playerResponse, null, clientVersion);
 
-            } catch (YoutubeException e) {
+            }catch (InvalidJsUrlException e){
+                JSONObject playerConfig = downloadPlayerConfig("HHbt6rPuC3M",callback);
+                String jsUrl;
+                try {
+                    jsUrl = extractor.extractJsUrlFromConfig(playerConfig, videoId);
+                } catch (YoutubeException ex) {
+
+                    if (callback != null) {
+                        callback.onError(ex);
+                    }
+                    throw ex;
+                }
+                formats=parseFormats(playerResponse,jsUrl,clientVersion);
+            }
+            catch (YoutubeException e) {
                 if (callback != null) {
                     callback.onError(e);
                 }
@@ -119,8 +165,7 @@ public class ParserImpl implements Parser {
         }
 
     }
-
-    private VideoInfo parseVideoWeb(String videoId, YoutubeCallback<VideoInfo> callback) throws YoutubeException {
+    private JSONObject downloadPlayerConfig(String videoId,YoutubeCallback<VideoInfo> callback) throws YoutubeException{
         String htmlUrl = "https://www.youtube.com/watch?v=" + videoId;
 
         Response<String> response = downloader.downloadWebpage(new RequestWebpage(htmlUrl));
@@ -142,6 +187,10 @@ public class ParserImpl implements Parser {
             }
             throw e;
         }
+        return playerConfig;
+    }
+    private VideoInfo parseVideoWeb(String videoId, YoutubeCallback<VideoInfo> callback) throws YoutubeException {
+        JSONObject playerConfig= downloadPlayerConfig(videoId,callback);
 
         JSONObject args = playerConfig.getJSONObject("args");
         JSONObject playerResponse = args.getJSONObject("player_response");
@@ -247,6 +296,7 @@ public class ParserImpl implements Parser {
         }
     }
 
+
     private Format parseFormat(JSONObject json, String jsUrl, Itag itag, boolean isAdaptive, String clientVersion) throws YoutubeException {
         if (json.containsKey("signatureCipher")) {
             JSONObject jsonCipher = new JSONObject();
@@ -268,7 +318,7 @@ public class ParserImpl implements Parser {
             if (urlWithSig.contains("signature")
                     || (!jsonCipher.containsKey("s") && (urlWithSig.contains("&sig=") || urlWithSig.contains("&lsig=")))) {
                 // do nothing, this is pre-signed videos with signature
-            } else if (jsUrl != null) {
+            } else if (jsUrl != null || cipherFactory.getLastCipher()!=null) {
                 String s = jsonCipher.getString("s");
                 try {
                     s = URLDecoder.decode(s, "UTF-8");
@@ -281,7 +331,9 @@ public class ParserImpl implements Parser {
                 String decipheredUrl = urlWithSig + "&sig=" + signature;
                 json.put("url", decipheredUrl);
             } else {
-                throw new YoutubeException.BadPageException("deciphering is required but no js url");
+
+                    throw new InvalidJsUrlException("deciphering is required but no js url");
+
             }
         }
 

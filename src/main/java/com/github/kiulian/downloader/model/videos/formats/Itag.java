@@ -146,8 +146,10 @@ public enum Itag {
     i698(VideoQuality.hd720),
     i699(VideoQuality.hd1080),
     i700(VideoQuality.hd1440),
-    i701(VideoQuality.hd2160);
-    ;
+    i701(VideoQuality.hd2160),
+    //vp9
+    i779(VideoQuality.large),
+    i780(VideoQuality.large);
 
     protected int id;
     private VideoQuality videoQuality;
