@@ -37,11 +37,7 @@ import java.util.concurrent.Future;
 public class ParserImpl implements Parser {
     private static final String ANDROID_APIKEY = "AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8";
     private static final String BASE_API_URL= "https://www.youtube.com/youtubei/v1";
-        static class InvalidJsUrlException extends YoutubeException.CipherException{
-            public InvalidJsUrlException(String message) {
-                super(message);
-            }
-        }
+
 
     private static class DelegatedCipherFactory implements CipherFactory{
         Cipher lastCipher;
@@ -137,7 +133,7 @@ public class ParserImpl implements Parser {
             try {
                 formats = parseFormats(playerResponse, null, clientVersion);
 
-            }catch (InvalidJsUrlException e){
+            }catch (YoutubeException.InvalidJsUrlException e){
                 JSONObject playerConfig = downloadPlayerConfig(videoId,callback);
                 String jsUrl;
                 try {
@@ -332,7 +328,7 @@ public class ParserImpl implements Parser {
                 json.put("url", decipheredUrl);
             } else {
 
-                    throw new InvalidJsUrlException("deciphering is required but no js url");
+                    throw new YoutubeException.InvalidJsUrlException("deciphering is required but no js url");
 
             }
         }

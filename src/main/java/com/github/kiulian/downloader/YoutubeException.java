@@ -28,5 +28,10 @@ public abstract class YoutubeException extends Exception {
             super(message);
         }
     }
+   public static class InvalidJsUrlException extends YoutubeException.CipherException{
+        public InvalidJsUrlException(String message) {
+            super(message);
+        }
+    }
 
 }
