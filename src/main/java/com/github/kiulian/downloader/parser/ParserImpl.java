@@ -145,16 +145,7 @@ public class ParserImpl implements Parser {
 
             } catch (YoutubeException.InvalidJsUrlException e) {
                 JSONObject playerConfig = downloadPlayerConfig(videoId, callback);
-                String jsUrl;
-                try {
-                    jsUrl = extractor.extractJsUrlFromConfig(playerConfig, videoId);
-                } catch (YoutubeException ex) {
-
-                    if (callback != null) {
-                        callback.onError(ex);
-                    }
-                    throw ex;
-                }
+                String jsUrl = extractor.extractJsUrlFromConfig(playerConfig, videoId);
                 formats = parseFormats(playerResponse, jsUrl, clientVersion);
             } catch (YoutubeException e) {
                 if (callback != null) {

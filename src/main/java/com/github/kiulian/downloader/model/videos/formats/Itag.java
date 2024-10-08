@@ -1,7 +1,6 @@
 package com.github.kiulian.downloader.model.videos.formats;
 
 
-
 import com.github.kiulian.downloader.model.videos.quality.AudioQuality;
 import com.github.kiulian.downloader.model.videos.quality.VideoQuality;
 
