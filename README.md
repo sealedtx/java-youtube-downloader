@@ -44,6 +44,26 @@ Request request = new Request(...)
         .callback(...) // add callback for async processing
         .async(); // make request async
 ```
+**NOTE:**
+
+At present because youtube is seemingly making some changes to it's APIS, requests made to certain clients might fail.
+That's why, in case a request fails, with this one can choose to opt for a different client if the current one is broken. This can either be a registered client in Clients , or a custom made one if it has not been added yet to the registered ones. Any methods that use innertube have been updated to use clients specified in the corresponding request. At present, those include requests for video info, search continuation, and one for playlists. 
+
+Using one of the registered clients is as simple as:
+```java
+// each request accepts optional params that will override global configuration
+Request request = new Request(...)
+        .clientType(ClientType.MWEB); // <---- put here any existing client or implement your own if it is not present
+```
+
+```java
+// or overwrite default highest priority client and it will be used by default in all requests
+Clients.setHighestPriorityClientType(ClientType.MWEB);
+```
+
+Currently highest priority client is set to `ANDROID_VR`. It was chooses by manual test done by @iexavl
+
+More information here: https://github.com/sealedtx/java-youtube-downloader/pull/132
 
 ### Response
 ```java
@@ -370,7 +390,7 @@ dependencyResolutionManagement {
 	}
 }
 ```
-```gradle 
+```gradleA
 dependencies {
   implementation 'com.github.sealedtx:java-youtube-downloader:3.2.4'
 }

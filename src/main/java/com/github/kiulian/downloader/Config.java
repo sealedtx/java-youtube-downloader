@@ -147,8 +147,9 @@ public class Config {
             ProxyAuthenticator.addAuthentication(host, port, userName, password);
             return this;
         }
-        public Builder proxy(Proxy proxy){
-            this.proxy=proxy;
+
+        public Builder proxy(Proxy proxy) {
+            this.proxy = proxy;
             return this;
         }
 
