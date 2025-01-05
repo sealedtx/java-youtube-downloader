@@ -16,13 +16,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class Config {
     private static final ThreadFactory threadFactory = new ThreadFactory() {
         private static final String NAME_PREFIX = "yt-downloader-";
-        private final AtomicInteger threadNumber = new AtomicInteger(1);
+        private final AtomicInteger threadNumber = new AtomicInteger(0);
 
         public Thread newThread(Runnable r) {
-            SecurityManager s = System.getSecurityManager();
-            ThreadGroup group = s != null ? s.getThreadGroup() : Thread.currentThread().getThreadGroup();
-
-            Thread thread = new Thread(group, r, NAME_PREFIX + threadNumber.getAndIncrement());
+            final Thread thread = new Thread(r, NAME_PREFIX + this.threadNumber.getAndIncrement());
             thread.setDaemon(true);
             return thread;
         }
@@ -50,7 +47,7 @@ public class Config {
         this.headers = new HashMap<>();
         this.maxRetries = DEFAULT_RETRY_ON_FAILURE;
         this.compressionEnabled = true;
-        this.executorService = Executors.newCachedThreadPool(threadFactory);
+        this.executorService = null;
 
         setHeader("User-Agent", DEFAULT_USER_AGENT);
         setHeader("Accept-language", DEFAULT_ACCEPT_LANG);
@@ -93,7 +90,10 @@ public class Config {
     }
 
     public ExecutorService getExecutorService() {
-        return executorService;
+        if (this.executorService == null) {
+            this.executorService = Executors.newCachedThreadPool(threadFactory);
+        }
+        return this.executorService;
     }
 
     public int getMaxRetries() {
@@ -165,9 +165,6 @@ public class Config {
         }
 
         public Config build() {
-            if (executorService == null) {
-                executorService = Executors.newCachedThreadPool(threadFactory);
-            }
             return new Config(this);
         }
 

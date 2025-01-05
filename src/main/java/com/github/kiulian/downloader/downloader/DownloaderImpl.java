@@ -8,6 +8,7 @@ import com.github.kiulian.downloader.model.videos.formats.Format;
 
 import java.io.*;
 import java.net.*;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.concurrent.*;
 import java.util.zip.GZIPInputStream;
@@ -55,7 +56,7 @@ public class DownloaderImpl implements Downloader {
                 urlConnection.setRequestMethod(request.getMethod());
                 if (request.getBody() != null) {
                     urlConnection.setDoOutput(true);
-                    try (OutputStreamWriter outputWriter = new OutputStreamWriter(urlConnection.getOutputStream(), "UTF-8")){
+                    try (OutputStreamWriter outputWriter = new OutputStreamWriter(urlConnection.getOutputStream(), StandardCharsets.UTF_8)){
                         outputWriter.write(request.getBody());
                         outputWriter.flush();
                     }
@@ -84,7 +85,7 @@ public class DownloaderImpl implements Downloader {
                     if (config.isCompressionEnabled() && "gzip".equals(urlConnection.getHeaderField("content-encoding"))) {
                         in = new GZIPInputStream(in);
                     }
-                    br = new BufferedReader(new InputStreamReader(in, "UTF-8"));
+                    br = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8));
                     String inputLine;
                     while ((inputLine = br.readLine()) != null)
                         result.append(inputLine).append('\n');
