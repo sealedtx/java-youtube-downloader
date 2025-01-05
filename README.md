@@ -53,7 +53,7 @@ Using one of the registered clients is as simple as:
 ```java
 // each request accepts optional params that will override global configuration
 Request request = new Request(...)
-        .clientType(ClientType.MWEB); // <---- put here any existing client or implement your own if it is not present
+        .client(ClientType.MWEB); // <---- put here any existing client or implement your own if it is not present
 ```
 
 ```java

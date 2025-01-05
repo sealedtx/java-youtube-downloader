@@ -11,7 +11,7 @@ import com.github.kiulian.downloader.cipher.CipherFactory;
 import com.github.kiulian.downloader.cipher.CipherFunction;
 import com.github.kiulian.downloader.downloader.Downloader;
 import com.github.kiulian.downloader.downloader.YoutubeCallback;
-import com.github.kiulian.downloader.downloader.client.ClientType;
+import com.github.kiulian.downloader.downloader.client.Client;
 import com.github.kiulian.downloader.downloader.request.*;
 import com.github.kiulian.downloader.downloader.response.Response;
 import com.github.kiulian.downloader.downloader.response.ResponseImpl;
@@ -92,18 +92,18 @@ public class ParserImpl implements Parser {
     public Response<VideoInfo> parseVideo(RequestVideoInfo request) {
         if (request.isAsync()) {
             ExecutorService executorService = config.getExecutorService();
-            Future<VideoInfo> result = executorService.submit(() -> parseVideo(request.getVideoId(), request.getCallback(), request.getClientType()));
+            Future<VideoInfo> result = executorService.submit(() -> parseVideo(request.getVideoId(), request.getCallback(), request.getClient()));
             return ResponseImpl.fromFuture(result);
         }
         try {
-            VideoInfo result = parseVideo(request.getVideoId(), request.getCallback(), request.getClientType());
+            VideoInfo result = parseVideo(request.getVideoId(), request.getCallback(), request.getClient());
             return ResponseImpl.from(result);
         } catch (YoutubeException e) {
             return ResponseImpl.error(e);
         }
     }
 
-    private VideoInfo parseVideo(String videoId, YoutubeCallback<VideoInfo> callback, ClientType client) throws YoutubeException {
+    private VideoInfo parseVideo(String videoId, YoutubeCallback<VideoInfo> callback, Client client) throws YoutubeException {
         // try to spoof android
         // workaround for issue https://github.com/sealedtx/java-youtube-downloader/issues/97
         VideoInfo videoInfo = parseVideoAndroid(videoId, callback, client);
@@ -116,7 +116,7 @@ public class ParserImpl implements Parser {
         return videoInfo;
     }
 
-    private VideoInfo parseVideoAndroid(String videoId, YoutubeCallback<VideoInfo> callback, ClientType client) throws YoutubeException {
+    private VideoInfo parseVideoAndroid(String videoId, YoutubeCallback<VideoInfo> callback, Client client) throws YoutubeException {
         String url = BASE_API_URL + "/player?key=" + ANDROID_APIKEY;
 
 
@@ -387,11 +387,11 @@ public class ParserImpl implements Parser {
     public Response<PlaylistInfo> parsePlaylist(RequestPlaylistInfo request) {
         if (request.isAsync()) {
             ExecutorService executorService = config.getExecutorService();
-            Future<PlaylistInfo> result = executorService.submit(() -> parsePlaylist(request.getPlaylistId(), request.getCallback(), request.getClientType()));
+            Future<PlaylistInfo> result = executorService.submit(() -> parsePlaylist(request.getPlaylistId(), request.getCallback(), request.getClient()));
             return ResponseImpl.fromFuture(result);
         }
         try {
-            PlaylistInfo result = parsePlaylist(request.getPlaylistId(), request.getCallback(), request.getClientType());
+            PlaylistInfo result = parsePlaylist(request.getPlaylistId(), request.getCallback(), request.getClient());
             return ResponseImpl.from(result);
         } catch (YoutubeException e) {
             return ResponseImpl.error(e);
@@ -399,7 +399,7 @@ public class ParserImpl implements Parser {
 
     }
 
-    private PlaylistInfo parsePlaylist(String playlistId, YoutubeCallback<PlaylistInfo> callback, ClientType client) throws YoutubeException {
+    private PlaylistInfo parsePlaylist(String playlistId, YoutubeCallback<PlaylistInfo> callback, Client client) throws YoutubeException {
         String htmlUrl = "https://www.youtube.com/playlist?list=" + playlistId;
 
         Response<String> response = downloader.downloadWebpage(new RequestWebpage(htmlUrl));
@@ -467,7 +467,7 @@ public class ParserImpl implements Parser {
         return new PlaylistDetails(playlistId, title, author, videoCount, viewCount);
     }
 
-    private List<PlaylistVideoDetails> parsePlaylistVideos(JSONObject initialData, int videoCount, ClientType client) throws YoutubeException {
+    private List<PlaylistVideoDetails> parsePlaylistVideos(JSONObject initialData, int videoCount, Client client) throws YoutubeException {
         JSONObject content;
 
         try {
@@ -497,7 +497,7 @@ public class ParserImpl implements Parser {
         return videos;
     }
 
-    private void populatePlaylist(JSONObject content, List<PlaylistVideoDetails> videos, ClientType client) throws YoutubeException {
+    private void populatePlaylist(JSONObject content, List<PlaylistVideoDetails> videos, Client client) throws YoutubeException {
         JSONArray contents;
         if (content.containsKey("contents")) { // parse first items (up to 100)
             contents = content.getJSONArray("contents");
@@ -531,7 +531,7 @@ public class ParserImpl implements Parser {
         }
     }
 
-    private void loadPlaylistContinuation(String continuation, String ctp, List<PlaylistVideoDetails> videos, ClientType client) throws YoutubeException {
+    private void loadPlaylistContinuation(String continuation, String ctp, List<PlaylistVideoDetails> videos, Client client) throws YoutubeException {
         JSONObject content;
         String url = BASE_API_URL + "/browse?key=" + ANDROID_APIKEY;
         JSONObject body = client.getBody()
@@ -575,18 +575,18 @@ public class ParserImpl implements Parser {
     public Response<PlaylistInfo> parseChannelsUploads(RequestChannelUploads request) {
         if (request.isAsync()) {
             ExecutorService executorService = config.getExecutorService();
-            Future<PlaylistInfo> result = executorService.submit(() -> parseChannelsUploads(request.getChannelId(), request.getCallback(), request.getClientType()));
+            Future<PlaylistInfo> result = executorService.submit(() -> parseChannelsUploads(request.getChannelId(), request.getCallback(), request.getClient()));
             return ResponseImpl.fromFuture(result);
         }
         try {
-            PlaylistInfo result = parseChannelsUploads(request.getChannelId(), request.getCallback(), request.getClientType());
+            PlaylistInfo result = parseChannelsUploads(request.getChannelId(), request.getCallback(), request.getClient());
             return ResponseImpl.from(result);
         } catch (YoutubeException e) {
             return ResponseImpl.error(e);
         }
     }
 
-    private PlaylistInfo parseChannelsUploads(String channelId, YoutubeCallback<PlaylistInfo> callback, ClientType client) throws YoutubeException {
+    private PlaylistInfo parseChannelsUploads(String channelId, YoutubeCallback<PlaylistInfo> callback, Client client) throws YoutubeException {
         String playlistId = null;
         if (channelId.length() == 24 && channelId.startsWith("UC")) { // channel id pattern
             playlistId = "UU" + channelId.substring(2); // replace "UC" with "UU"
@@ -689,11 +689,11 @@ public class ParserImpl implements Parser {
     public Response<SearchResult> parseSearchContinuation(RequestSearchContinuation request) {
         if (request.isAsync()) {
             ExecutorService executorService = config.getExecutorService();
-            Future<SearchResult> result = executorService.submit(() -> parseSearchContinuation(request.continuation(), request.getCallback(), request.getClientType()));
+            Future<SearchResult> result = executorService.submit(() -> parseSearchContinuation(request.continuation(), request.getCallback(), request.getClient()));
             return ResponseImpl.fromFuture(result);
         }
         try {
-            SearchResult result = parseSearchContinuation(request.continuation(), request.getCallback(), request.getClientType());
+            SearchResult result = parseSearchContinuation(request.continuation(), request.getCallback(), request.getClient());
             return ResponseImpl.from(result);
         } catch (YoutubeException e) {
             return ResponseImpl.error(e);
@@ -775,7 +775,7 @@ public class ParserImpl implements Parser {
         return parseSearchResult(estimatedCount, rootContents, continuation);
     }
 
-    private SearchResult parseSearchContinuation(SearchContinuation continuation, YoutubeCallback<SearchResult> callback, ClientType client) throws YoutubeException {
+    private SearchResult parseSearchContinuation(SearchContinuation continuation, YoutubeCallback<SearchResult> callback, Client client) throws YoutubeException {
         String url = BASE_API_URL + "/search?key=" + ANDROID_APIKEY + "&prettyPrint=false";
         JSONObject body = client.getBody()
                 .fluentPut("continuation", continuation.token())
