@@ -2,6 +2,7 @@ package com.github.kiulian.downloader.downloader;
 
 import com.github.kiulian.downloader.Config;
 import com.github.kiulian.downloader.YoutubeException;
+import com.github.kiulian.downloader.downloader.client.DefaultClients;
 import com.github.kiulian.downloader.downloader.request.*;
 import com.github.kiulian.downloader.downloader.response.ResponseImpl;
 import com.github.kiulian.downloader.model.videos.formats.Format;
@@ -184,6 +185,12 @@ public class DownloaderImpl implements Downloader {
                 }
                 // reset error in case of successful retry
                 exception = null;
+            } catch (UnauthorizedException e) {
+                if (request.getClient() instanceof DefaultClients) {
+                    DefaultClients c = (DefaultClients) request.getClient();
+                    request.client(c.next());
+                }
+                exception = e;
             } catch (IOException e) {
                 exception = e;
             } finally {
@@ -203,9 +210,13 @@ public class DownloaderImpl implements Downloader {
     private void downloadStraight(Format format, OutputStream os, Map<String, String> headers, Proxy proxy, YoutubeCallback<?> callback) throws IOException {
         HttpURLConnection urlConnection = openConnection(format.url(), headers, proxy, false);
         int responseCode = urlConnection.getResponseCode();
+        if (responseCode == 403) {
+            throw new UnauthorizedException("HTTP 403");
+        }
         if (responseCode != 200) {
             throw new RuntimeException("Failed to download: HTTP " + responseCode);
         }
+
         int contentLength = urlConnection.getContentLength();
         InputStream is = urlConnection.getInputStream();
 
@@ -239,6 +250,10 @@ public class DownloaderImpl implements Downloader {
 
             HttpURLConnection urlConnection = openConnection(partUrl, headers, proxy, false);
             int responseCode = urlConnection.getResponseCode();
+
+            if (responseCode == 403) {
+                throw new UnauthorizedException("HTTP 403");
+            }
             if (responseCode != 200) {
                 throw new RuntimeException("Failed to download: HTTP " + responseCode);
             }

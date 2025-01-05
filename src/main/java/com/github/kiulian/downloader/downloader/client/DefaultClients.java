@@ -103,6 +103,22 @@ public enum DefaultClients implements Client {
         this.body = body.toJSONString();
     }
 
+    public DefaultClients next() {
+        final int index = this.ordinal() + 1;
+        if (index >= VALUES.length) {
+            return (DefaultClients) VALUES[0];
+        }
+        return (DefaultClients) VALUES[index];
+    }
+
+    public DefaultClients previous() {
+        final int index = this.ordinal() - 1;
+        if (index <= 0) {
+            return (DefaultClients) VALUES[VALUES.length - 1];
+        }
+        return (DefaultClients) VALUES[index];
+    }
+
     @Override
     public String getVersion() {
         return this.version;
