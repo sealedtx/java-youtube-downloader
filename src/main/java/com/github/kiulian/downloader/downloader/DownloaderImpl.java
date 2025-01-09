@@ -187,10 +187,10 @@ public class DownloaderImpl implements Downloader {
                 exception = null;
             } catch (IOException e) {
                 exception = e;
-            } finally {
-                closeSilently(os);
             }
-        } while (exception != null && maxRetries > 0);
+        } while (exception != null && maxRetries-- > 0);
+
+        closeSilently(os);
 
         if (exception != null) {
             if (callback != null) {
