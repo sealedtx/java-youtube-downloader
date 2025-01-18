@@ -48,9 +48,11 @@ public class ParserImpl implements Parser {
 
         @Override
         public Cipher createCipher(String jsUrl) throws YoutubeException {
-            if (jsUrl == null)
-                return lastCipher;
-            return lastCipher = factory.createCipher(jsUrl);
+            synchronized (factory){
+                if (jsUrl == null)
+                    return lastCipher;
+                return lastCipher = factory.createCipher(jsUrl);
+            }
 
         }
 
@@ -65,7 +67,9 @@ public class ParserImpl implements Parser {
         }
 
         Cipher getLastCipher() {
-            return lastCipher;
+            synchronized (factory){
+                return lastCipher;
+            }
         }
 
         void invalidateLastCipher() {
