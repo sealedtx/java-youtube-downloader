@@ -78,10 +78,26 @@ public class ClientType {
         client.fluentPut("clientVersion", version);
         JSONObject cur = body;
         for (QueryParameter param : parameters) {
-            for (String p : param.path) {
-                cur = cur.getJSONObject(p);
+            final String key;
+            int i= param.path.length-1;
+            if(param.key==null){
+                key=param.path[i];
+                i--;
+            }else{
+                key = param.key;
             }
-            cur.fluentPut(param.key, param.value);
+            for(; i>=0; --i){
+                String p = param.path[i];
+                JSONObject c = cur.getJSONObject(p);
+                if(c==null){
+                    cur.fluentPut(p,(cur=new JSONObject()));
+                }else{
+                    cur=c;
+                }
+            }
+
+            cur.fluentPut(key, param.value);
+            cur=body;
 
         }
         this.body = body.toJSONString();
@@ -150,7 +166,7 @@ public class ClientType {
         }
 
         QueryParameter(String key, String value) {
-            this("", key, value);
+            this(key, null, value);
 
         }
     }
