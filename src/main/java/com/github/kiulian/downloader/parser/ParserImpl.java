@@ -206,12 +206,7 @@ public class ParserImpl implements Parser {
         JSONObject playerResponse = args.getJSONObject("player_response");
 
         if (!playerResponse.containsKey("streamingData") && !playerResponse.containsKey("videoDetails")) {
-            JSONObject playabilityStatus = playerResponse.getJSONObject("playabilityStatus");
-            String message = "streamingData not found.";
-            if(playabilityStatus!=null){
-                message+="\nplayabilityStatus: \n" + JSON.toJSONString(playabilityStatus, SerializerFeature.PrettyFormat);
-            }
-            YoutubeException e = new YoutubeException.BadPageException(message);
+            YoutubeException e = badResponse("streamingData not found. ",playerResponse);
             if (callback != null) {
                 callback.onError(e);
             }
@@ -262,14 +257,16 @@ public class ParserImpl implements Parser {
         return new VideoDetails(videoDetails, liveHLSUrl);
     }
 
+    private static YoutubeException.BadPageException badResponse(String message, JSONObject playerResponse){
+        JSONObject playabilityStatus = playerResponse.getJSONObject("playabilityStatus");
+        if(playabilityStatus!=null){
+        message=message+"playabilityStatus:" + JSON.toJSONString(playabilityStatus);
+        }
+        return new YoutubeException.BadPageException(message);
+    }
     private List<Format> parseFormats(JSONObject playerResponse, String jsUrl, String clientVersion) throws YoutubeException {
         if (!playerResponse.containsKey("streamingData")) {
-            JSONObject playabilityStatus = playerResponse.getJSONObject("playabilityStatus");
-            String message = "streamingData not found.";
-            if(playabilityStatus!=null){
-               message+="\nplayabilityStatus: \n" + JSON.toJSONString(playabilityStatus, SerializerFeature.PrettyFormat);
-            }
-            throw new YoutubeException.BadPageException(message);
+            throw badResponse("streamingData not found. ",playerResponse);
         }
 
         JSONObject streamingData = playerResponse.getJSONObject("streamingData");
