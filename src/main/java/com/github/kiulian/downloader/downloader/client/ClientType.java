@@ -86,8 +86,8 @@ public class ClientType {
             }else{
                 key = param.key;
             }
-            for(; i>=0; --i){
-                String p = param.path[i];
+            for(int j=0;j<=i; j++){
+                String p = param.path[j];
                 JSONObject c = cur.getJSONObject(p);
                 if(c==null){
                     cur.fluentPut(p,(cur=new JSONObject()));
@@ -130,7 +130,7 @@ public class ClientType {
         return JSON.parseObject(body);
     }
 
-    private static JSONObject baseJson() {
+    public static JSONObject baseJson() {
         /*
         {
             "context": {
@@ -155,9 +155,9 @@ public class ClientType {
     }
 
     public static class QueryParameter {
-        final String[] path;
-        final String value;
-        final String key;
+       public final String[] path;
+       public final String value;
+       public final String key;
 
         QueryParameter(String path, String key, String value) {
             this.path = path.split("/");
