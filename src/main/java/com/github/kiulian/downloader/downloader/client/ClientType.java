@@ -73,35 +73,30 @@ public class ClientType {
     public ClientType(String name, String version, JSONObject body, QueryParameter... parameters) {
         this.name = name;
         this.version = version;
-        JSONObject client = body.getJSONObject("context").getJSONObject("client");
-        client.fluentPut("clientName", name);
-        client.fluentPut("clientVersion", version);
-        JSONObject cur = body;
+        body.getJSONObject("context").getJSONObject("client")
+                .fluentPut("clientName", name)
+                .fluentPut("clientVersion", version);
         for (QueryParameter param : parameters) {
-            final String key;
-            int i= param.path.length-1;
-            if(param.key==null){
-                key=param.path[i];
-                i--;
-            }else{
-                key = param.key;
-            }
-            for(int j=0;j<=i; j++){
-                String p = param.path[j];
-                JSONObject c = cur.getJSONObject(p);
-                if(c==null){
-                    cur.fluentPut(p,(cur=new JSONObject()));
-                }else{
-                    cur=c;
-                }
-            }
-
-            cur.fluentPut(key, param.value);
-            cur=body;
-
+            processQueryParameter(body, param);
         }
         this.body = body.toJSONString();
+    }
 
+    private void processQueryParameter(JSONObject body, QueryParameter param) {
+        JSONObject current = body;
+
+        for (int j = 0; j < param.path.length - (param.key == null ? 1 : 0); j++) {
+            String path = param.path[j];
+            JSONObject next = current.getJSONObject(path);
+            if (next == null) {
+                next = new JSONObject();
+                current.fluentPut(path, next);
+            }
+            current = next;
+        }
+
+        String key = (param.key == null) ? param.path[param.path.length - 1] : param.key;
+        current.put(key, param.value);
     }
 
     public ClientType(String name, String version, JSONObject body) {
@@ -155,9 +150,9 @@ public class ClientType {
     }
 
     public static class QueryParameter {
-       public final String[] path;
-       public final String value;
-       public final String key;
+        public final String[] path;
+        public final String value;
+        public final String key;
 
         QueryParameter(String path, String key, String value) {
             this.path = path.split("/");
