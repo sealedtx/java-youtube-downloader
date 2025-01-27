@@ -3,6 +3,7 @@ package com.github.kiulian.downloader.parser;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson.serializer.SerializerFeature;
 import com.github.kiulian.downloader.Config;
 import com.github.kiulian.downloader.YoutubeException;
 import com.github.kiulian.downloader.YoutubeException.BadPageException;
@@ -205,7 +206,7 @@ public class ParserImpl implements Parser {
         JSONObject playerResponse = args.getJSONObject("player_response");
 
         if (!playerResponse.containsKey("streamingData") && !playerResponse.containsKey("videoDetails")) {
-            YoutubeException e = new YoutubeException.BadPageException("streamingData and videoDetails not found");
+            YoutubeException e = badResponse("streamingData not found. ",playerResponse);
             if (callback != null) {
                 callback.onError(e);
             }
@@ -256,9 +257,16 @@ public class ParserImpl implements Parser {
         return new VideoDetails(videoDetails, liveHLSUrl);
     }
 
+    private static YoutubeException.BadPageException badResponse(String message, JSONObject playerResponse){
+        JSONObject playabilityStatus = playerResponse.getJSONObject("playabilityStatus");
+        if(playabilityStatus!=null){
+        message=message+"playabilityStatus:" + JSON.toJSONString(playabilityStatus);
+        }
+        return new YoutubeException.BadPageException(message);
+    }
     private List<Format> parseFormats(JSONObject playerResponse, String jsUrl, String clientVersion) throws YoutubeException {
         if (!playerResponse.containsKey("streamingData")) {
-            throw new YoutubeException.BadPageException("streamingData not found");
+            throw badResponse("streamingData not found. ",playerResponse);
         }
 
         JSONObject streamingData = playerResponse.getJSONObject("streamingData");
