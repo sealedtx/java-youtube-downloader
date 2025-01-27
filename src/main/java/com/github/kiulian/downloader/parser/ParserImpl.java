@@ -49,7 +49,7 @@ public class ParserImpl implements Parser {
 
         @Override
         public Cipher createCipher(String jsUrl) throws YoutubeException {
-            synchronized (factory){
+            synchronized (factory) {
                 if (jsUrl == null)
                     return lastCipher;
                 return lastCipher = factory.createCipher(jsUrl);
@@ -68,7 +68,7 @@ public class ParserImpl implements Parser {
         }
 
         Cipher getLastCipher() {
-            synchronized (factory){
+            synchronized (factory) {
                 return lastCipher;
             }
         }
@@ -206,7 +206,7 @@ public class ParserImpl implements Parser {
         JSONObject playerResponse = args.getJSONObject("player_response");
 
         if (!playerResponse.containsKey("streamingData") && !playerResponse.containsKey("videoDetails")) {
-            YoutubeException e = badResponse("streamingData not found. ",playerResponse);
+            YoutubeException e = badResponse("streamingData not found. ", playerResponse);
             if (callback != null) {
                 callback.onError(e);
             }
@@ -257,16 +257,9 @@ public class ParserImpl implements Parser {
         return new VideoDetails(videoDetails, liveHLSUrl);
     }
 
-    private static YoutubeException.BadPageException badResponse(String message, JSONObject playerResponse){
-        JSONObject playabilityStatus = playerResponse.getJSONObject("playabilityStatus");
-        if(playabilityStatus!=null){
-        message=message+"playabilityStatus:" + JSON.toJSONString(playabilityStatus);
-        }
-        return new YoutubeException.BadPageException(message);
-    }
     private List<Format> parseFormats(JSONObject playerResponse, String jsUrl, String clientVersion) throws YoutubeException {
         if (!playerResponse.containsKey("streamingData")) {
-            throw badResponse("streamingData not found. ",playerResponse);
+            throw badResponse("streamingData not found. ", playerResponse);
         }
 
         JSONObject streamingData = playerResponse.getJSONObject("streamingData");
@@ -903,5 +896,13 @@ public class ParserImpl implements Parser {
                 System.out.println(jsonItem);
                 return null;
         }
+    }
+
+    private static YoutubeException.BadPageException badResponse(String message, JSONObject playerResponse) {
+        JSONObject playabilityStatus = playerResponse.getJSONObject("playabilityStatus");
+        if (playabilityStatus != null) {
+            message = message + "playabilityStatus:" + JSON.toJSONString(playabilityStatus);
+        }
+        return new YoutubeException.BadPageException(message);
     }
 }
