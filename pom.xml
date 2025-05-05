@@ -6,7 +6,7 @@
 
     <groupId>com.github.ikiulian</groupId>
     <artifactId>java-youtube-downloader</artifactId>
-    <version>3.2.8</version>
+    <version>3.3.0</version>
 
     <name>Java youtube video downloader</name>
     <description>Java parser for retrieving youtube video meta info</description>
@@ -62,6 +62,18 @@
             <groupId>com.alibaba</groupId>
             <artifactId>fastjson</artifactId>
             <version>1.2.83</version>
+        </dependency>
+
+        <!-- logging -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>2.0.9</version>
+        </dependency>
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <version>1.5.13</version>
         </dependency>
 
     </dependencies>
