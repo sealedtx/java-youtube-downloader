@@ -1,12 +1,13 @@
 package com.github.kiulian.downloader.model.videos.formats;
 
-
-
-
 import com.alibaba.fastjson.JSONObject;
 import com.github.kiulian.downloader.model.Extension;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public abstract class Format {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(Format.class);
 
     public static final String AUDIO = "audio";
     public static final String VIDEO = "video";
@@ -32,7 +33,7 @@ public abstract class Format {
         try {
             itag = Itag.valueOf("i" + json.getInteger("itag"));
         } catch (IllegalArgumentException e) {
-            e.printStackTrace();
+            LOGGER.error("Format init failed", e);
             itag = Itag.unknown;
             itag.setId(json.getIntValue("itag"));
         }
