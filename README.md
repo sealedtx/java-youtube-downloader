@@ -410,3 +410,18 @@ android {
   }
 }
 ```
+
+To publish the library to a local Maven repository for test purposes run:
+-------
+
+Gradle:
+```bash
+./gradlew publishToMavenLocal -x test
+```
+
+Maven:
+```bash
+mvn install -DskipTests
+```
+
+`-x test` in Gradle and `-DskipTests` in Maven is used to bypass the outdated failing tests.

@@ -528,9 +528,24 @@ public class ParserImpl implements Parser {
                 videos.add(new PlaylistVideoDetails(contentsItem.getJSONObject("playlistVideoRenderer")));
             } else {
                 if (contentsItem.containsKey("continuationItemRenderer")) {
-                    JSONObject continuationEndpoint = contentsItem.getJSONObject("continuationItemRenderer")
-                        .getJSONObject("continuationEndpoint");
-                    String continuation = continuationEndpoint.getJSONObject("continuationCommand").getString("token");
+                    JSONObject continuationEndpoint =
+                        Optional.ofNullable(contentsItem.getJSONObject("continuationItemRenderer"))
+                            .map(cir -> cir.getJSONObject("continuationEndpoint"))
+                            .orElseThrow(
+                                () -> new YoutubeException.BadPageException("Continuation endpoint not found"));
+
+                    String continuation =
+                        Optional.ofNullable(continuationEndpoint.getJSONObject("commandExecutorCommand"))
+                            .map(cec -> cec.getJSONArray("commands"))
+                            .flatMap(commands -> commands.stream().filter(
+                                commandObject -> (commandObject instanceof JSONObject) &&
+                                    ((JSONObject) commandObject).getString("continuationCommand") != null).findFirst())
+                            .map(commandObject -> (JSONObject) commandObject)
+                            .map(commandObject -> commandObject.getJSONObject("continuationCommand"))
+                            .map(continuationCommand -> continuationCommand.getString("token"))
+                            .orElseThrow(
+                                () -> new YoutubeException.BadPageException("Could not find continuation token"));
+
                     String ctp = continuationEndpoint.getString("clickTrackingParams");
                     loadPlaylistContinuation(continuation, ctp, videos, client);
                 }
