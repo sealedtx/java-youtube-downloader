@@ -44,7 +44,7 @@ public class YoutubePlaylistExtractor_Tests extends YoutubePlaylistTest {
         assertDoesNotThrow(() -> {
             PlaylistInfo playlist = getPlaylist(LOTR_PLAYLIST_ID);
             testPlaylist(playlist, LOTR_PLAYLIST_ID,
-                    "The Lord of the Rings Complete Recordings",
+                    "The Lord of the Rings Complete Recordings and the Hobbit score",
                     "Darkrunn",
                     210);    // stable
             testVideo(getVideo(playlist, "tK_bCeRcGxo", 194),
@@ -96,7 +96,7 @@ public class YoutubePlaylistExtractor_Tests extends YoutubePlaylistTest {
     void getPlaylist_Unavailable_ThrowsException() {
         Response<PlaylistInfo> response = downloader.getPlaylistInfo(new RequestPlaylistInfo("12345678901"));
         assertFalse(response.ok());
-        assertTrue(response.error() instanceof YoutubeException.BadPageException);
+        assertTrue(response.error() instanceof YoutubeException.DownloadException);
     }
 
     @Test
