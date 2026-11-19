@@ -56,7 +56,38 @@ final class PlayerResponse {
     }
 
     VideoDetails details(String videoId) {
+        return details(videoId, JsonNode.missing());
+    }
+
+    /** True if the answer lacks the basic metadata (seen for age-restricted videos through the TV client). */
+    boolean lacksMetadata() {
+        return json.at("videoDetails", "title").asString() == null;
+    }
+
+    /**
+     * Metadata; fields the player answer lacks are taken from an innertube {@code next} answer (the watch page
+     * data), if given. Only the video's own primary and secondary info is read, never recommendations.
+     */
+    VideoDetails details(String videoId, JsonNode next) {
         JsonNode d = json.get("videoDetails");
+        JsonNode primary = next.findFirst("videoPrimaryInfoRenderer");
+        JsonNode secondary = next.findFirst("videoSecondaryInfoRenderer");
+        String title = d.get("title").asString();
+        if (title == null) {
+            title = Texts.text(primary.get("title"));
+        }
+        String author = d.get("author").asString();
+        if (author == null) {
+            author = Texts.text(secondary.at("owner", "videoOwnerRenderer", "title"));
+        }
+        long views = d.get("viewCount").asLong(-1);
+        if (views < 0) {
+            views = Renderers.parseCount(Texts.text(primary.at("viewCount", "videoViewCountRenderer", "viewCount")));
+        }
+        String description = d.get("shortDescription").asString();
+        if (description == null) {
+            description = Texts.text(secondary.get("attributedDescription"));
+        }
         List<String> keywords = new ArrayList<>();
         for (JsonNode keyword : d.get("keywords").items()) {
             if (keyword.isString()) {
@@ -64,13 +95,13 @@ final class PlayerResponse {
             }
         }
         return VideoDetails.builder(d.get("videoId").asString(videoId))
-                .title(d.get("title").asString())
-                .author(d.get("author").asString())
+                .title(title)
+                .author(author)
                 .channelId(d.get("channelId").asString())
-                .description(d.get("shortDescription").asString())
+                .description(description)
                 .keywords(keywords)
                 .lengthSeconds(d.get("lengthSeconds").asLong(0))
-                .viewCount(d.get("viewCount").asLong(0))
+                .viewCount(views)
                 .thumbnails(thumbnails(d.at("thumbnail", "thumbnails")))
                 .live(d.get("isLive").asBoolean(false))
                 .liveContent(d.get("isLiveContent").asBoolean(false))
