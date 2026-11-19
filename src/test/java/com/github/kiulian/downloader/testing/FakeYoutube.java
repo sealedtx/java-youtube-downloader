@@ -25,6 +25,13 @@ public final class FakeYoutube implements HttpTransport {
 
     public static final String VISITOR_DATA = "CgtGaXh0dXJlVmlzaXQ%3D";
 
+    private static final String STATUS_MARKER = "\u0000status:";
+
+    /** A router answer that makes the fake reply with this HTTP status and an empty body. */
+    public static String status(int status) {
+        return STATUS_MARKER + status;
+    }
+
     /** Answer for one player request: JSON text, or {@code null} for HTTP 404. */
     public interface PlayerHandler {
         String player(String clientName, String videoId, int call) throws IOException;
@@ -143,6 +150,9 @@ public final class FakeYoutube implements HttpTransport {
         String path = fixturePath(request);
         requests.add(path != null ? path : request.url());
         String answer = router.answer(request);
+        if (answer != null && answer.startsWith(STATUS_MARKER)) {
+            return response(Integer.parseInt(answer.substring(STATUS_MARKER.length())), "");
+        }
         return answer == null ? response(404, "") : response(200, answer);
     }
 

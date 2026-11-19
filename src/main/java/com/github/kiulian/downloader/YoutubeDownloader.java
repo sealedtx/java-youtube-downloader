@@ -12,6 +12,9 @@ import com.github.kiulian.downloader.internal.http.RetryPolicy;
 import com.github.kiulian.downloader.internal.youtube.Innertube;
 import com.github.kiulian.downloader.internal.youtube.PlaylistExtractor;
 import com.github.kiulian.downloader.internal.youtube.SearchExtractor;
+import com.github.kiulian.downloader.internal.youtube.SubtitleDownloader;
+import com.github.kiulian.downloader.model.subtitles.SubtitleFormat;
+import com.github.kiulian.downloader.model.subtitles.SubtitleTrack;
 import com.github.kiulian.downloader.model.search.SearchQuery;
 import com.github.kiulian.downloader.model.search.SearchResult;
 import com.github.kiulian.downloader.internal.youtube.VideoExtractor;
@@ -51,6 +54,7 @@ public final class YoutubeDownloader implements AutoCloseable {
     private final VideoExtractor videos;
     private final PlaylistExtractor playlists;
     private final SearchExtractor searches;
+    private final SubtitleDownloader subtitles;
     private final FormatDownloader downloads;
     private ExecutorService ownExecutor;
 
@@ -62,6 +66,7 @@ public final class YoutubeDownloader implements AutoCloseable {
         this.videos = new VideoExtractor(innertube, builder.clients);
         this.playlists = new PlaylistExtractor(innertube);
         this.searches = new SearchExtractor(innertube);
+        this.subtitles = new SubtitleDownloader(http);
         Map<String, String> userAgents = new HashMap<>();
         for (ClientProfile client : builder.clients) {
             userAgents.put(client.name(), client.userAgent());
@@ -137,6 +142,21 @@ public final class YoutubeDownloader implements AutoCloseable {
      */
     public SearchResult search(SearchQuery query) {
         return searches.search(query);
+    }
+
+    /**
+     * The text of a subtitle track, for example {@code yt.subtitles(video.subtitles().get(0), SubtitleFormat.SRT)}.
+     */
+    public String subtitles(SubtitleTrack track, SubtitleFormat format) {
+        return subtitles.text(track, format, null);
+    }
+
+    /**
+     * The text of a subtitle track, machine-translated by YouTube to {@code translateTo} (a language code such as
+     * {@code uk}). Note: since 2026-11 YouTube refuses translations for the default clients with HTTP 429.
+     */
+    public String subtitles(SubtitleTrack track, SubtitleFormat format, String translateTo) {
+        return subtitles.text(track, format, Objects.requireNonNull(translateTo, "translateTo"));
     }
 
     /** Downloads the format to {@code file} with default options. */

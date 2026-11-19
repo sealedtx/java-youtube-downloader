@@ -12,6 +12,8 @@ import com.github.kiulian.downloader.http.HttpTransport.Response;
 import com.github.kiulian.downloader.http.UrlConnectionTransport;
 import com.github.kiulian.downloader.model.playlist.Playlist;
 import com.github.kiulian.downloader.model.playlist.PlaylistVideo;
+import com.github.kiulian.downloader.model.subtitles.SubtitleFormat;
+import com.github.kiulian.downloader.model.subtitles.SubtitleTrack;
 import com.github.kiulian.downloader.model.search.SearchQuery;
 import com.github.kiulian.downloader.model.search.SearchResult;
 import com.github.kiulian.downloader.model.search.field.DurationField;
@@ -247,6 +249,38 @@ class LiveTest {
             assertTrue(result.correctedQuery() != null, "no correction");
             assertTrue(YT.search(result.query().exact(true)).correctedQuery() == null, "exact search was corrected");
             return "corrected to \"" + result.correctedQuery() + "\"";
+        });
+    }
+
+    // ---- subtitles
+
+    @Test
+    void subtitlesInSeveralFormats() {
+        check("subtitles " + Corpus.N3WPORT, () -> {
+            SubtitleTrack track = YT.videoInfo(Corpus.N3WPORT).subtitles().get(0);
+            String vtt = YT.subtitles(track, SubtitleFormat.VTT);
+            String srt = YT.subtitles(track, SubtitleFormat.SRT);
+            String json3 = YT.subtitles(track, SubtitleFormat.JSON3);
+            assertTrue(vtt.startsWith("WEBVTT"), "vtt starts with " + vtt.substring(0, Math.min(20, vtt.length())));
+            assertTrue(srt.trim().startsWith("1"), "srt");
+            assertTrue(json3.contains("\"events\""), "json3");
+            return track.languageCode() + ": vtt " + vtt.length() + " chars, srt " + srt.length() + ", json3 " + json3.length();
+        });
+    }
+
+    @Test
+    void translatedSubtitles() {
+        check("translated subtitles", () -> {
+            SubtitleTrack track = YT.videoInfo(Corpus.ZOO).subtitles().get(0);
+            try {
+                String text = YT.subtitles(track, SubtitleFormat.VTT, "uk");
+                return "translation works again: " + text.length() + " chars";
+            } catch (YoutubeException.HttpException e) {
+                if (e.status() == 429) {
+                    throw new TestAbortedException("known limitation still there: YouTube answers translations with HTTP 429");
+                }
+                throw e;
+            }
         });
     }
 
