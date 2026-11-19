@@ -1,9 +1,14 @@
 package com.github.kiulian.downloader.model.subtitles;
 
+import java.util.regex.Pattern;
+
 /**
  * A subtitle (caption) track of a video.
  */
 public final class SubtitleTrack {
+
+    private static final Pattern OWN_PARAMS = Pattern.compile("&(?:fmt|tlang)=[^&]*");
+    private static final Pattern LANGUAGE = Pattern.compile("[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*");
 
     private final String languageCode;
     private final String name;
@@ -42,6 +47,30 @@ public final class SubtitleTrack {
     /** Download URL as YouTube sent it. */
     public String url() {
         return url;
+    }
+
+    /** Download URL in the given format, for example to hand it to another download tool. */
+    public String url(SubtitleFormat format) {
+        return url(format, null);
+    }
+
+    /**
+     * Download URL in the given format, machine-translated to {@code translateTo} (a language code such as
+     * {@code uk}) unless that is {@code null}. Only {@link #isTranslatable() translatable} tracks can be translated.
+     */
+    public String url(SubtitleFormat format, String translateTo) {
+        String base = OWN_PARAMS.matcher(url).replaceAll("");
+        StringBuilder result = new StringBuilder(base).append(base.indexOf('?') >= 0 ? '&' : '?').append("fmt=").append(format.value());
+        if (translateTo != null) {
+            if (!LANGUAGE.matcher(translateTo).matches()) {
+                throw new IllegalArgumentException("Not a language code: " + translateTo);
+            }
+            if (!translatable) {
+                throw new IllegalArgumentException("Track " + languageCode + " cannot be translated");
+            }
+            result.append("&tlang=").append(translateTo);
+        }
+        return result.toString();
     }
 
     @Override
