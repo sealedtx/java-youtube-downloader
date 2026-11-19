@@ -53,7 +53,7 @@ class VideoExtractorTest {
         FakeYoutube youtube = new FakeYoutube((client, id, call) -> BOT);
 
         BotCheckException error = assertThrows(BotCheckException.class, () -> extractor(youtube).videoInfo(ID));
-        assertEquals(3, error.attempts().size(), error.attempts().toString());
+        assertEquals(4, error.attempts().size(), error.attempts().toString());
     }
 
     @Test
@@ -80,7 +80,7 @@ class VideoExtractorTest {
         VideoInfo video = extractor(youtube).videoInfo(ID);
 
         assertEquals(1, video.formats().size());
-        assertTrue(video.warnings().contains("visionos: skipped 1 formats that need a signature solver"));
+        assertTrue(video.warnings().contains("visionos: skipped 1 formats that need a challenge solver"));
         assertTrue(video.warnings().contains("visionos: skipped 2 formats with URLs outside YouTube hosts"));
     }
 
@@ -128,7 +128,8 @@ class VideoExtractorTest {
         FakeYoutube youtube = new FakeYoutube((client, id, call) -> "{}");
 
         YoutubeException error = assertThrows(YoutubeException.class, () -> extractor(youtube).videoInfo(ID));
-        assertEquals(Arrays.asList("visionos: no status (no reason given)", "android_vr: no status (no reason given)"), error.attempts());
+        assertEquals(Arrays.asList("visionos: no status (no reason given)", "android_vr: no status (no reason given)",
+                "tv_samsung: skipped, needs a challenge solver (for example EjsSolver.node())"), error.attempts());
     }
 
     private static VideoExtractor extractor(FakeYoutube youtube) {

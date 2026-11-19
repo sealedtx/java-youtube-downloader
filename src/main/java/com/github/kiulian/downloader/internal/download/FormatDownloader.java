@@ -83,6 +83,10 @@ public final class FormatDownloader {
     }
 
     private void copy(Format format, OutputStream out, DownloadOptions options) throws IOException {
+        long wait = format.availableAtMillis() - System.currentTimeMillis();
+        if (wait > 0) {
+            sleep(wait); // the URL answers 403 until the pre-roll ad could be skipped
+        }
         Transfer transfer = new Transfer(format.contentLength(), options);
         if (transfer.total <= 0) {
             // unknown size: one plain request, nothing to resume from

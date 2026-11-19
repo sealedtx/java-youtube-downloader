@@ -147,12 +147,27 @@ public final class Innertube {
 
     /** {@code /youtubei/v1/player} for one video as the given client. */
     public JsonNode player(ClientProfile client, String videoId) throws IOException {
+        return player(client, videoId, null);
+    }
+
+    /**
+     * Like {@link #player(ClientProfile, String)}, with the player's {@code signatureTimestamp}, which clients that
+     * need the JS player must send (without it YouTube answers "The page needs to be reloaded").
+     */
+    public JsonNode player(ClientProfile client, String videoId, Integer signatureTimestamp) throws IOException {
         String visitor = visitorData();
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("context", context(client, visitor));
         body.put("videoId", videoId);
         body.put("contentCheckOk", true);
         body.put("racyCheckOk", true);
+        if (signatureTimestamp != null) {
+            Map<String, Object> content = new LinkedHashMap<>();
+            content.put("signatureTimestamp", signatureTimestamp);
+            Map<String, Object> playback = new LinkedHashMap<>();
+            playback.put("contentPlaybackContext", content);
+            body.put("playbackContext", playback);
+        }
         return post("player", client, visitor, body);
     }
 

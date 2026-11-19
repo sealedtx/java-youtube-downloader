@@ -10,7 +10,9 @@ import com.github.kiulian.downloader.internal.download.FormatDownloader;
 import com.github.kiulian.downloader.internal.http.Http;
 import com.github.kiulian.downloader.internal.http.RetryPolicy;
 import com.github.kiulian.downloader.internal.youtube.Innertube;
+import com.github.kiulian.downloader.internal.youtube.PlayerScripts;
 import com.github.kiulian.downloader.internal.youtube.PlaylistExtractor;
+import com.github.kiulian.downloader.js.ChallengeSolver;
 import com.github.kiulian.downloader.internal.youtube.SearchExtractor;
 import com.github.kiulian.downloader.internal.youtube.SubtitleDownloader;
 import com.github.kiulian.downloader.model.subtitles.SubtitleFormat;
@@ -63,7 +65,7 @@ public final class YoutubeDownloader implements AutoCloseable {
         RetryPolicy retryPolicy = RetryPolicy.retries(builder.retries);
         Http http = new Http(builder.transport(), retryPolicy);
         Innertube innertube = new Innertube(http, builder.webClient);
-        this.videos = new VideoExtractor(innertube, builder.clients);
+        this.videos = new VideoExtractor(innertube, builder.clients, new PlayerScripts(http), builder.challengeSolver);
         this.playlists = new PlaylistExtractor(innertube);
         this.searches = new SearchExtractor(innertube);
         this.subtitles = new SubtitleDownloader(http);
@@ -252,6 +254,7 @@ public final class YoutubeDownloader implements AutoCloseable {
         private int retries = 2;
         private List<ClientProfile> clients = ClientProfiles.defaults();
         private ClientProfile webClient = ClientProfiles.WEB;
+        private ChallengeSolver challengeSolver;
         private Executor executor;
 
         private Builder() {
@@ -293,6 +296,16 @@ public final class YoutubeDownloader implements AutoCloseable {
                 throw new IllegalArgumentException("at least one client profile is needed");
             }
             this.clients = Collections.unmodifiableList(new ArrayList<>(clients));
+            return this;
+        }
+
+        /**
+         * Solver for YouTube's JS challenges, for example {@code EjsSolver.node()} (needs Node.js 22+). Enables the
+         * client profiles that need the JS player, such as {@link ClientProfiles#TV_SAMSUNG}, which also serves
+         * "made for kids" videos. Without it those profiles are skipped.
+         */
+        public Builder challengeSolver(ChallengeSolver challengeSolver) {
+            this.challengeSolver = Objects.requireNonNull(challengeSolver, "challengeSolver");
             return this;
         }
 
@@ -339,6 +352,7 @@ public final class YoutubeDownloader implements AutoCloseable {
             copy.retries = retries;
             copy.clients = clients;
             copy.webClient = webClient;
+            copy.challengeSolver = challengeSolver;
             copy.executor = executor;
             return copy;
         }

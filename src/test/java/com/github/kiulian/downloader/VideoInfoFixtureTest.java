@@ -64,11 +64,12 @@ class VideoInfoFixtureTest {
     }
 
     @Test
-    void privateVideoIsUnavailableWithBothAttempts() {
+    void privateVideoIsUnavailableWithEveryAttempt() {
         VideoUnavailableException error = assertThrows(VideoUnavailableException.class, () -> yt.videoInfo(Corpus.PRIVATE));
 
         assertEquals("Please sign in", error.reason());
-        assertEquals(2, error.attempts().size());
+        assertEquals(3, error.attempts().size());
+        assertTrue(error.attempts().get(2).startsWith("tv_samsung: skipped, needs a challenge solver"));
         assertEquals(Arrays.asList("VISIONOS:" + Corpus.PRIVATE, "ANDROID_VR:" + Corpus.PRIVATE), youtube.playerCalls());
     }
 
