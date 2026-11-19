@@ -65,6 +65,27 @@ public class YoutubeException extends RuntimeException {
         }
     }
 
+    /** The playlist does not exist or is private. {@link #reason()} is YouTube's own explanation. */
+    public static class PlaylistUnavailableException extends YoutubeException {
+        private final String reason;
+
+        public PlaylistUnavailableException(String playlistId, String reason) {
+            super("Playlist " + playlistId + " is unavailable: " + reason, null);
+            this.reason = reason;
+        }
+
+        public String reason() {
+            return reason;
+        }
+    }
+
+    /** YouTube does not know this channel. */
+    public static class ChannelUnavailableException extends YoutubeException {
+        public ChannelUnavailableException(String channel, Throwable cause) {
+            super("Channel not found: " + channel, cause);
+        }
+    }
+
     /**
      * YouTube asked to "sign in to confirm you're not a bot" for every client that was tried. Usually helps:
      * update the library, wait, or use another network. See the README.

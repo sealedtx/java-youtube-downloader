@@ -19,6 +19,16 @@ public final class Corpus {
 
     public static final List<String> VIDEOS = Arrays.asList(ZOO, N3WPORT, PRIVATE, MISSING);
 
+    /** #AskNASA: 22 videos, owner NASA, one page. */
+    public static final String ASK_NASA = "PL2aBZuCeDwlRbJhDIkKXilZRz9ur4VVAA";
+    /** Auto-generated album playlist without an owner: 13 tracks. */
+    public static final String ALBUM = "OLAK5uy_kiTxC7OplYPiaW4EqzAdqmtguAY7s7f2g";
+    /** Well-formed id of a playlist that does not exist. */
+    public static final String MISSING_PLAYLIST = "PLaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+    /** NASA: thousands of uploads, so their playlist has many pages. */
+    public static final String NASA_HANDLE = "@NASA";
+    public static final String NASA_CHANNEL_ID = "UCLA_DiR1FfKNvjuUpBHmylQ";
+
     private Corpus() {
     }
 }

@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -56,6 +57,40 @@ class IdsTest {
     })
     void rejectsEverythingElse(String input) {
         assertThrows(IllegalArgumentException.class, () -> Ids.videoId(input));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "PL2aBZuCeDwlRbJhDIkKXilZRz9ur4VVAA",
+            "https://www.youtube.com/playlist?list=PL2aBZuCeDwlRbJhDIkKXilZRz9ur4VVAA",
+            "https://www.youtube.com/watch?v=jNQXAC9IVRw&list=PL2aBZuCeDwlRbJhDIkKXilZRz9ur4VVAA&index=2",
+            "music.youtube.com/playlist?list=PL2aBZuCeDwlRbJhDIkKXilZRz9ur4VVAA",
+    })
+    void findsThePlaylistId(String input) {
+        assertEquals("PL2aBZuCeDwlRbJhDIkKXilZRz9ur4VVAA", Ids.playlistId(input));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"", "WL", "LL", "PLshort", "https://example.com/playlist?list=PL2aBZuCeDwlRbJhDIkKXilZRz9ur4VVAA",
+            "https://www.youtube.com/watch?v=jNQXAC9IVRw"})
+    void rejectsWhatIsNotAPlaylist(String input) {
+        assertThrows(IllegalArgumentException.class, () -> Ids.playlistId(input));
+    }
+
+    @Test
+    void findsChannels() {
+        assertArrayEquals(new String[]{"UCLA_DiR1FfKNvjuUpBHmylQ", null}, Ids.channel("UCLA_DiR1FfKNvjuUpBHmylQ"));
+        assertArrayEquals(new String[]{"UCLA_DiR1FfKNvjuUpBHmylQ", null}, Ids.channel("https://www.youtube.com/channel/UCLA_DiR1FfKNvjuUpBHmylQ/videos"));
+        assertArrayEquals(new String[]{null, "https://www.youtube.com/@NASA"}, Ids.channel("@NASA"));
+        assertArrayEquals(new String[]{null, "https://www.youtube.com/@NASA"}, Ids.channel("https://m.youtube.com/@NASA/shorts"));
+        assertArrayEquals(new String[]{null, "https://www.youtube.com/c/NASA"}, Ids.channel("youtube.com/c/NASA"));
+        assertArrayEquals(new String[]{null, "https://www.youtube.com/user/NASAtelevision"}, Ids.channel("https://www.youtube.com/user/NASAtelevision"));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"", "NASA", "@a", "https://example.com/@NASA", "https://www.youtube.com/watch?v=jNQXAC9IVRw"})
+    void rejectsWhatIsNotAChannel(String input) {
+        assertThrows(IllegalArgumentException.class, () -> Ids.channel(input));
     }
 
     @Test

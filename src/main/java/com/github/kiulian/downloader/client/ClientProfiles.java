@@ -33,6 +33,14 @@ public final class ClientProfiles {
             .context("osVersion", "12L")
             .build();
 
+    /**
+     * Desktop web client. Used for playlists, channels and search, not for video formats (web gets SABR only).
+     */
+    public static final ClientProfile WEB = ClientProfile.builder("web", "WEB", 1)
+            .version("2.20260708.00.00")
+            .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36")
+            .build();
+
     private static final List<ClientProfile> DEFAULTS = Collections.unmodifiableList(Arrays.asList(VISIONOS, ANDROID_VR));
 
     private ClientProfiles() {
