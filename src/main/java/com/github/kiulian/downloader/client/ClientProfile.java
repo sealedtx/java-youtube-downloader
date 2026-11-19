@@ -20,6 +20,7 @@ public final class ClientProfile {
     private final String version;
     private final String userAgent;
     private final Map<String, Object> context;
+    private final boolean requiresJsPlayer;
 
     private ClientProfile(Builder builder) {
         this.name = builder.name;
@@ -28,6 +29,7 @@ public final class ClientProfile {
         this.version = builder.version;
         this.userAgent = builder.userAgent;
         this.context = Collections.unmodifiableMap(new LinkedHashMap<>(builder.context));
+        this.requiresJsPlayer = builder.requiresJsPlayer;
     }
 
     /**
@@ -66,8 +68,16 @@ public final class ClientProfile {
         return context;
     }
 
+    /**
+     * True if this client's stream URLs need the JS challenges of YouTube's player solved (and the player's
+     * {@code signatureTimestamp} in the request). Such clients are used only with a {@code ChallengeSolver}.
+     */
+    public boolean requiresJsPlayer() {
+        return requiresJsPlayer;
+    }
+
     public Builder toBuilder() {
-        Builder builder = new Builder(name, clientName, clientId).version(version).userAgent(userAgent);
+        Builder builder = new Builder(name, clientName, clientId).version(version).userAgent(userAgent).requiresJsPlayer(requiresJsPlayer);
         builder.context.putAll(context);
         return builder;
     }
@@ -84,6 +94,7 @@ public final class ClientProfile {
         private String version;
         private String userAgent;
         private final Map<String, Object> context = new LinkedHashMap<>();
+        private boolean requiresJsPlayer;
 
         private Builder(String name, String clientName, int clientId) {
             this.name = Objects.requireNonNull(name, "name");
@@ -98,6 +109,11 @@ public final class ClientProfile {
 
         public Builder userAgent(String userAgent) {
             this.userAgent = Objects.requireNonNull(userAgent, "userAgent");
+            return this;
+        }
+
+        public Builder requiresJsPlayer(boolean requiresJsPlayer) {
+            this.requiresJsPlayer = requiresJsPlayer;
             return this;
         }
 

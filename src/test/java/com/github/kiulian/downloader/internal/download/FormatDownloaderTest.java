@@ -172,6 +172,18 @@ class FormatDownloaderTest {
     }
 
     @Test
+    void waitsUntilTheFormatIsAvailable() {
+        long start = System.currentTimeMillis();
+        Format later = Format.builder(140, server.url("/videoplayback?itag=140")).contentLength(MEDIA.length)
+                .availableAtMillis(start + 400).build();
+
+        downloader.toStream(later, new ByteArrayOutputStream(), DownloadOptions.defaults());
+
+        assertTrue(System.currentTimeMillis() - start >= 390, "did not wait");
+        assertEquals(1, ranges.size());
+    }
+
+    @Test
     void cancelStopsTheDownloadAndRemovesThePartFile() throws Exception {
         delayPer100BytesMillis = 50;
         CountDownLatch started = new CountDownLatch(1);

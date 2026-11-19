@@ -12,7 +12,14 @@ import com.github.kiulian.downloader.model.videos.formats.Format;
 import com.github.kiulian.downloader.model.videos.formats.Formats;
 
 import java.io.IOException;
+import com.github.kiulian.downloader.internal.youtube.PlayerScripts.PlayerScript;
+import com.github.kiulian.downloader.js.ChallengeSolutions;
+import com.github.kiulian.downloader.js.ChallengeSolver;
+
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.List;
 
 /**
@@ -25,13 +32,22 @@ public final class VideoExtractor {
 
     private final Innertube innertube;
     private final List<ClientProfile> clients;
+    private final PlayerScripts playerScripts;
+    private final ChallengeSolver solver;
 
     public VideoExtractor(Innertube innertube, List<ClientProfile> clients) {
+        this(innertube, clients, null, null);
+    }
+
+    /** @param solver {@code null} to skip clients that need the JS player */
+    public VideoExtractor(Innertube innertube, List<ClientProfile> clients, PlayerScripts playerScripts, ChallengeSolver solver) {
         if (clients.isEmpty()) {
             throw new IllegalArgumentException("at least one client profile is needed");
         }
         this.innertube = innertube;
         this.clients = new ArrayList<>(clients);
+        this.playerScripts = playerScripts;
+        this.solver = solver;
     }
 
     public VideoInfo videoInfo(String videoId) {
@@ -45,9 +61,19 @@ public final class VideoExtractor {
 
         for (int i = 0; i < clients.size(); i++) {
             ClientProfile client = clients.get(i);
+            if (client.requiresJsPlayer() && solver == null) {
+                attempts.add(client.name() + ": skipped, needs a challenge solver (for example EjsSolver.node())");
+                continue;
+            }
             PlayerResponse player;
+            PlayerScript script = null;
             try {
-                player = new PlayerResponse(innertube.player(client, videoId));
+                if (client.requiresJsPlayer()) {
+                    script = playerScripts.current();
+                    player = new PlayerResponse(innertube.player(client, videoId, script.signatureTimestamp));
+                } else {
+                    player = new PlayerResponse(innertube.player(client, videoId));
+                }
             } catch (HttpStatusException e) {
                 attempts.add(client.name() + ": HTTP " + e.status());
                 httpError = e;
@@ -73,7 +99,7 @@ public final class VideoExtractor {
             String status = player.status();
             if (status.equals("OK")) {
                 List<String> warnings = new ArrayList<>(attempts);
-                VideoInfo info = toVideoInfo(player, videoId, client, warnings);
+                VideoInfo info = toVideoInfo(player, videoId, client, warnings, script);
                 if (!info.formats().isEmpty() || info.details().isLive()) {
                     return info;
                 }
@@ -84,7 +110,7 @@ public final class VideoExtractor {
             } else if (status.equals("LIVE_STREAM_OFFLINE")) {
                 attempts.add(client.name() + ": " + player.reason());
                 if (partial == null) {
-                    partial = toVideoInfo(player, videoId, client, new ArrayList<>(attempts));
+                    partial = toVideoInfo(player, videoId, client, new ArrayList<>(attempts), script);
                 }
             } else if (player.isBotCheck()) {
                 botCheck = true;
@@ -117,9 +143,25 @@ public final class VideoExtractor {
         throw new YoutubeException("Could not get video info for " + videoId, attempts, ioError);
     }
 
-    private static VideoInfo toVideoInfo(PlayerResponse player, String videoId, ClientProfile client, List<String> warnings) {
+    private VideoInfo toVideoInfo(PlayerResponse player, String videoId, ClientProfile client, List<String> warnings, PlayerScript script) {
         boolean live = player.details(videoId).isLive();
-        List<Format> formats = player.formats(client.name(), warnings);
+        List<Format> formats;
+        if (script == null) {
+            formats = player.formats(client.name(), warnings);
+        } else {
+            long now = System.currentTimeMillis();
+            Set<String> n = new HashSet<>();
+            Set<String> signatures = new HashSet<>();
+            player.collectChallenges(n, signatures);
+            ChallengeSolutions solutions;
+            try {
+                solutions = solver.solve(script.id, script.code, n, signatures);
+            } catch (IOException | RuntimeException e) {
+                warnings.add(client.name() + ": challenge solver failed (" + e.getMessage() + ")");
+                solutions = new ChallengeSolutions(Collections.emptyMap(), Collections.emptyMap());
+            }
+            formats = player.formats(client.name(), warnings, solutions, player.availableAtMillis(now));
+        }
         if (live && !formats.isEmpty()) {
             warnings.add(client.name() + ": live stream, formats left out; use hlsManifestUrl()");
             formats = new ArrayList<>();

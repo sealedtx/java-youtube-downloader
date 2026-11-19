@@ -34,6 +34,21 @@ public final class ClientProfiles {
             .build();
 
     /**
+     * Samsung TV app. Needs the JS player: used only with a {@code ChallengeSolver} (for example
+     * {@code EjsSolver.node()}). Serves "made for kids" videos, which visionos and android_vr do not.
+     * Ciphered formats become valid only after the pre-roll ad; the downloader waits for that.
+     */
+    public static final ClientProfile TV_SAMSUNG = ClientProfile.builder("tv_samsung", "TVHTML5", 7)
+            .version("5.20260707")
+            .userAgent("Mozilla/5.0 (SMART-TV; Linux; Tizen 2.4.0) AppleWebKit/538.1 (KHTML, like Gecko) Version/2.4.0 TV Safari/538.1")
+            .context("deviceMake", "Samsung")
+            .context("deviceModel", "UKS9800")
+            .context("osName", "Tizen")
+            .context("osVersion", "2.4.0")
+            .requiresJsPlayer(true)
+            .build();
+
+    /**
      * Desktop web client. Used for playlists, channels and search, not for video formats (web gets SABR only).
      */
     public static final ClientProfile WEB = ClientProfile.builder("web", "WEB", 1)
@@ -41,12 +56,15 @@ public final class ClientProfiles {
             .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36")
             .build();
 
-    private static final List<ClientProfile> DEFAULTS = Collections.unmodifiableList(Arrays.asList(VISIONOS, ANDROID_VR));
+    private static final List<ClientProfile> DEFAULTS = Collections.unmodifiableList(Arrays.asList(VISIONOS, ANDROID_VR, TV_SAMSUNG));
 
     private ClientProfiles() {
     }
 
-    /** The default order: the first client that returns downloadable formats wins. */
+    /**
+     * The default order: the first client that returns downloadable formats wins. Clients that need the JS player
+     * are skipped when no challenge solver is set.
+     */
     public static List<ClientProfile> defaults() {
         return DEFAULTS;
     }

@@ -35,6 +35,7 @@ public final class Format {
     private final boolean defaultAudioTrack;
     private final boolean drc;
     private final String client;
+    private final long availableAtMillis;
 
     private Format(Builder b) {
         this.itag = b.itag;
@@ -60,6 +61,7 @@ public final class Format {
         this.defaultAudioTrack = b.defaultAudioTrack;
         this.drc = b.drc;
         this.client = b.client;
+        this.availableAtMillis = b.availableAtMillis;
     }
 
     public static Builder builder(int itag, String url) {
@@ -184,6 +186,14 @@ public final class Format {
         return client;
     }
 
+    /**
+     * Epoch milliseconds from when the URL can be downloaded, 0 if right away. Some clients get URLs that work
+     * only after the pre-roll ad; the downloader waits until then.
+     */
+    public long availableAtMillis() {
+        return availableAtMillis;
+    }
+
     @Override
     public String toString() {
         String quality = hasVideo() ? (qualityLabel != null ? qualityLabel : height + "p") : audioQuality.name();
@@ -222,6 +232,7 @@ public final class Format {
         private boolean defaultAudioTrack = true;
         private boolean drc;
         private String client;
+        private long availableAtMillis;
 
         private Builder(int itag, String url) {
             this.itag = itag;
@@ -250,6 +261,7 @@ public final class Format {
         }
         public Builder drc(boolean drc) { this.drc = drc; return this; }
         public Builder client(String client) { this.client = client; return this; }
+        public Builder availableAtMillis(long availableAtMillis) { this.availableAtMillis = availableAtMillis; return this; }
 
         public Format build() {
             return new Format(this);

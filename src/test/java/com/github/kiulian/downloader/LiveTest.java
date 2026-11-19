@@ -8,6 +8,7 @@ import com.github.kiulian.downloader.client.ClientProfiles;
 import com.github.kiulian.downloader.download.DownloadOptions;
 import com.github.kiulian.downloader.download.FileNames;
 import com.github.kiulian.downloader.http.HttpTransport.Request;
+import com.github.kiulian.downloader.js.EjsSolver;
 import com.github.kiulian.downloader.http.HttpTransport.Response;
 import com.github.kiulian.downloader.http.UrlConnectionTransport;
 import com.github.kiulian.downloader.model.playlist.Playlist;
@@ -62,7 +63,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class LiveTest {
 
     private static final List<String> REPORT = Collections.synchronizedList(new ArrayList<>());
-    private static final YoutubeDownloader YT = YoutubeDownloader.create();
+    /** Node.js 22+ if installed: then clients that need the JS player are checked too. */
+    private static final EjsSolver SOLVER = EjsSolver.detect();
+    private static final YoutubeDownloader YT = SOLVER != null
+            ? YoutubeDownloader.builder().challengeSolver(SOLVER).build() : YoutubeDownloader.create();
 
     // ---- every client profile on its own
 
@@ -75,7 +79,11 @@ class LiveTest {
     @MethodSource("clientsAndVideos")
     void clientHealth(ClientProfile client, String videoId) {
         check("client " + client.name() + " / " + videoId, () -> {
-            VideoInfo video = YoutubeDownloader.builder().clients(Collections.singletonList(client)).build().videoInfo(videoId);
+            if (client.requiresJsPlayer() && SOLVER == null) {
+                throw new TestAbortedException("needs Node.js 22+ for the JS challenges");
+            }
+            YoutubeDownloader.Builder builder = YoutubeDownloader.builder().clients(Collections.singletonList(client));
+            VideoInfo video = (SOLVER != null ? builder.challengeSolver(SOLVER) : builder).build().videoInfo(videoId);
             Format audio = video.formats().bestAudio().orElseThrow(() -> new AssertionError("no audio format"));
             Format best = video.formats().bestVideo().orElseThrow(() -> new AssertionError("no video format"));
             String range = range(audio, client.userAgent(), 0, 65_535);
@@ -121,7 +129,14 @@ class LiveTest {
                 }),
                 VideoCase.unavailable("private video", Corpus.PRIVATE),
                 VideoCase.unavailable("missing video", Corpus.MISSING),
-                VideoCase.knownLimitation("made for kids (not served to visionos/android_vr)", Corpus.MADE_FOR_KIDS)
+                SOLVER != null
+                        ? new VideoCase("made for kids (via tv_samsung and the JS solver)", Corpus.MADE_FOR_KIDS, v -> {
+                            assertEquals("tv_samsung", v.client());
+                            Format audio = v.formats().bestAudio().get();
+                            String range = range(audio, ClientProfiles.TV_SAMSUNG.userAgent(), 0, 65_535);
+                            assertTrue(range.startsWith("OK"), "first 64 KB after the ad wait: " + range);
+                        })
+                        : VideoCase.knownLimitation("made for kids (needs Node.js 22+ for tv_samsung)", Corpus.MADE_FOR_KIDS)
         );
     }
 
@@ -305,6 +320,14 @@ class LiveTest {
     }
 
     private static String range(Format format, String userAgent, long first, long last) {
+        long wait = format.availableAtMillis() - System.currentTimeMillis();
+        if (wait > 0) {
+            try {
+                Thread.sleep(wait); // URLs of some clients work only after the pre-roll ad
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
         Request request = Request.get(format.url() + "&range=" + first + "-" + last)
                 .header("User-Agent", userAgent != null ? userAgent : ClientProfiles.VISIONOS.userAgent()).build();
         try (Response response = UrlConnectionTransport.create().send(request)) {
