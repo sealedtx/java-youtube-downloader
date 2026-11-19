@@ -1,5 +1,6 @@
 package com.github.kiulian.downloader.internal.youtube;
 
+import com.github.kiulian.downloader.auth.YoutubeCookies;
 import com.github.kiulian.downloader.client.ClientProfile;
 import com.github.kiulian.downloader.client.ClientProfiles;
 import com.github.kiulian.downloader.http.HttpTransport.Request;
@@ -33,6 +34,7 @@ public final class Innertube {
 
     private final Http http;
     private final ClientProfile webClient;
+    private final YoutubeCookies cookies;
     private String visitorData;
     private long visitorDataTime;
 
@@ -42,8 +44,19 @@ public final class Innertube {
 
     /** @param webClient profile for browse, resolve and search requests */
     public Innertube(Http http, ClientProfile webClient) {
+        this(http, webClient, null);
+    }
+
+    /** @param cookies account cookies, or {@code null}; sent only by clients that support them */
+    public Innertube(Http http, ClientProfile webClient, YoutubeCookies cookies) {
         this.http = http;
         this.webClient = webClient;
+        this.cookies = cookies;
+    }
+
+    /** Whether requests run with account cookies. */
+    public boolean hasCookies() {
+        return cookies != null;
     }
 
     /** {@code /youtubei/v1/browse} with a {@code browseId}, for example {@code VL<playlist id>}. */
@@ -79,8 +92,8 @@ public final class Innertube {
 
     /** {@code ytInitialData} of a web page such as {@code /playlist?list=...}; fallback when the API fails. */
     public JsonNode initialData(String pathAndQuery) throws IOException {
-        String html = http.text(Request.get(ORIGIN + pathAndQuery).header("User-Agent", webClient.userAgent())
-                .header("Accept-Language", "en-US,en;q=0.9").build());
+        String html = http.text(withCookie(Request.get(ORIGIN + pathAndQuery).header("User-Agent", webClient.userAgent())
+                .header("Accept-Language", "en-US,en;q=0.9")).build());
         Matcher matcher = INITIAL_DATA.matcher(html);
         if (!matcher.find()) {
             throw new IOException("No ytInitialData on " + pathAndQuery);
@@ -123,7 +136,7 @@ public final class Innertube {
 
     // Response is ")]}'" followed by a JSON array; the visitor data sits at a fixed position.
     private String visitorDataFromServiceWorker() throws IOException {
-        String text = http.text(Request.get(ORIGIN + "/sw.js_data").header("User-Agent", WEB_USER_AGENT).build());
+        String text = http.text(withCookie(Request.get(ORIGIN + "/sw.js_data").header("User-Agent", WEB_USER_AGENT)).build());
         int start = text.indexOf('[');
         if (start < 0) {
             throw new IOException("sw.js_data has no JSON");
@@ -136,8 +149,8 @@ public final class Innertube {
     }
 
     private String visitorDataFromHomePage() throws IOException {
-        String html = http.text(Request.get(ORIGIN + "/").header("User-Agent", WEB_USER_AGENT)
-                .header("Accept-Language", "en-US,en;q=0.9").build());
+        String html = http.text(withCookie(Request.get(ORIGIN + "/").header("User-Agent", WEB_USER_AGENT)
+                .header("Accept-Language", "en-US,en;q=0.9")).build());
         Matcher matcher = VISITOR_DATA_IN_PAGE.matcher(html);
         if (!matcher.find()) {
             throw new IOException("Could not find visitor data on the YouTube home page");
@@ -172,16 +185,23 @@ public final class Innertube {
     }
 
     private JsonNode post(String endpoint, ClientProfile client, String visitor, Map<String, Object> body) throws IOException {
-        Request request = Request.post(ORIGIN + "/youtubei/v1/" + endpoint + "?prettyPrint=false",
+        Request.Builder request = Request.post(ORIGIN + "/youtubei/v1/" + endpoint + "?prettyPrint=false",
                         Json.write(body).getBytes(StandardCharsets.UTF_8))
                 .header("Content-Type", "application/json")
                 .header("User-Agent", client.userAgent())
                 .header("Origin", ORIGIN)
                 .header("X-YouTube-Client-Name", String.valueOf(client.clientId()))
                 .header("X-YouTube-Client-Version", client.version())
-                .header("X-Goog-Visitor-Id", visitor)
-                .build();
-        return Json.parse(http.text(request));
+                .header("X-Goog-Visitor-Id", visitor);
+        if (cookies != null && client.supportsCookies()) {
+            CookieAuth.headers(cookies, ORIGIN, System.currentTimeMillis() / 1000).forEach(request::header);
+        }
+        return Json.parse(http.text(request.build()));
+    }
+
+    /** Adds the account cookies to a youtube.com page request. */
+    Request.Builder withCookie(Request.Builder request) {
+        return cookies == null ? request : request.header("Cookie", cookies.header());
     }
 
     private static Map<String, Object> context(ClientProfile client, String visitorData) {

@@ -16,9 +16,11 @@ import java.io.IOException;
 public final class SubtitleDownloader {
 
     private final Http http;
+    private final Innertube innertube;
 
-    public SubtitleDownloader(Http http) {
+    public SubtitleDownloader(Http http, Innertube innertube) {
         this.http = http;
+        this.innertube = innertube;
     }
 
     public String text(SubtitleTrack track, SubtitleFormat format, String translateTo) {
@@ -27,7 +29,10 @@ public final class SubtitleDownloader {
             throw new IllegalArgumentException("Subtitle URL is not on a YouTube host: " + url);
         }
         try {
-            return http.text(Request.get(url).header("User-Agent", Innertube.WEB_USER_AGENT).build());
+            Request.Builder request = Request.get(url).header("User-Agent", Innertube.WEB_USER_AGENT);
+            // account cookies go to youtube.com only, never to video servers
+            boolean youtubeHost = java.net.URI.create(url).getHost().toLowerCase(java.util.Locale.ROOT).endsWith("youtube.com");
+            return http.text((youtubeHost ? innertube.withCookie(request) : request).build());
         } catch (HttpStatusException e) {
             String message = "Could not download subtitles " + track.languageCode() + ": " + e.getMessage();
             if (translateTo != null && e.status() == 429) {

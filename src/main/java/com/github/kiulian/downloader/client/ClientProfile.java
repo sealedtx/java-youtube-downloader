@@ -21,6 +21,7 @@ public final class ClientProfile {
     private final String userAgent;
     private final Map<String, Object> context;
     private final boolean requiresJsPlayer;
+    private final boolean supportsCookies;
 
     private ClientProfile(Builder builder) {
         this.name = builder.name;
@@ -30,6 +31,7 @@ public final class ClientProfile {
         this.userAgent = builder.userAgent;
         this.context = Collections.unmodifiableMap(new LinkedHashMap<>(builder.context));
         this.requiresJsPlayer = builder.requiresJsPlayer;
+        this.supportsCookies = builder.supportsCookies;
     }
 
     /**
@@ -76,8 +78,14 @@ public final class ClientProfile {
         return requiresJsPlayer;
     }
 
+    /** True if YouTube accepts account cookies from this client; only such clients get them. */
+    public boolean supportsCookies() {
+        return supportsCookies;
+    }
+
     public Builder toBuilder() {
-        Builder builder = new Builder(name, clientName, clientId).version(version).userAgent(userAgent).requiresJsPlayer(requiresJsPlayer);
+        Builder builder = new Builder(name, clientName, clientId).version(version).userAgent(userAgent)
+                .requiresJsPlayer(requiresJsPlayer).supportsCookies(supportsCookies);
         builder.context.putAll(context);
         return builder;
     }
@@ -95,6 +103,7 @@ public final class ClientProfile {
         private String userAgent;
         private final Map<String, Object> context = new LinkedHashMap<>();
         private boolean requiresJsPlayer;
+        private boolean supportsCookies;
 
         private Builder(String name, String clientName, int clientId) {
             this.name = Objects.requireNonNull(name, "name");
@@ -114,6 +123,11 @@ public final class ClientProfile {
 
         public Builder requiresJsPlayer(boolean requiresJsPlayer) {
             this.requiresJsPlayer = requiresJsPlayer;
+            return this;
+        }
+
+        public Builder supportsCookies(boolean supportsCookies) {
+            this.supportsCookies = supportsCookies;
             return this;
         }
 

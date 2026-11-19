@@ -8,6 +8,7 @@ import com.github.kiulian.downloader.client.ClientProfiles;
 import com.github.kiulian.downloader.download.DownloadOptions;
 import com.github.kiulian.downloader.download.FileNames;
 import com.github.kiulian.downloader.http.HttpTransport.Request;
+import com.github.kiulian.downloader.auth.YoutubeCookies;
 import com.github.kiulian.downloader.js.EjsSolver;
 import com.github.kiulian.downloader.http.HttpTransport.Response;
 import com.github.kiulian.downloader.http.UrlConnectionTransport;
@@ -296,6 +297,36 @@ class LiveTest {
                 }
                 throw e;
             }
+        });
+    }
+
+    // ---- logged in: mvn test -Plive -Dyt.cookies=/path/to/cookies.txt (Netscape format)
+
+    @Test
+    void loggedIn() {
+        check("logged in", () -> {
+            String path = System.getProperty("yt.cookies");
+            if (path == null || path.isEmpty()) {
+                throw new TestAbortedException("no -Dyt.cookies=<cookies.txt> given");
+            }
+            if (SOLVER == null) {
+                throw new TestAbortedException("cookies are used by tv_samsung, which needs Node.js 22+");
+            }
+            YoutubeCookies cookies = YoutubeCookies.fromNetscapeFile(Paths.get(path));
+            assertTrue(cookies.isLoggedIn(), "the file has no login cookies: " + cookies.names());
+            YoutubeDownloader yt = YoutubeDownloader.builder().challengeSolver(SOLVER).cookies(cookies)
+                    .clients(Collections.singletonList(ClientProfiles.TV_SAMSUNG)).build();
+            VideoInfo video = yt.videoInfo(Corpus.MUSIC);
+            Format audio = video.formats().bestAudio().get();
+            String range = range(audio, ClientProfiles.TV_SAMSUNG.userAgent(), 0, 65_535);
+            assertTrue(range.startsWith("OK"), "logged-in download: " + range);
+            String translation;
+            try {
+                translation = "translation OK, " + yt.subtitles(video.subtitles().get(0), SubtitleFormat.VTT, "uk").length() + " chars";
+            } catch (YoutubeException.HttpException e) {
+                translation = "translation still HTTP " + e.status();
+            }
+            return video.formats().size() + " formats, " + range + ", " + translation;
         });
     }
 
