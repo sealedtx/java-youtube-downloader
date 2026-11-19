@@ -3,6 +3,8 @@ package com.github.kiulian.downloader;
 import com.github.kiulian.downloader.YoutubeException.VideoUnavailableException;
 import com.github.kiulian.downloader.client.ClientProfile;
 import com.github.kiulian.downloader.client.ClientProfiles;
+import com.github.kiulian.downloader.download.DownloadOptions;
+import com.github.kiulian.downloader.download.FileNames;
 import com.github.kiulian.downloader.http.HttpTransport.Request;
 import com.github.kiulian.downloader.http.HttpTransport.Response;
 import com.github.kiulian.downloader.http.UrlConnectionTransport;
@@ -71,6 +73,8 @@ class LiveCanaryTest {
             }
         }
         rows.add("");
+        rows.add("Full download: " + fullDownloadCheck());
+        rows.add("");
         rows.add("Unavailable videos: " + unavailableCheck());
         write(rows);
         assertTrue(zooWorks, "no client could download audio of " + Corpus.ZOO + "; see target/live-report.md");
@@ -84,6 +88,31 @@ class LiveCanaryTest {
         } catch (IOException e) {
             return "FAIL (" + e + ")";
         }
+    }
+
+    // whole best audio and best video of the zoo video through the public API, in small chunks to exercise ranges
+    private static String fullDownloadCheck() {
+        StringBuilder result = new StringBuilder();
+        try (YoutubeDownloader yt = YoutubeDownloader.create()) {
+            VideoInfo video = yt.videoInfo(Corpus.ZOO);
+            Path dir = Files.createTempDirectory("yt-live");
+            for (Format format : Arrays.asList(video.formats().bestAudio().orElse(null), video.formats().bestVideo().orElse(null))) {
+                if (format == null) {
+                    result.append("missing format; ");
+                    continue;
+                }
+                long start = System.currentTimeMillis();
+                Path file = yt.download(format, dir.resolve(FileNames.of(video.details().title(), format)),
+                        DownloadOptions.defaults().chunkSize(256 * 1024).overwrite(true));
+                long size = Files.size(file);
+                result.append("itag ").append(format.itag()).append(size == format.contentLength() ? " OK " : " WRONG SIZE ")
+                        .append(size).append(" B in ").append(System.currentTimeMillis() - start).append(" ms; ");
+                Files.delete(file);
+            }
+        } catch (IOException | RuntimeException e) {
+            result.append("FAIL ").append(e);
+        }
+        return result.toString();
     }
 
     private static String unavailableCheck() {

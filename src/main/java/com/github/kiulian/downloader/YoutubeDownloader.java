@@ -2,19 +2,27 @@ package com.github.kiulian.downloader;
 
 import com.github.kiulian.downloader.client.ClientProfile;
 import com.github.kiulian.downloader.client.ClientProfiles;
+import com.github.kiulian.downloader.download.DownloadOptions;
 import com.github.kiulian.downloader.http.HttpTransport;
 import com.github.kiulian.downloader.http.UrlConnectionTransport;
 import com.github.kiulian.downloader.internal.Ids;
+import com.github.kiulian.downloader.internal.download.FormatDownloader;
 import com.github.kiulian.downloader.internal.http.Http;
 import com.github.kiulian.downloader.internal.http.RetryPolicy;
 import com.github.kiulian.downloader.internal.youtube.Innertube;
 import com.github.kiulian.downloader.internal.youtube.VideoExtractor;
 import com.github.kiulian.downloader.model.videos.VideoInfo;
+import com.github.kiulian.downloader.model.videos.formats.Format;
 
+import java.io.OutputStream;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.function.Supplier;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
@@ -36,12 +44,19 @@ public final class YoutubeDownloader implements AutoCloseable {
 
     private final Builder settings;
     private final VideoExtractor videos;
+    private final FormatDownloader downloads;
     private ExecutorService ownExecutor;
 
     private YoutubeDownloader(Builder builder) {
         this.settings = builder.copy();
-        Http http = new Http(builder.transport(), RetryPolicy.retries(builder.retries));
+        RetryPolicy retryPolicy = RetryPolicy.retries(builder.retries);
+        Http http = new Http(builder.transport(), retryPolicy);
         this.videos = new VideoExtractor(new Innertube(http), builder.clients);
+        Map<String, String> userAgents = new HashMap<>();
+        for (ClientProfile client : builder.clients) {
+            userAgents.put(client.name(), client.userAgent());
+        }
+        this.downloads = new FormatDownloader(http, retryPolicy, userAgents, Innertube.WEB_USER_AGENT);
     }
 
     /** Downloader with default settings. */
@@ -73,7 +88,67 @@ public final class YoutubeDownloader implements AutoCloseable {
     /** {@link #videoInfo(String)} on the executor. */
     public CompletableFuture<VideoInfo> videoInfoAsync(String videoIdOrUrl) {
         String videoId = Ids.videoId(videoIdOrUrl);
-        return CompletableFuture.supplyAsync(() -> videos.videoInfo(videoId), executor());
+        return async(() -> videos.videoInfo(videoId));
+    }
+
+    /** Downloads the format to {@code file} with default options. */
+    public Path download(Format format, Path file) {
+        return download(format, file, DownloadOptions.defaults());
+    }
+
+    /**
+     * Downloads the format to {@code file}. The data goes to {@code file + ".part"} first and is moved into place
+     * when complete, so a failed or cancelled download never leaves a broken file. A name for the file:
+     * {@link com.github.kiulian.downloader.download.FileNames#of(String, Format)}.
+     *
+     * @throws YoutubeException.DownloadException on HTTP errors, an expired URL, a wrong size or if the file exists
+     */
+    public Path download(Format format, Path file, DownloadOptions options) {
+        return downloads.toFile(format, file, options);
+    }
+
+    /** Downloads the format into the stream; the stream is not closed. On failure it may hold part of the data. */
+    public void download(Format format, OutputStream out, DownloadOptions options) {
+        downloads.toStream(format, out, options);
+    }
+
+    /** {@link #download(Format, Path, DownloadOptions)} on the executor. {@code cancel(true)} stops it. */
+    public CompletableFuture<Path> downloadAsync(Format format, Path file, DownloadOptions options) {
+        return async(() -> downloads.toFile(format, file, options));
+    }
+
+    private <T> CompletableFuture<T> async(Supplier<T> work) {
+        Task<T> task = new Task<>();
+        executor().execute(() -> {
+            if (task.isDone()) {
+                return;
+            }
+            task.worker = Thread.currentThread();
+            try {
+                task.complete(work.get());
+            } catch (Throwable e) {
+                task.completeExceptionally(e);
+            } finally {
+                task.worker = null;
+                Thread.interrupted(); // leave a clean pool thread after a cancel
+            }
+        });
+        return task;
+    }
+
+    /** A future whose {@code cancel} interrupts the running work, which plain CompletableFuture does not. */
+    private static final class Task<T> extends CompletableFuture<T> {
+        volatile Thread worker;
+
+        @Override
+        public boolean cancel(boolean mayInterruptIfRunning) {
+            boolean cancelled = super.cancel(mayInterruptIfRunning);
+            Thread running = worker;
+            if (cancelled && running != null) {
+                running.interrupt();
+            }
+            return cancelled;
+        }
     }
 
     /** Stops the executor this downloader created for async calls; a custom executor is left alone. */

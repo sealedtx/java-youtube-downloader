@@ -45,7 +45,7 @@ public final class RetryPolicy {
     /**
      * Milliseconds to wait before retry number {@code retry} (1-based) after {@code failure}, or -1 to give up.
      */
-    long delayBeforeRetry(int retry, IOException failure) {
+    public long delayBeforeRetry(int retry, IOException failure) {
         if (retry > maxRetries || Thread.currentThread().isInterrupted()) {
             return -1;
         }
