@@ -11,6 +11,9 @@ import com.github.kiulian.downloader.internal.http.Http;
 import com.github.kiulian.downloader.internal.http.RetryPolicy;
 import com.github.kiulian.downloader.internal.youtube.Innertube;
 import com.github.kiulian.downloader.internal.youtube.PlaylistExtractor;
+import com.github.kiulian.downloader.internal.youtube.SearchExtractor;
+import com.github.kiulian.downloader.model.search.SearchQuery;
+import com.github.kiulian.downloader.model.search.SearchResult;
 import com.github.kiulian.downloader.internal.youtube.VideoExtractor;
 import com.github.kiulian.downloader.model.playlist.Playlist;
 import com.github.kiulian.downloader.model.videos.VideoInfo;
@@ -47,6 +50,7 @@ public final class YoutubeDownloader implements AutoCloseable {
     private final Builder settings;
     private final VideoExtractor videos;
     private final PlaylistExtractor playlists;
+    private final SearchExtractor searches;
     private final FormatDownloader downloads;
     private ExecutorService ownExecutor;
 
@@ -57,6 +61,7 @@ public final class YoutubeDownloader implements AutoCloseable {
         Innertube innertube = new Innertube(http, builder.webClient);
         this.videos = new VideoExtractor(innertube, builder.clients);
         this.playlists = new PlaylistExtractor(innertube);
+        this.searches = new SearchExtractor(innertube);
         Map<String, String> userAgents = new HashMap<>();
         for (ClientProfile client : builder.clients) {
             userAgents.put(client.name(), client.userAgent());
@@ -116,6 +121,22 @@ public final class YoutubeDownloader implements AutoCloseable {
      */
     public Playlist channelUploads(String channel) {
         return playlists.channelUploads(channel);
+    }
+
+    /** Search with YouTube's default settings. */
+    public SearchResult search(String text) {
+        return search(SearchQuery.of(text));
+    }
+
+    /**
+     * One page of search results; {@link SearchResult#nextPage()} loads the next one.
+     *
+     * <pre>{@code
+     * yt.search(SearchQuery.of("nasa").filter(TypeField.VIDEO, DurationField.UNDER_4_MINUTES).sortBy(SortField.VIEW_COUNT))
+     * }</pre>
+     */
+    public SearchResult search(SearchQuery query) {
+        return searches.search(query);
     }
 
     /** Downloads the format to {@code file} with default options. */

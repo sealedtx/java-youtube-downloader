@@ -10,6 +10,10 @@ import com.github.kiulian.downloader.internal.http.Http;
 import com.github.kiulian.downloader.internal.http.RetryPolicy;
 import com.github.kiulian.downloader.internal.json.Json;
 import com.github.kiulian.downloader.internal.youtube.Innertube;
+import com.github.kiulian.downloader.model.search.SearchQuery;
+import com.github.kiulian.downloader.model.search.field.DurationField;
+import com.github.kiulian.downloader.model.search.field.SortField;
+import com.github.kiulian.downloader.model.search.field.TypeField;
 import com.github.kiulian.downloader.testing.Corpus;
 import com.github.kiulian.downloader.testing.RecordingTransport;
 import org.junit.jupiter.api.BeforeAll;
@@ -62,6 +66,16 @@ class FixtureRecorderTest {
         yt.channelUploads(Corpus.NASA_HANDLE).stream().limit(150).count();
         yt.channelUploads("https://www.youtube.com/c/NASA");
         new Innertube(new Http(transport, RetryPolicy.retries(2))).initialData("/playlist?list=" + Corpus.ASK_NASA);
+    }
+
+    @Test
+    void recordSearches() {
+        YoutubeDownloader yt = YoutubeDownloader.builder().transport(transport).build();
+        yt.search(Corpus.SEARCH).nextPage();
+        yt.search(SearchQuery.of("nasa").filter(TypeField.CHANNEL));
+        yt.search(SearchQuery.of("nasa").filter(TypeField.PLAYLIST));
+        yt.search(SearchQuery.of("nasa").filter(TypeField.VIDEO, DurationField.UNDER_4_MINUTES).sortBy(SortField.VIEW_COUNT));
+        yt.search(Corpus.SEARCH_TYPO);
     }
 
     // sw.js_data also carries the caller's IP address; it must never end up in the repository.
