@@ -132,6 +132,26 @@ class VideoExtractorTest {
                 "tv_samsung: skipped, needs a challenge solver (for example EjsSolver.node())"), error.attempts());
     }
 
+    @Test
+    void fillsMissingMetadataFromTheWatchPageDataNotFromRecommendations() {
+        String withoutTitle = "{\"playabilityStatus\":{\"status\":\"OK\"},\"videoDetails\":{\"videoId\":\"" + ID + "\",\"lengthSeconds\":\"60\"},"
+                + "\"endscreen\":{\"endscreenRenderer\":{\"elements\":[{\"endscreenElementRenderer\":{\"title\":{\"runs\":[{\"text\":\"Another video\"}]}}}]}},"
+                + "\"streamingData\":{\"adaptiveFormats\":[" + format(140, "https://rr1.googlevideo.com/videoplayback?itag=140", "audio/mp4") + "]}}";
+        String next = "{\"contents\":{\"twoColumnWatchNextResults\":{\"results\":{\"results\":{\"contents\":["
+                + "{\"videoPrimaryInfoRenderer\":{\"title\":{\"runs\":[{\"text\":\"We are back!\"}]},"
+                + "\"viewCount\":{\"videoViewCountRenderer\":{\"viewCount\":{\"simpleText\":\"102,250 views\"}}}}},"
+                + "{\"videoSecondaryInfoRenderer\":{\"owner\":{\"videoOwnerRenderer\":{\"title\":{\"runs\":[{\"text\":\"Drugslab\"}]}}}}}]}}},"
+                + "\"secondaryResults\":{\"x\":{\"videoPrimaryInfoRenderer\":{\"title\":{\"simpleText\":\"Wrong\"}}}}}}";
+        FakeYoutube youtube = new FakeYoutube((FakeYoutube.Router) request -> request.url().contains("/youtubei/v1/next") ? next : withoutTitle);
+
+        VideoInfo video = extractor(youtube).videoInfo(ID);
+
+        assertEquals("We are back!", video.details().title());
+        assertEquals("Drugslab", video.details().author());
+        assertEquals(102_250, video.details().viewCount());
+        assertEquals(60, video.details().lengthSeconds());
+    }
+
     private static VideoExtractor extractor(FakeYoutube youtube) {
         return new VideoExtractor(new Innertube(new Http(youtube, RetryPolicy.NONE)), ClientProfiles.defaults());
     }

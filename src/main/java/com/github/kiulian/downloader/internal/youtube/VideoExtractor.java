@@ -7,6 +7,7 @@ import com.github.kiulian.downloader.YoutubeException.VideoUnavailableException;
 import com.github.kiulian.downloader.client.ClientProfile;
 import com.github.kiulian.downloader.internal.http.HttpStatusException;
 import com.github.kiulian.downloader.internal.json.JsonException;
+import com.github.kiulian.downloader.model.videos.VideoDetails;
 import com.github.kiulian.downloader.model.videos.VideoInfo;
 import com.github.kiulian.downloader.model.videos.formats.Format;
 import com.github.kiulian.downloader.model.videos.formats.Formats;
@@ -166,7 +167,15 @@ public final class VideoExtractor {
             warnings.add(client.name() + ": live stream, formats left out; use hlsManifestUrl()");
             formats = new ArrayList<>();
         }
-        return new VideoInfo(player.details(videoId), new Formats(formats), player.subtitles(),
+        VideoDetails details = player.details(videoId);
+        if (player.lacksMetadata()) {
+            try {
+                details = player.details(videoId, innertube.next(videoId));
+            } catch (IOException | RuntimeException e) {
+                warnings.add(client.name() + ": metadata incomplete, the watch page data failed (" + e.getMessage() + ")");
+            }
+        }
+        return new VideoInfo(details, new Formats(formats), player.subtitles(),
                 player.hlsManifestUrl(), player.dashManifestUrl(), client.name(), warnings);
     }
 }

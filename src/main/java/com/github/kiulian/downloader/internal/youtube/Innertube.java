@@ -66,6 +66,13 @@ public final class Innertube {
         return webPost("browse", body);
     }
 
+    /** {@code /youtubei/v1/next}: the watch page data (title, channel, description) as the web client. */
+    public JsonNode next(String videoId) throws IOException {
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("videoId", videoId);
+        return webPost("next", body);
+    }
+
     /** {@code /youtubei/v1/search}; {@code params} holds filters and sort order, may be {@code null}. */
     public JsonNode search(String query, String params) throws IOException {
         Map<String, Object> body = new LinkedHashMap<>();

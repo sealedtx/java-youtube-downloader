@@ -326,7 +326,13 @@ class LiveTest {
             } catch (YoutubeException.HttpException e) {
                 translation = "translation still HTTP " + e.status();
             }
-            return video.formats().size() + " formats, " + range + ", " + translation;
+            YoutubeDownloader withChain = YoutubeDownloader.builder().challengeSolver(SOLVER).cookies(cookies).build();
+            VideoInfo adult = withChain.videoInfo(Corpus.AGE_RESTRICTED);
+            assertTrue(adult.details().title() != null, "age-restricted video without title");
+            String adultRange = range(adult.formats().bestAudio().get(), ClientProfiles.TV_SAMSUNG.userAgent(), 0, 65_535);
+            assertTrue(adultRange.startsWith("OK"), "age-restricted download: " + adultRange);
+            return video.formats().size() + " formats, " + range + ", " + translation + "; age-restricted \"" + adult.details().title()
+                    + "\" via " + adult.client() + ", " + adultRange;
         });
     }
 

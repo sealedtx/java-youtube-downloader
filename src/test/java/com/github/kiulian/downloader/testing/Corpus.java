@@ -37,6 +37,8 @@ public final class Corpus {
     public static final String LONG = "Qjx3u9_FZHo";
     /** U.S. Spacewalk: an ended live stream of 10 hours. */
     public static final String WAS_LIVE = "VlB_ZtDLAOQ";
+    /** Drugslab "We are back!": age-restricted, needs cookies and the JS solver (tv_samsung). */
+    public static final String AGE_RESTRICTED = "AgGa7xohni8";
     /** Baby Shark Dance: "made for kids", which the JS-less clients do not get. */
     public static final String MADE_FOR_KIDS = "XqZsoesa55w";
 
