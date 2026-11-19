@@ -1,5 +1,6 @@
 package com.github.kiulian.downloader;
 
+import com.github.kiulian.downloader.auth.YoutubeCookies;
 import com.github.kiulian.downloader.client.ClientProfile;
 import com.github.kiulian.downloader.client.ClientProfiles;
 import com.github.kiulian.downloader.download.DownloadOptions;
@@ -64,11 +65,11 @@ public final class YoutubeDownloader implements AutoCloseable {
         this.settings = builder.copy();
         RetryPolicy retryPolicy = RetryPolicy.retries(builder.retries);
         Http http = new Http(builder.transport(), retryPolicy);
-        Innertube innertube = new Innertube(http, builder.webClient);
+        Innertube innertube = new Innertube(http, builder.webClient, builder.cookies);
         this.videos = new VideoExtractor(innertube, builder.clients, new PlayerScripts(http), builder.challengeSolver);
         this.playlists = new PlaylistExtractor(innertube);
         this.searches = new SearchExtractor(innertube);
-        this.subtitles = new SubtitleDownloader(http);
+        this.subtitles = new SubtitleDownloader(http, innertube);
         Map<String, String> userAgents = new HashMap<>();
         for (ClientProfile client : builder.clients) {
             userAgents.put(client.name(), client.userAgent());
@@ -255,6 +256,7 @@ public final class YoutubeDownloader implements AutoCloseable {
         private List<ClientProfile> clients = ClientProfiles.defaults();
         private ClientProfile webClient = ClientProfiles.WEB;
         private ChallengeSolver challengeSolver;
+        private YoutubeCookies cookies;
         private Executor executor;
 
         private Builder() {
@@ -309,6 +311,17 @@ public final class YoutubeDownloader implements AutoCloseable {
             return this;
         }
 
+        /**
+         * Account cookies, for age-restricted, private and members-only videos. They go only to youtube.com and only
+         * from client profiles that support cookies ({@link ClientProfiles#TV_SAMSUNG}, {@link ClientProfiles#WEB});
+         * for videos that need a login this means a challenge solver is needed too. See {@link YoutubeCookies} for
+         * the risks.
+         */
+        public Builder cookies(YoutubeCookies cookies) {
+            this.cookies = Objects.requireNonNull(cookies, "cookies");
+            return this;
+        }
+
         /** Client profile for playlists, channels and search. Default {@link ClientProfiles#WEB}. */
         public Builder webClient(ClientProfile webClient) {
             this.webClient = Objects.requireNonNull(webClient, "webClient");
@@ -353,6 +366,7 @@ public final class YoutubeDownloader implements AutoCloseable {
             copy.clients = clients;
             copy.webClient = webClient;
             copy.challengeSolver = challengeSolver;
+            copy.cookies = cookies;
             copy.executor = executor;
             return copy;
         }
