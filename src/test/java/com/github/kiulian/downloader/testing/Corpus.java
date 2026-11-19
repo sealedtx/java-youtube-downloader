@@ -19,6 +19,22 @@ public final class Corpus {
 
     public static final List<String> VIDEOS = Arrays.asList(ZOO, N3WPORT, PRIVATE, MISSING);
 
+    // live checks only (checked 2026-11-19)
+    /** Rick Astley, Never Gonna Give You Up: music video up to 2160p, several subtitle tracks. */
+    public static final String MUSIC = "dQw4w9WgXcQ";
+    /** Costa Rica in 4K 60fps HDR. */
+    public static final String UHD = "LXb3EKWsInQ";
+    /** MrBeast, $456,000 Squid Game: about 20 dubbed audio tracks with visionos. */
+    public static final String MULTI_AUDIO = "0e3GPea1Tyg";
+    /** NASA short, vertical. */
+    public static final String SHORT = "6jT7GbxRIcw";
+    /** NASA's Mariner Missions: about 4 hours. */
+    public static final String LONG = "Qjx3u9_FZHo";
+    /** U.S. Spacewalk: an ended live stream of 10 hours. */
+    public static final String WAS_LIVE = "VlB_ZtDLAOQ";
+    /** Baby Shark Dance: "made for kids", which the JS-less clients do not get. */
+    public static final String MADE_FOR_KIDS = "XqZsoesa55w";
+
     /** #AskNASA: 22 videos, owner NASA, one page. */
     public static final String ASK_NASA = "PL2aBZuCeDwlRbJhDIkKXilZRz9ur4VVAA";
     /** Auto-generated album playlist without an owner: 13 tracks. */
