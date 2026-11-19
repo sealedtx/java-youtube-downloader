@@ -1,0 +1,195 @@
+package com.github.kiulian.downloader;
+
+import com.github.kiulian.downloader.client.ClientProfile;
+import com.github.kiulian.downloader.client.ClientProfiles;
+import com.github.kiulian.downloader.http.HttpTransport;
+import com.github.kiulian.downloader.http.UrlConnectionTransport;
+import com.github.kiulian.downloader.internal.Ids;
+import com.github.kiulian.downloader.internal.http.Http;
+import com.github.kiulian.downloader.internal.http.RetryPolicy;
+import com.github.kiulian.downloader.internal.youtube.Innertube;
+import com.github.kiulian.downloader.internal.youtube.VideoExtractor;
+import com.github.kiulian.downloader.model.videos.VideoInfo;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
+
+/**
+ * Entry point of the library. Thread-safe; create one and reuse it.
+ *
+ * <pre>{@code
+ * YoutubeDownloader yt = YoutubeDownloader.create();
+ * VideoInfo video = yt.videoInfo("https://youtu.be/jNQXAC9IVRw");
+ * Format audio = video.formats().bestAudio().orElseThrow();
+ * }</pre>
+ *
+ * Errors are unchecked {@link YoutubeException}s; async methods complete exceptionally with them.
+ */
+public final class YoutubeDownloader implements AutoCloseable {
+
+    private final Builder settings;
+    private final VideoExtractor videos;
+    private ExecutorService ownExecutor;
+
+    private YoutubeDownloader(Builder builder) {
+        this.settings = builder.copy();
+        Http http = new Http(builder.transport(), RetryPolicy.retries(builder.retries));
+        this.videos = new VideoExtractor(new Innertube(http), builder.clients);
+    }
+
+    /** Downloader with default settings. */
+    public static YoutubeDownloader create() {
+        return builder().build();
+    }
+
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    /** A builder with the settings of this downloader, to make a variant (for example with another proxy). */
+    public Builder toBuilder() {
+        return settings.copy();
+    }
+
+    /**
+     * Metadata, formats and subtitle tracks of a video.
+     *
+     * @param videoIdOrUrl an 11-character id or any YouTube video URL
+     * @throws IllegalArgumentException if it is neither
+     * @throws YoutubeException.VideoUnavailableException if YouTube says the video cannot be played
+     * @throws YoutubeException.BotCheckException if every client got a bot check
+     */
+    public VideoInfo videoInfo(String videoIdOrUrl) {
+        return videos.videoInfo(Ids.videoId(videoIdOrUrl));
+    }
+
+    /** {@link #videoInfo(String)} on the executor. */
+    public CompletableFuture<VideoInfo> videoInfoAsync(String videoIdOrUrl) {
+        String videoId = Ids.videoId(videoIdOrUrl);
+        return CompletableFuture.supplyAsync(() -> videos.videoInfo(videoId), executor());
+    }
+
+    /** Stops the executor this downloader created for async calls; a custom executor is left alone. */
+    @Override
+    public synchronized void close() {
+        if (ownExecutor != null) {
+            ownExecutor.shutdown();
+            ownExecutor = null;
+        }
+    }
+
+    private synchronized Executor executor() {
+        if (settings.executor != null) {
+            return settings.executor;
+        }
+        if (ownExecutor == null) {
+            AtomicInteger number = new AtomicInteger();
+            ownExecutor = Executors.newCachedThreadPool(task -> {
+                Thread thread = new Thread(task, "yt-downloader-" + number.incrementAndGet());
+                thread.setDaemon(true);
+                return thread;
+            });
+        }
+        return ownExecutor;
+    }
+
+    public static final class Builder {
+        private HttpTransport transport;
+        private String proxyHost;
+        private int proxyPort;
+        private String proxyUser;
+        private String proxyPassword;
+        private int retries = 2;
+        private List<ClientProfile> clients = ClientProfiles.defaults();
+        private Executor executor;
+
+        private Builder() {
+        }
+
+        /** Your own HTTP stack. Proxy settings of this builder then do not apply. */
+        public Builder transport(HttpTransport transport) {
+            this.transport = Objects.requireNonNull(transport, "transport");
+            return this;
+        }
+
+        /** HTTP proxy for the default transport. */
+        public Builder proxy(String host, int port) {
+            this.proxyHost = Objects.requireNonNull(host, "host");
+            this.proxyPort = port;
+            return this;
+        }
+
+        /** HTTP proxy with credentials for the default transport; they are sent to the proxy only. */
+        public Builder proxy(String host, int port, String user, String password) {
+            proxy(host, port);
+            this.proxyUser = Objects.requireNonNull(user, "user");
+            this.proxyPassword = Objects.requireNonNull(password, "password");
+            return this;
+        }
+
+        /** How often a failed request is sent again (I/O errors, timeouts, 429 and 5xx). Default 2. */
+        public Builder retries(int retries) {
+            if (retries < 0) {
+                throw new IllegalArgumentException("retries must not be negative");
+            }
+            this.retries = retries;
+            return this;
+        }
+
+        /** Client profiles to try, in order. Default {@link ClientProfiles#defaults()}. */
+        public Builder clients(List<ClientProfile> clients) {
+            if (clients.isEmpty()) {
+                throw new IllegalArgumentException("at least one client profile is needed");
+            }
+            this.clients = Collections.unmodifiableList(new ArrayList<>(clients));
+            return this;
+        }
+
+        /** Executor for async methods. Default: a daemon thread pool owned by the downloader. */
+        public Builder executor(Executor executor) {
+            this.executor = Objects.requireNonNull(executor, "executor");
+            return this;
+        }
+
+        public YoutubeDownloader build() {
+            if (transport != null && proxyHost != null) {
+                throw new IllegalStateException("proxy settings apply only to the default transport; configure the proxy in your transport");
+            }
+            return new YoutubeDownloader(this);
+        }
+
+        private HttpTransport transport() {
+            if (transport != null) {
+                return transport;
+            }
+            UrlConnectionTransport.Builder builder = UrlConnectionTransport.builder();
+            if (proxyHost != null) {
+                builder.proxy(proxyHost, proxyPort);
+            }
+            if (proxyUser != null) {
+                builder.proxyCredentials(proxyUser, proxyPassword);
+            }
+            return builder.build();
+        }
+
+        private Builder copy() {
+            Builder copy = new Builder();
+            copy.transport = transport;
+            copy.proxyHost = proxyHost;
+            copy.proxyPort = proxyPort;
+            copy.proxyUser = proxyUser;
+            copy.proxyPassword = proxyPassword;
+            copy.retries = retries;
+            copy.clients = clients;
+            copy.executor = executor;
+            return copy;
+        }
+    }
+}

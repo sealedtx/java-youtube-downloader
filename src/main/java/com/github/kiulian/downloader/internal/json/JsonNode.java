@@ -50,6 +50,11 @@ public final class JsonNode {
         return MISSING;
     }
 
+    /** True if this is an object with this key, even if its value is JSON {@code null}. */
+    public boolean has(String key) {
+        return value instanceof Map && ((Map<?, ?>) value).containsKey(key);
+    }
+
     /** Array element, or a missing node. */
     public JsonNode get(int index) {
         if (value instanceof List) {
