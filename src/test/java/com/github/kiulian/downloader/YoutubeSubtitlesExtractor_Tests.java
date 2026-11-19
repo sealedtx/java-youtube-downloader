@@ -8,6 +8,7 @@ import com.github.kiulian.downloader.model.Extension;
 import com.github.kiulian.downloader.model.subtitles.SubtitlesInfo;
 import com.github.kiulian.downloader.model.videos.VideoInfo;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -15,6 +16,7 @@ import java.util.List;
 import static com.github.kiulian.downloader.TestUtils.N3WPORT_ID;
 import static org.junit.jupiter.api.Assertions.*;
 
+@Tag("live")
 @DisplayName("Tests extracting metadata for youtube subtitles")
 public class YoutubeSubtitlesExtractor_Tests {
 

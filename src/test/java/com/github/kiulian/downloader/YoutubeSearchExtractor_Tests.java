@@ -11,6 +11,7 @@ import com.github.kiulian.downloader.model.search.field.SortField;
 import com.github.kiulian.downloader.model.search.field.TypeField;
 import com.github.kiulian.downloader.model.search.query.*;
 
+@Tag("live")
 @DisplayName("Tests extracting metadata from search results")
 public class YoutubeSearchExtractor_Tests {
 

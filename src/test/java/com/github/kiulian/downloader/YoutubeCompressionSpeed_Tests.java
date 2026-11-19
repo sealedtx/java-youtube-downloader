@@ -7,6 +7,7 @@ import org.junit.jupiter.api.*;
 import com.github.kiulian.downloader.downloader.request.*;
 import com.github.kiulian.downloader.model.search.SearchResult;
 
+@Tag("live")
 @DisplayName("Compare execution times of plain and gzip responses")
 public class YoutubeCompressionSpeed_Tests extends TestUtils {
 

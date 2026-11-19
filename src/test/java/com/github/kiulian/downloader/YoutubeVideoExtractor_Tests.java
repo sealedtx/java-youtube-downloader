@@ -8,6 +8,7 @@ import com.github.kiulian.downloader.model.videos.VideoInfo;
 import com.github.kiulian.downloader.model.videos.formats.*;
 import com.github.kiulian.downloader.model.videos.quality.AudioQuality;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -17,6 +18,7 @@ import static com.github.kiulian.downloader.TestUtils.ME_AT_THE_ZOO_ID;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@Tag("live")
 @DisplayName("Tests extracting metadata for youtube videos")
 public class YoutubeVideoExtractor_Tests {
 
