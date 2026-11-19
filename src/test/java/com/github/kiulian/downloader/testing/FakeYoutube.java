@@ -98,7 +98,10 @@ public final class FakeYoutube implements HttpTransport {
             if (body.has("browseId")) {
                 return endpoint + "/" + body.get("browseId").asString() + ".json.gz";
             }
-            return endpoint + "/" + hash(Json.write(body.get("url").or(body.get("query")))) + ".json.gz";
+            if (body.has("query")) {
+                return endpoint + "/" + hash(body.get("query").asString() + "|" + body.get("params").asString("")) + ".json.gz";
+            }
+            return endpoint + "/" + hash(body.get("url").asString("")) + ".json.gz";
         }
         if (url.endsWith("/sw.js_data")) {
             return null;

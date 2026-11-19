@@ -76,10 +76,10 @@ class PlaylistExtractorTest {
 
     @Test
     void parsesDurations() {
-        assertEquals(338, PlaylistExtractor.parseDuration("5:38"));
-        assertEquals(3723, PlaylistExtractor.parseDuration("1:02:03"));
-        assertEquals(0, PlaylistExtractor.parseDuration("LIVE"));
-        assertEquals(0, PlaylistExtractor.parseDuration(null));
+        assertEquals(338, Renderers.parseDuration("5:38"));
+        assertEquals(3723, Renderers.parseDuration("1:02:03"));
+        assertEquals(0, Renderers.parseDuration("LIVE"));
+        assertEquals(0, Renderers.parseDuration(null));
     }
 
     private static PlaylistExtractor extractor(FakeYoutube.Router router) {

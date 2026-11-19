@@ -12,6 +12,10 @@ import com.github.kiulian.downloader.http.HttpTransport.Response;
 import com.github.kiulian.downloader.http.UrlConnectionTransport;
 import com.github.kiulian.downloader.model.playlist.Playlist;
 import com.github.kiulian.downloader.model.playlist.PlaylistVideo;
+import com.github.kiulian.downloader.model.search.SearchQuery;
+import com.github.kiulian.downloader.model.search.SearchResult;
+import com.github.kiulian.downloader.model.search.field.DurationField;
+import com.github.kiulian.downloader.model.search.field.TypeField;
 import com.github.kiulian.downloader.model.videos.VideoInfo;
 import com.github.kiulian.downloader.model.videos.formats.Format;
 import com.github.kiulian.downloader.testing.Corpus;
@@ -205,6 +209,44 @@ class LiveTest {
             assertThrows(PlaylistUnavailableException.class, () -> YT.playlist(Corpus.MISSING_PLAYLIST));
             assertThrows(ChannelUnavailableException.class, () -> YT.channelUploads("@noSuchChannelHere1"));
             return "both unavailable as expected";
+        });
+    }
+
+    // ---- search
+
+    @Test
+    void searchWithTwoPages() {
+        check("search \"" + Corpus.SEARCH + "\"", () -> {
+            SearchResult first = YT.search(Corpus.SEARCH);
+            assertTrue(first.videos().size() >= 10, first.videos().size() + " videos");
+            assertTrue(first.videos().stream().allMatch(v -> v.videoId().length() == 11));
+            SearchResult second = first.nextPage();
+            assertTrue(second.items().size() >= 10, "second page " + second.items().size());
+            return first.items().size() + " + " + second.items().size() + " items, " + first.channels().size() + " channels, "
+                    + first.videos().stream().filter(v -> v.isShort()).count() + " shorts";
+        });
+    }
+
+    @Test
+    void searchFilters() {
+        check("search filters", () -> {
+            SearchResult channels = YT.search(SearchQuery.of("nasa").filter(TypeField.CHANNEL));
+            assertEquals(channels.items().size(), channels.channels().size(), "only channels");
+            SearchResult playlists = YT.search(SearchQuery.of("nasa").filter(TypeField.PLAYLIST));
+            assertEquals(playlists.items().size(), playlists.playlists().size(), "only playlists");
+            SearchResult shortOnes = YT.search(SearchQuery.of("nasa").filter(TypeField.VIDEO, DurationField.UNDER_4_MINUTES));
+            assertTrue(shortOnes.videos().stream().allMatch(v -> v.lengthSeconds() < 240), "all under 4 minutes");
+            return channels.items().size() + " channels, " + playlists.items().size() + " playlists, " + shortOnes.items().size() + " short videos";
+        });
+    }
+
+    @Test
+    void searchCorrectsSpelling() {
+        check("search spelling correction", () -> {
+            SearchResult result = YT.search(Corpus.SEARCH_TYPO);
+            assertTrue(result.correctedQuery() != null, "no correction");
+            assertTrue(YT.search(result.query().exact(true)).correctedQuery() == null, "exact search was corrected");
+            return "corrected to \"" + result.correctedQuery() + "\"";
         });
     }
 

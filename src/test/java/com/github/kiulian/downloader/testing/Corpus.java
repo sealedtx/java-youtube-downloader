@@ -19,6 +19,11 @@ public final class Corpus {
 
     public static final List<String> VIDEOS = Arrays.asList(ZOO, N3WPORT, PRIVATE, MISSING);
 
+    /** Search text whose results mix videos, shorts and a channel. */
+    public static final String SEARCH = "nasa artemis";
+    /** Misspelled search text that YouTube corrects. */
+    public static final String SEARCH_TYPO = "rick astly never gona give";
+
     // live checks only (checked 2026-11-19)
     /** Rick Astley, Never Gonna Give You Up: music video up to 2160p, several subtitle tracks. */
     public static final String MUSIC = "dQw4w9WgXcQ";

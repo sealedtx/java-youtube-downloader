@@ -53,6 +53,16 @@ public final class Innertube {
         return webPost("browse", body);
     }
 
+    /** {@code /youtubei/v1/search}; {@code params} holds filters and sort order, may be {@code null}. */
+    public JsonNode search(String query, String params) throws IOException {
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("query", query);
+        if (params != null) {
+            body.put("params", params);
+        }
+        return webPost("search", body);
+    }
+
     /** Next page of a browse or search answer. */
     public JsonNode continuation(String endpoint, String token) throws IOException {
         Map<String, Object> body = new LinkedHashMap<>();
