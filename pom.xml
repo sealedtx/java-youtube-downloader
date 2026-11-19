@@ -22,8 +22,8 @@
     <properties>
         <maven.compiler.release>11</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <!-- tests tagged "live" call real YouTube; they run only with -Plive -->
-        <test.excludedGroups>live</test.excludedGroups>
+        <!-- tests tagged "live" or "record" call real YouTube; they run only with -Plive or -Precord -->
+        <test.excludedGroups>live,record</test.excludedGroups>
     </properties>
 
     <build>
@@ -63,16 +63,27 @@
                 </plugins>
             </build>
         </profile>
+        <profile>
+            <!-- re-records the offline fixtures in src/test/resources/fixtures from real YouTube -->
+            <id>record</id>
+            <properties>
+                <test.excludedGroups/>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <groups>record</groups>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
     </profiles>
 
     <dependencies>
-
-        <!-- json (replaced in 4.0 phase 1) -->
-        <dependency>
-            <groupId>com.alibaba</groupId>
-            <artifactId>fastjson</artifactId>
-            <version>1.2.83</version>
-        </dependency>
 
         <!-- logging: API only, the application picks the backend -->
         <dependency>
@@ -86,13 +97,6 @@
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>
             <version>5.14.4</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.mockito</groupId>
-            <artifactId>mockito-core</artifactId>
-            <version>5.24.0</version>
             <scope>test</scope>
         </dependency>
 

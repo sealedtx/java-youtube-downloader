@@ -1,17 +1,16 @@
 package com.github.kiulian.downloader.model.videos.formats;
 
+import java.util.HashMap;
+import java.util.Map;
+
 
 import com.github.kiulian.downloader.model.videos.quality.AudioQuality;
 import com.github.kiulian.downloader.model.videos.quality.VideoQuality;
 
+/**
+ * Known YouTube format ids (itags) with the quality they usually stand for.
+ */
 public enum Itag {
-
-    unknown {
-        @Override
-        public void setId(int id) {
-            this.id = id;
-        }
-    },
 
     i5(VideoQuality.small, AudioQuality.low),
     i6(VideoQuality.small, AudioQuality.low),
@@ -150,13 +149,18 @@ public enum Itag {
     i779(VideoQuality.large),
     i780(VideoQuality.large);
 
-    protected int id;
-    private VideoQuality videoQuality;
-    private AudioQuality audioQuality;
-    private boolean isVRor3D;
+    private static final Map<Integer, Itag> BY_ID = new HashMap<>();
 
-    Itag() {
+    static {
+        for (Itag itag : values()) {
+            BY_ID.put(itag.id, itag);
+        }
     }
+
+    private final int id;
+    private final VideoQuality videoQuality;
+    private final AudioQuality audioQuality;
+    private final boolean isVRor3D;
 
     Itag(VideoQuality videoQuality) {
         this(videoQuality, AudioQuality.noAudio, false);
@@ -171,14 +175,15 @@ public enum Itag {
     }
 
     Itag(VideoQuality videoQuality, AudioQuality audioQuality, boolean isVRor3D) {
-        setId(Integer.parseInt(name().substring(1)));
+        this.id = Integer.parseInt(name().substring(1));
         this.videoQuality = videoQuality;
         this.audioQuality = audioQuality;
         this.isVRor3D = isVRor3D;
     }
 
-    public void setId(int id) {
-        this.id = id;
+    /** The known itag with this id, or {@code null}. */
+    public static Itag of(int id) {
+        return BY_ID.get(id);
     }
 
     public int id() {
@@ -194,11 +199,15 @@ public enum Itag {
     }
 
     public boolean isVideo() {
-        return this != unknown && videoQuality != VideoQuality.noVideo;
+        return videoQuality != VideoQuality.noVideo;
     }
 
     public boolean isAudio() {
-        return this != unknown && audioQuality != AudioQuality.noAudio;
+        return audioQuality != AudioQuality.noAudio;
+    }
+
+    public boolean isVRor3D() {
+        return isVRor3D;
     }
 
     @Override
