@@ -76,6 +76,16 @@ public class YoutubeException extends RuntimeException {
     }
 
     /**
+     * A format could not be downloaded: HTTP error, expired URL, broken connection after all retries,
+     * wrong size, or a problem with the target file. A partial file is never left behind.
+     */
+    public static class DownloadException extends YoutubeException {
+        public DownloadException(String message, Throwable cause) {
+            super(message, cause);
+        }
+    }
+
+    /**
      * A YouTube response did not have the expected structure. Usually means YouTube changed something;
      * please report it with {@link #attempts()}.
      */

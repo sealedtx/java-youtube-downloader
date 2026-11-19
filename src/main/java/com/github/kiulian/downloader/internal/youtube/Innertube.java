@@ -23,7 +23,7 @@ public final class Innertube {
 
     public static final String ORIGIN = "https://www.youtube.com";
 
-    static final String WEB_USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
+    public static final String WEB_USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
 
     private static final Logger LOG = LoggerFactory.getLogger(Innertube.class);
     private static final long VISITOR_DATA_TTL_MILLIS = 60 * 60 * 1000;
