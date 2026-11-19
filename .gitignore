@@ -31,6 +31,9 @@ hs_err_pid*
 *.iml
 .idea
 
+# Account cookies are secrets (live tests with -Dyt.cookies)
+*cookies*.txt
+
 # Eclipse
 .project
 .classpath
