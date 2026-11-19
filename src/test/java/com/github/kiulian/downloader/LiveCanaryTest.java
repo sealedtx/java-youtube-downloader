@@ -8,6 +8,7 @@ import com.github.kiulian.downloader.download.FileNames;
 import com.github.kiulian.downloader.http.HttpTransport.Request;
 import com.github.kiulian.downloader.http.HttpTransport.Response;
 import com.github.kiulian.downloader.http.UrlConnectionTransport;
+import com.github.kiulian.downloader.model.playlist.Playlist;
 import com.github.kiulian.downloader.model.videos.VideoInfo;
 import com.github.kiulian.downloader.model.videos.formats.Format;
 import com.github.kiulian.downloader.testing.Corpus;
@@ -75,6 +76,8 @@ class LiveCanaryTest {
         rows.add("");
         rows.add("Full download: " + fullDownloadCheck());
         rows.add("");
+        rows.add("Playlists: " + playlistCheck());
+        rows.add("");
         rows.add("Unavailable videos: " + unavailableCheck());
         write(rows);
         assertTrue(zooWorks, "no client could download audio of " + Corpus.ZOO + "; see target/live-report.md");
@@ -111,6 +114,23 @@ class LiveCanaryTest {
             }
         } catch (IOException | RuntimeException e) {
             result.append("FAIL ").append(e);
+        }
+        return result.toString();
+    }
+
+    private static String playlistCheck() {
+        YoutubeDownloader yt = YoutubeDownloader.create();
+        StringBuilder result = new StringBuilder();
+        String[][] checks = {{"playlist", Corpus.ASK_NASA}, {"album", Corpus.ALBUM}, {"channel", Corpus.NASA_HANDLE}};
+        for (String[] check : checks) {
+            try {
+                Playlist playlist = check[0].equals("channel") ? yt.channelUploads(check[1]) : yt.playlist(check[1]);
+                long count = playlist.stream().limit(250).count();
+                result.append(check[0]).append(" OK (").append(playlist.details().title()).append(", ").append(count)
+                        .append(count == 250 ? "+" : "").append(" of ").append(playlist.details().videoCount()).append(" videos); ");
+            } catch (RuntimeException e) {
+                result.append(check[0]).append(" FAIL ").append(e.getClass().getSimpleName()).append(": ").append(e.getMessage()).append("; ");
+            }
         }
         return result.toString();
     }

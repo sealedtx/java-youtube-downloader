@@ -10,7 +10,9 @@ import com.github.kiulian.downloader.internal.download.FormatDownloader;
 import com.github.kiulian.downloader.internal.http.Http;
 import com.github.kiulian.downloader.internal.http.RetryPolicy;
 import com.github.kiulian.downloader.internal.youtube.Innertube;
+import com.github.kiulian.downloader.internal.youtube.PlaylistExtractor;
 import com.github.kiulian.downloader.internal.youtube.VideoExtractor;
+import com.github.kiulian.downloader.model.playlist.Playlist;
 import com.github.kiulian.downloader.model.videos.VideoInfo;
 import com.github.kiulian.downloader.model.videos.formats.Format;
 
@@ -44,6 +46,7 @@ public final class YoutubeDownloader implements AutoCloseable {
 
     private final Builder settings;
     private final VideoExtractor videos;
+    private final PlaylistExtractor playlists;
     private final FormatDownloader downloads;
     private ExecutorService ownExecutor;
 
@@ -51,7 +54,9 @@ public final class YoutubeDownloader implements AutoCloseable {
         this.settings = builder.copy();
         RetryPolicy retryPolicy = RetryPolicy.retries(builder.retries);
         Http http = new Http(builder.transport(), retryPolicy);
-        this.videos = new VideoExtractor(new Innertube(http), builder.clients);
+        Innertube innertube = new Innertube(http, builder.webClient);
+        this.videos = new VideoExtractor(innertube, builder.clients);
+        this.playlists = new PlaylistExtractor(innertube);
         Map<String, String> userAgents = new HashMap<>();
         for (ClientProfile client : builder.clients) {
             userAgents.put(client.name(), client.userAgent());
@@ -89,6 +94,28 @@ public final class YoutubeDownloader implements AutoCloseable {
     public CompletableFuture<VideoInfo> videoInfoAsync(String videoIdOrUrl) {
         String videoId = Ids.videoId(videoIdOrUrl);
         return async(() -> videos.videoInfo(videoId));
+    }
+
+    /**
+     * A playlist; its videos are loaded page by page while you iterate.
+     *
+     * @param playlistIdOrUrl a playlist id or any YouTube URL with a {@code list} parameter
+     * @throws IllegalArgumentException if it is neither
+     * @throws YoutubeException.PlaylistUnavailableException if the playlist does not exist or is private
+     */
+    public Playlist playlist(String playlistIdOrUrl) {
+        return playlists.playlist(Ids.playlistId(playlistIdOrUrl));
+    }
+
+    /**
+     * The uploads of a channel as a playlist.
+     *
+     * @param channel channel id ({@code UC...}), handle ({@code @NASA}) or channel URL ({@code /channel/}, {@code /@},
+     *                {@code /c/}, {@code /user/})
+     * @throws YoutubeException.ChannelUnavailableException if YouTube does not know the channel
+     */
+    public Playlist channelUploads(String channel) {
+        return playlists.channelUploads(channel);
     }
 
     /** Downloads the format to {@code file} with default options. */
@@ -183,6 +210,7 @@ public final class YoutubeDownloader implements AutoCloseable {
         private String proxyPassword;
         private int retries = 2;
         private List<ClientProfile> clients = ClientProfiles.defaults();
+        private ClientProfile webClient = ClientProfiles.WEB;
         private Executor executor;
 
         private Builder() {
@@ -227,6 +255,12 @@ public final class YoutubeDownloader implements AutoCloseable {
             return this;
         }
 
+        /** Client profile for playlists, channels and search. Default {@link ClientProfiles#WEB}. */
+        public Builder webClient(ClientProfile webClient) {
+            this.webClient = Objects.requireNonNull(webClient, "webClient");
+            return this;
+        }
+
         /** Executor for async methods. Default: a daemon thread pool owned by the downloader. */
         public Builder executor(Executor executor) {
             this.executor = Objects.requireNonNull(executor, "executor");
@@ -263,6 +297,7 @@ public final class YoutubeDownloader implements AutoCloseable {
             copy.proxyPassword = proxyPassword;
             copy.retries = retries;
             copy.clients = clients;
+            copy.webClient = webClient;
             copy.executor = executor;
             return copy;
         }

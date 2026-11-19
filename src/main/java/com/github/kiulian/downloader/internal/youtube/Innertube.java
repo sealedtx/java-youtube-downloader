@@ -1,6 +1,7 @@
 package com.github.kiulian.downloader.internal.youtube;
 
 import com.github.kiulian.downloader.client.ClientProfile;
+import com.github.kiulian.downloader.client.ClientProfiles;
 import com.github.kiulian.downloader.http.HttpTransport.Request;
 import com.github.kiulian.downloader.internal.http.Http;
 import com.github.kiulian.downloader.internal.json.Json;
@@ -28,13 +29,61 @@ public final class Innertube {
     private static final Logger LOG = LoggerFactory.getLogger(Innertube.class);
     private static final long VISITOR_DATA_TTL_MILLIS = 60 * 60 * 1000;
     private static final Pattern VISITOR_DATA_IN_PAGE = Pattern.compile("\"VISITOR_DATA\":\"([^\"]+)\"");
+    private static final Pattern INITIAL_DATA = Pattern.compile("ytInitialData\"?\\]?\\s*=\\s*");
 
     private final Http http;
+    private final ClientProfile webClient;
     private String visitorData;
     private long visitorDataTime;
 
     public Innertube(Http http) {
+        this(http, ClientProfiles.WEB);
+    }
+
+    /** @param webClient profile for browse, resolve and search requests */
+    public Innertube(Http http, ClientProfile webClient) {
         this.http = http;
+        this.webClient = webClient;
+    }
+
+    /** {@code /youtubei/v1/browse} with a {@code browseId}, for example {@code VL<playlist id>}. */
+    public JsonNode browse(String browseId) throws IOException {
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("browseId", browseId);
+        return webPost("browse", body);
+    }
+
+    /** Next page of a browse or search answer. */
+    public JsonNode continuation(String endpoint, String token) throws IOException {
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("continuation", token);
+        return webPost(endpoint, body);
+    }
+
+    /** {@code /youtubei/v1/navigation/resolve_url}: turns a channel URL such as {@code /@NASA} into ids. */
+    public JsonNode resolveUrl(String url) throws IOException {
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("url", url);
+        return webPost("navigation/resolve_url", body);
+    }
+
+    /** {@code ytInitialData} of a web page such as {@code /playlist?list=...}; fallback when the API fails. */
+    public JsonNode initialData(String pathAndQuery) throws IOException {
+        String html = http.text(Request.get(ORIGIN + pathAndQuery).header("User-Agent", webClient.userAgent())
+                .header("Accept-Language", "en-US,en;q=0.9").build());
+        Matcher matcher = INITIAL_DATA.matcher(html);
+        if (!matcher.find()) {
+            throw new IOException("No ytInitialData on " + pathAndQuery);
+        }
+        return Json.parsePrefix(html, matcher.end());
+    }
+
+    private JsonNode webPost(String endpoint, Map<String, Object> fields) throws IOException {
+        String visitor = visitorData();
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("context", context(webClient, visitor));
+        body.putAll(fields);
+        return post(endpoint, webClient, visitor, body);
     }
 
     /**
