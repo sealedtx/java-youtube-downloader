@@ -6,7 +6,7 @@
 
     <groupId>com.github.ikiulian</groupId>
     <artifactId>java-youtube-downloader</artifactId>
-    <version>3.3.1</version>
+    <version>4.0.0-SNAPSHOT</version>
 
     <name>Java youtube video downloader</name>
     <description>Java parser for retrieving youtube video meta info</description>
@@ -19,64 +19,90 @@
         </license>
     </licenses>
 
+    <properties>
+        <maven.compiler.release>11</maven.compiler.release>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <!-- tests tagged "live" call real YouTube; they run only with -Plive -->
+        <test.excludedGroups>live</test.excludedGroups>
+    </properties>
 
     <build>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <source>1.8</source>
-                    <target>1.8</target>
-                </configuration>
+                <version>3.16.0</version>
             </plugin>
 
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>2.22.0</version>
+                <version>3.6.1</version>
+                <configuration>
+                    <excludedGroups>${test.excludedGroups}</excludedGroups>
+                </configuration>
             </plugin>
-
         </plugins>
     </build>
 
+    <profiles>
+        <profile>
+            <id>live</id>
+            <properties>
+                <test.excludedGroups/>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <groups>live</groups>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+
     <dependencies>
 
-        <!-- test -->
-        <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter-engine</artifactId>
-            <version>5.3.2</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.mockito</groupId>
-            <artifactId>mockito-core</artifactId>
-            <version>2.23.4</version>
-            <scope>test</scope>
-        </dependency>
-
-        <!-- json -->
+        <!-- json (replaced in 4.0 phase 1) -->
         <dependency>
             <groupId>com.alibaba</groupId>
             <artifactId>fastjson</artifactId>
             <version>1.2.83</version>
         </dependency>
 
-        <!-- logging -->
+        <!-- logging: API only, the application picks the backend -->
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
-            <version>2.0.9</version>
+            <version>2.0.20</version>
         </dependency>
+
+        <!-- test -->
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>5.14.4</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-core</artifactId>
+            <version>5.24.0</version>
+            <scope>test</scope>
+        </dependency>
+
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
-            <version>1.5.13</version>
+            <version>1.5.38</version>
+            <scope>test</scope>
         </dependency>
 
     </dependencies>
-
 
 </project>

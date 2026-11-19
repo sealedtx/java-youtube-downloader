@@ -7,12 +7,14 @@ import java.util.List;
 import com.github.kiulian.downloader.downloader.request.RequestPlaylistInfo;
 import com.github.kiulian.downloader.downloader.response.Response;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import com.github.kiulian.downloader.model.playlist.PlaylistDetails;
 import com.github.kiulian.downloader.model.playlist.PlaylistVideoDetails;
 import com.github.kiulian.downloader.model.playlist.PlaylistInfo;
 
+@Tag("live")
 @DisplayName("Tests extracting metadata from youtube playlists")
 public class YoutubePlaylistExtractor_Tests extends YoutubePlaylistTest {
 

@@ -20,6 +20,7 @@ import com.github.kiulian.downloader.model.videos.VideoInfo;
 import com.github.kiulian.downloader.model.videos.formats.Format;
 import org.junit.jupiter.api.Test;
 
+@Tag("live")
 public class YoutubeDownloadSpeed_Tests extends TestUtils {
     private static final File outDir = new File("videos");
 

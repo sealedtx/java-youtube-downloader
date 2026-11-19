@@ -4,10 +4,12 @@ import com.github.kiulian.downloader.downloader.request.RequestChannelUploads;
 import com.github.kiulian.downloader.downloader.response.Response;
 import com.github.kiulian.downloader.model.playlist.PlaylistInfo;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+@Tag("live")
 @DisplayName("Tests the \"getChannelUploads\" method")
 public class YoutubeChannelUploads_Tests {
 

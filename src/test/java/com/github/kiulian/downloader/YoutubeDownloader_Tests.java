@@ -12,6 +12,7 @@ import com.github.kiulian.downloader.model.videos.formats.Format;
 import com.github.kiulian.downloader.model.subtitles.SubtitlesInfo;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
@@ -26,6 +27,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
+@Tag("live")
 @DisplayName("Tests downloading youtube videos")
 class YoutubeDownloader_Tests {
 
