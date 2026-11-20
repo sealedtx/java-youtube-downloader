@@ -64,13 +64,22 @@ class VideoInfoFixtureTest {
     }
 
     @Test
+    void madeForKidsVideoWithoutAChallengeSolver() {
+        VideoInfo video = yt.videoInfo(Corpus.MADE_FOR_KIDS);
+
+        assertEquals("android_sdkless", video.client());
+        assertTrue(video.formats().size() >= 10, video.formats().size() + " formats");
+    }
+
+    @Test
     void privateVideoIsUnavailableWithEveryAttempt() {
         VideoUnavailableException error = assertThrows(VideoUnavailableException.class, () -> yt.videoInfo(Corpus.PRIVATE));
 
-        assertEquals("Please sign in", error.reason());
-        assertEquals(3, error.attempts().size());
-        assertTrue(error.attempts().get(2).startsWith("tv_samsung: skipped, needs a challenge solver"));
-        assertEquals(Arrays.asList("VISIONOS:" + Corpus.PRIVATE, "ANDROID_VR:" + Corpus.PRIVATE), youtube.playerCalls());
+        assertEquals("This video is private", error.reason());
+        assertEquals(4, error.attempts().size());
+        assertTrue(error.attempts().get(3).startsWith("tv_samsung: skipped, needs a challenge solver"));
+        assertEquals(Arrays.asList("VISIONOS:" + Corpus.PRIVATE, "ANDROID_VR:" + Corpus.PRIVATE, "ANDROID:" + Corpus.PRIVATE),
+                youtube.playerCalls());
     }
 
     @Test

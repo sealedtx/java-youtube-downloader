@@ -130,14 +130,12 @@ class LiveTest {
                 }),
                 VideoCase.unavailable("private video", Corpus.PRIVATE),
                 VideoCase.unavailable("missing video", Corpus.MISSING),
-                SOLVER != null
-                        ? new VideoCase("made for kids (via tv_samsung and the JS solver)", Corpus.MADE_FOR_KIDS, v -> {
-                            assertEquals("tv_samsung", v.client());
-                            Format audio = v.formats().bestAudio().get();
-                            String range = range(audio, ClientProfiles.TV_SAMSUNG.userAgent(), 0, 65_535);
-                            assertTrue(range.startsWith("OK"), "first 64 KB after the ad wait: " + range);
-                        })
-                        : VideoCase.knownLimitation("made for kids (needs Node.js 22+ for tv_samsung)", Corpus.MADE_FOR_KIDS)
+                new VideoCase("made for kids", Corpus.MADE_FOR_KIDS, v -> {
+                    String userAgent = ClientProfiles.defaults().stream().filter(p -> p.name().equals(v.client()))
+                            .findFirst().get().userAgent();
+                    String range = range(v.formats().bestAudio().get(), userAgent, 0, 65_535);
+                    assertTrue(range.startsWith("OK"), "first 64 KB via " + v.client() + ": " + range);
+                })
         );
     }
 
