@@ -14,8 +14,6 @@ Client profiles are plain data, so when YouTube blocks one you can update it you
 ([Terms of Service - II. Prohibitions](https://developers.google.com/youtube/terms/api-services-terms-of-service)).
 Downloading videos may violate copyrights. This project is for educational purposes only; do not use it to violate any laws.
 
-Upgrading from 3.x? See [MIGRATION.md](MIGRATION.md).
-
 ## What works
 
 | Feature | Status | Notes |
@@ -29,10 +27,6 @@ Upgrading from 3.x? See [MIGRATION.md](MIGRATION.md).
 | Age-restricted videos | with cookies and a JS solver | see [Logged-in requests](#logged-in-requests-cookies) |
 | Machine-translated subtitles | not working | YouTube answers HTTP 429 since 2026-11, also when logged in |
 | Formats of the web client | not supported | the web client gets SABR streaming only |
-
-Networks that enforce YouTube's Restricted Mode (common in company networks: `www.youtube.com` resolves to
-`restrictmoderate.youtube.com`) block age-restricted videos for every client; YouTube then answers
-"This video is restricted. Please check the Google Workspace administrator and/or the network administrator restrictions."
 
 ## Install
 
@@ -76,7 +70,7 @@ Format audio = video.formats().bestAudio().orElseThrow();
 Path file = yt.download(audio, Paths.get("music", FileNames.of(video.details().title(), audio)));
 ```
 
-`YoutubeDownloader` is thread-safe; create one and reuse it. Errors are unchecked `YoutubeException`s.
+`YoutubeDownloader` is thread-safe; create one and reuse it. `YoutubeException` exceptions are unchecked .
 
 ## Video info
 
@@ -109,10 +103,10 @@ f.itag(); f.mimeType(); f.codecs(); f.extension(); f.width(); f.height(); f.fps(
 f.bitrate(); f.contentLength(); f.audioTrackName(); f.isDefaultAudioTrack(); f.url();
 ```
 
-Most high-quality formats hold video *or* audio. Combine them with any muxing tool (for example ffmpeg) if you
-need one file; the library does not mux.
+**Note**: This library does not mux, most high-quality formats hold video *or* audio. 
+Combine them with any muxing tool (for example `ffmpeg`) if you need one file.
 
-Format URLs expire after some hours; fetch the video info again then.
+Format URLs expire after some hours.
 
 ## Download
 
@@ -305,5 +299,4 @@ and for the JS challenges, provide your own `HttpTransport` (for example OkHttp)
 
 ## Development
 
-See [CONTRIBUTING.md](CONTRIBUTING.md): offline tests (`mvn test`), live checks against YouTube
-(`mvn test -Plive`), recording new fixtures (`mvn test -Precord`), and what to do when YouTube changes something.
+See [CONTRIBUTING.md](docs/CONTRIBUTING.md):
