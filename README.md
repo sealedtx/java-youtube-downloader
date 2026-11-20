@@ -3,366 +3,40 @@ java-youtube-downloader
 
 [![](https://jitpack.io/v/sealedtx/java-youtube-downloader.svg)](https://jitpack.io/#sealedtx/java-youtube-downloader)
 
-Simple java parser for retrieving youtube video metadata.
+Java library to get YouTube video metadata, formats, playlists, channel uploads, search results and subtitles, and
+to download videos and audio. Java 11+, no dependencies besides `slf4j-api`.
 
-Library is **not stable**, because Youtube often changes web structure of its pages. I don't use this library regularly to find the errors. Thats why errors are fixed as soon as someone finds it and opens an issue. Feel free to report an error or sumbit a PR.
+YouTube changes its internals often. The library is built to cope: it tries several app identities ("client
+profiles") in order, skips what it cannot read instead of failing, and tells you why (`warnings()`, `attempts()`).
+Client profiles are plain data, so when YouTube blocks one you can update it yourself without waiting for a release.
 
-**WARNING**: Youtube API does not support a video download. In fact, it is prohibited - [Terms of Service - II. Prohibitions](https://developers.google.com/youtube/terms/api-services-terms-of-service).
-<br>**WARNING**: Downloading videos may violate copyrights!
-<br><br>This project is only for educational purposes. I urge not to use this project to violate any laws.
+**WARNING**: The YouTube terms of service do not allow downloading videos
+([Terms of Service - II. Prohibitions](https://developers.google.com/youtube/terms/api-services-terms-of-service)).
+Downloading videos may violate copyrights. This project is for educational purposes only; do not use it to violate any laws.
 
-Usage
--------
+Upgrading from 3.x? See [MIGRATION.md](MIGRATION.md).
 
-### Configuration
-```java
-// init downloader with default config
-YoutubeDownloader downloader = new YoutubeDownloader();
-// or with custom config
-Config config = new Config.Builder()
-    .executorService(executorService) // for async requests, default Executors.newCachedThreadPool()
-    .maxRetries(1) // retry on failure, default 0
-    .header("Accept-language", "en-US,en;") // extra request header
-    .proxy("192.168.0.1", 2005)
-    .proxyCredentialsManager(proxyCredentials) // default ProxyCredentialsImpl
-    .proxy("192.168.0.1", 2005, "login", "pass")
-    .build();
-YoutubeDownloader downloader = new YoutubeDownloader(config);
+## What works
 
-// or configure after init
-Config config = downloader.getConfig();
-config.setMaxRetries(0);
-```
+| Feature | Status | Notes |
+|---|---|---|
+| Video info: metadata, formats, subtitle tracks | works | up to 2160p; live streams give an HLS manifest |
+| Download (file or stream) | works | chunked range requests, resume after broken connections, progress, cancel |
+| Playlists, channel uploads | works | lazy paging; channel by id, `@handle`, `/c/`, `/user/` URL |
+| Search | works | filters, sort, pages, shorts, spelling correction |
+| Subtitles | works | VTT, SRT, TTML, JSON3, SRV1-3 |
+| "Made for kids" videos | with a JS solver | needs Node.js 22+, see [JS challenges](#js-challenges) |
+| Age-restricted videos | with cookies and a JS solver | see [Logged-in requests](#logged-in-requests-cookies) |
+| Machine-translated subtitles | not working | YouTube answers HTTP 429 since 2026-11, also when logged in |
+| Formats of the web client | not supported | the web client gets SABR streaming only |
 
-### Request
-```java
-// each request accepts optional params that will override global configuration
-Request request = new Request(...)
-        .maxRetries(...) 
-        .proxy(...) 
-        .header(...)
-        .callback(...) // add callback for async processing
-        .async(); // make request async
-```
-**NOTE:**
+Networks that enforce YouTube's Restricted Mode (common in company networks: `www.youtube.com` resolves to
+`restrictmoderate.youtube.com`) block age-restricted videos for every client; YouTube then answers
+"This video is restricted. Please check the Google Workspace administrator and/or the network administrator restrictions."
 
-At present because youtube is seemingly making some changes to it's APIS, requests made to certain clients might fail.
-That's why, in case a request fails, with this one can choose to opt for a different client if the current one is broken. This can either be a registered client in Clients , or a custom made one if it has not been added yet to the registered ones. Any methods that use innertube have been updated to use clients specified in the corresponding request. At present, those include requests for video info, search continuation, and one for playlists. 
+## Install
 
-Using one of the registered clients is as simple as:
-```java
-// each request accepts optional params that will override global configuration
-Request request = new Request(...)
-        .clientType(ClientType.MWEB); // <---- put here any existing client or implement your own if it is not present
-```
-
-```java
-// or overwrite default highest priority client and it will be used by default in all requests
-Clients.setHighestPriorityClientType(ClientType.MWEB);
-```
-
-Currently highest priority client is set to `ANDROID_VR`. It was chooses by manual test done by @iexavl
-
-More information here: https://github.com/sealedtx/java-youtube-downloader/pull/132
-
-### Response
-```java
-Response<T> response = downloader.get...(request)
-
-// get response status one of [downloading, completed, canceled, error]
-ResponseStatus status = response.status();
-
-// get reponse data 
-// NOTE: will block current thread until completion if request is async        
-T data = response.data(); 
-// or get with timeout, may throw TimeoutException
-T data = response.data(1, TimeUnit.SECONDS);
-
-// cancel if request is async
-boolean canceled = response.cancel();        
-
-// get response error if request finished exceptionally
-// NOTE: will block current thread until completion if request is async        
-Throwable error = response.error();
-
-// check if request finished successfully
-// NOTE: will block current thread until completion if request is async        
-boolean ok = response.ok();
-```
-
-### VideoInfo
-```java
-String videoId = "abc12345"; // for url https://www.youtube.com/watch?v=abc12345
-
-// sync parsing
-RequestVideoInfo request = new RequestVideoInfo(videoId);
-Response<VideoInfo> response = downloader.getVideoInfo(request);
-VideoInfo video = response.data();
-
-// async parsing
-RequestVideoInfo request = new RequestVideoInfo(videoId)
-        .callback(new YoutubeCallback<VideoInfo>() {
-            @Override
-            public void onFinished(VideoInfo videoInfo) {
-                System.out.println("Finished parsing");
-            }
-    
-            @Override
-            public void onError(Throwable throwable) {
-                System.out.println("Error: " + throwable.getMessage());
-            }
-        })
-        .async();
-Response<VideoInfo> response = downloader.getVideoInfo(request);
-VideoInfo video = response.data(); // will block thread
-
-// video details
-VideoDetails details = video.details();
-System.out.println(details.title());
-System.out.println(details.viewCount());
-details.thumbnails().forEach(image -> System.out.println("Thumbnail: " + image));
-
-// HLS url only for live videos and streams
-if (video.details().isLive()) {
-    System.out.println("Live Stream HLS URL: " + video.details().liveUrl());
-}
-        
-// get videos formats only with audio
-List<VideoWithAudioFormat> videoWithAudioFormats = video.videoWithAudioFormats();
-videoWithAudioFormats.forEach(it -> {
-    System.out.println(it.audioQuality() + ", " + it.videoQuality() + " : " + it.url());
-});
-
-// get all videos formats (may contain better quality but without audio) 
-List<VideoFormat> videoFormats = video.videoFormats();
-videoFormats.forEach(it -> {
-    System.out.println(it.videoQuality() + " : " + it.url());
-});
-
-// get audio formats
-List<AudioFormat> audioFormats = video.audioFormats();
-audioFormats.forEach(it -> {
-    System.out.println(it.audioQuality() + " : " + it.url());
-});
-
-// get best format
-video.bestVideoWithAudioFormat();
-video.bestVideoFormat();
-video.bestAudioFormat();
-
-// filtering formats
-List<Format> formats = video.findFormats(new Filter<Format>() {
-    @Override
-    public boolean test(Format format) {
-        return format.extension() == Extension.WEBM;
-    }
-});
-
-// itags can be found here - https://gist.github.com/sidneys/7095afe4da4ae58694d128b1034e01e2
-Format formatByItag = video.findFormatByItag(18); // return null if not found
-if (formatByItag != null) {
-    System.out.println(formatByItag.url());
-}
-```
-
-### Downloading video
-```java
-File outputDir = new File("my_videos");
-Format format = videoFormats.get(0);
-
-// sync downloading
-RequestVideoFileDownload request = new RequestVideoFileDownload(format)
-    // optional params    
-    .saveTo(outputDir) // by default "videos" directory
-    .renameTo("video") // by default file name will be same as video title on youtube
-    .overwriteIfExists(true); // if false and file with such name already exits sufix will be added video(1).mp4
-Response<File> response = downloader.downloadVideoFile(request);
-File data = response.data();
-
-// async downloading with callback
-RequestVideoFileDownload request = new RequestVideoFileDownload(format)
-    .callback(new YoutubeProgressCallback<File>() {
-        @Override
-        public void onDownloading(int progress) {
-            System.out.printf("Downloaded %d%%\n", progress);
-        }
-    
-        @Override
-        public void onFinished(File videoInfo) {
-            System.out.println("Finished file: " + videoInfo);
-        }
-    
-        @Override
-        public void onError(Throwable throwable) {
-            System.out.println("Error: " + throwable.getLocalizedMessage());
-        }
-    })
-    .async();
-Response<File> response = downloader.downloadVideoFile(request);
-File data = response.data(); // will block current thread
-
-// async downloading without callback
-RequestVideoFileDownload request = new RequestVideoFileDownload(format).async();
-Response<File> response = downloader.downloadVideoFile(request);
-File data = response.data(20, TimeUnit.SECONDS); // will block current thread and may throw TimeoutExeption
-
-// download in-memory to OutputStream
-OutputStream os = new ByteArrayOutputStream();
-RequestVideoStreamDownload request = new RequestVideoStreamDownload(format, os);
-Response<Void> response = downloader.downloadVideoStream(request);
-```
-
-### Subtitles
-```java
-// you can get subtitles from video captions if you have already parsed video info
-List<SubtitlesInfo> subtitlesInfo = video.subtitles(); // NOTE: includes auto-generated
-// if you don't need video info, but just subtitles make this request instead
-Response<List<SubtitlesInfo>> response = downloader.getSubtitlesInfo(new RequestSubtitlesInfo(videoId)); // NOTE: does not include auto-generated
-List<SubtitlesInfo> subtitlesInfo = response.data();
-
-for (SubtitlesInfo info : subtitles) {
-    RequestSubtitlesDownload request = new RequestSubtitlesDownload(info)
-            // optional
-            .formatTo(Extension.JSON3)
-            .translateTo("uk");
-    // sync download
-    Response<String> response = downloader.downloadSubtitle(request);
-    String subtitlesString = response.data();
-
-    // async download
-    RequestSubtitlesDownload request = new RequestSubtitlesDownload(info)
-            .callback(...) // optional
-            .async();
-    Response<String> response = downloader.downloadSubtitle(request);
-    String subtitlesString = response.data(); // will block current thread
-
-    // to download using external download manager
-    String downloadUrl = request.getDownloadUrl();
-}
-```
-
-### Playlists
-```java
-String playlistId = "abc12345"; // for url https://www.youtube.com/playlist?list=abc12345
-RequestPlaylistInfo request = new RequestPlaylistInfo(playlistId);
-Response<PlaylistInfo> response = downloader.getPlaylistInfo(request);
-PlaylistInfo playlistInfo = response.data();
-
-// playlist details
-PlaylistDetails details = playlistInfo.details();
-System.out.println(details.title());
-System.out.println(details.videoCount());
-
-// get video details
-PlaylistVideoDetails videoDetails = playlistInfo.videos().get(0);
-System.out.println(videoDetails.videoId());
-System.out.println(videoDetails.title());
-System.out.println(videoDetails.index());
-```
-
-### Channel uploads
-```java
-String channelId = "abc12345";  // for url https://www.youtube.com/channel/abc12345
-// or 
-String channelId = "someName";  // for url https://www.youtube.com/c/someName
-RequestChannelUploads request = new RequestChannelUploads(channelId);
-Response<PlaylistInfo> response = downloader.getChannelUploads(request);
-PlaylistInfo playlistInfo = response.data();
-```
-
-### Search
-```java
-RequestSearchResult request = new RequestSearchResult("search query")
-    // filters
-    .type(TypeField.VIDEO)                 // Videos only
-    .format(FormatField._3D,
-        FormatField.HD)                    // 3D HD videos
-    .match(FeatureField.SUBTITLES)         // with subtitles
-    .during(DurationField.OVER_20_MINUTES) // more than 20 minutes videos
-    .uploadedThis(UploadDateField.MONTH)   // uploaded this month
-
-    // other parameters
-    .forceExactQuery(true)                 // avoid auto correction
-    .sortBy(SortField.VIEW_COUNT);         // results sorted by view count
-// or
-RequestSearchResult request = new RequestSearchResult("search query")
-    .filter(
-        TypeField.VIDEO,
-        FormatField.HD,
-        (...)
-        UploadDateField.MONTH);
-
-SearchResult result = downloader.search(request).data();
-
-// retrieve next result (20 items max per continuation)
-if (result.hasContinuation()) {
-    RequestSearchContinuation nextRequest = new RequestSearchContinuation(result);
-    SearchResult continuation = downloader.searchContinuation(nextRequest).data();
-}
-
-// a query is suggested, get its result
-if (result.suggestion() != null) {
-    System.out.println(result.suggestion().query()); // suggested query
-    RequestSearchable suggestedRequest = new RequestSearchable(result.suggestion());
-    SearchResult suggestedResult = downloader.search(suggestedRequest).data();
-}
-
-// query refinements
-if (result.refinements() != null) {
-    System.out.println(result.refinements().get(0).query()); // refinement query
-    RequestSearchable refinedRequest = new RequestSearchable(result.refinements().get(0));
-    SearchResult refinedResult = downloader.search(refinedRequest).data();
-}
-
-// the query has been auto corrected, force original query
-if (result.isAutoCorrected()) {
-	System.out.println(result.autoCorrectedQuery()); // corrected query
-	SearchResult forcedResult = downloader.search(request.forceExactQuery(true)).data();    
-}
-
-// details
-System.out.println(result.estimatedResults());
-
-// items, 20 max per result (+ possible shelves on first result)
-List<SearchResultItem> items = result.items();
-List<SearchResultVideoDetails> videos = result.videos();
-List<SearchResultChannelDetails> channels = result.channels();
-List<SearchResultPlaylistDetails> playlists = result.playlists();
-List<SearchResultShelf> shelves = result.shelves();
-
-// item cast
-SearchResultItem item = items.get(0);
-switch (item.type()) {
-case VIDEO:
-    System.out.println(item.asVideo().description());
-    break;
-case SHELF:
-    for (SearchResultVideoDetails video : item.asShelf().videos()) {
-        System.out.println(video.author());
-    }
-    break;
-(...)
-}
-
-// Base 64 (optional) : use another base 64 encoder for search parameters
-
-// Classic JDK and Android API >= 26
-Base64Encoder.setInstance(bytes -> Base64.getUrlEncoder().encodeToString(bytes));
-
-// Android API < 26
-Base64Encoder.setInstance(new Base64Encoder() {
-    @Override
-    public String encodeToString(byte[] bytes) {
-        return Base64.encodeToString(bytes, Base64.URL_SAFE);
-    }
-};
-```
-
-Include
--------
-
-### Maven
-
+Maven:
 ```xml
 <repositories>
   <repository>
@@ -370,58 +44,266 @@ Include
     <url>https://jitpack.io</url>
   </repository>
 </repositories>
-```
-```xml
+
 <dependency>
   <groupId>com.github.sealedtx</groupId>
   <artifactId>java-youtube-downloader</artifactId>
-  <version>3.3.1</version>
+  <version>4.0.0-rc1</version>
 </dependency>
 ```
 
-### Gradle
-
-```gradle
-dependencyResolutionManagement {
-	repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
-	repositories {
-		mavenCentral()
-		maven { url 'https://jitpack.io' }
-	}
-}
-```
-```gradleA
-dependencies {
-  implementation 'com.github.sealedtx:java-youtube-downloader:3.3.1'
-}
-```
-### Android
-
-```gradle
-android {
-  ...
-  compileOptions {
-    sourceCompatibility JavaVersion.VERSION_1_8
-    targetCompatibility JavaVersion.VERSION_1_8
-  }
-  // For Kotlin projects
-  kotlinOptions {
-    jvmTarget = "1.8"
-  }
-}
-```
-
-To publish the library to a local Maven repository for test purposes run:
--------
-
 Gradle:
-```bash
-./gradlew publishToMavenLocal -x test
+```gradle
+repositories {
+    maven { url 'https://jitpack.io' }
+}
+dependencies {
+    implementation 'com.github.sealedtx:java-youtube-downloader:4.0.0-rc1'
+}
 ```
 
-Maven:
-```bash
-mvn install -DskipTests
+The library logs through SLF4J; add any SLF4J backend if you want its logs.
+
+## Quick start
+
+```java
+YoutubeDownloader yt = YoutubeDownloader.create();
+
+VideoInfo video = yt.videoInfo("https://youtu.be/jNQXAC9IVRw");    // an id or any YouTube video URL
+System.out.println(video.details().title());                       // Me at the zoo
+
+Format audio = video.formats().bestAudio().orElseThrow();
+Path file = yt.download(audio, Paths.get("music", FileNames.of(video.details().title(), audio)));
 ```
 
-`-x test` in Gradle and `-DskipTests` in Maven is used to bypass the outdated failing tests.
+`YoutubeDownloader` is thread-safe; create one and reuse it. Errors are unchecked `YoutubeException`s.
+
+## Video info
+
+```java
+VideoInfo video = yt.videoInfo("jNQXAC9IVRw");
+
+VideoDetails details = video.details();
+details.title(); details.author(); details.channelId(); details.lengthSeconds(); details.viewCount();
+details.description(); details.keywords(); details.thumbnails(); details.isLive(); details.isLiveContent();
+
+video.hlsManifestUrl();   // live streams
+video.subtitles();        // subtitle tracks, see below
+video.client();           // which client profile answered
+video.warnings();         // what was skipped and why, for example "skipped 14 formats without URL (SABR only)"
+```
+
+Formats:
+```java
+Formats formats = video.formats();
+
+formats.bestVideo();      // highest resolution, then frame rate, then bitrate (Optional)
+formats.bestAudio();      // main audio track first, without volume compression, then bitrate
+formats.bestMuxed();      // video and audio in one file; YouTube offers few of these, often only 360p
+formats.videoOnly(); formats.audioOnly(); formats.muxed();
+formats.byItag(140);
+formats.filter(f -> f.extension() == Extension.WEBM && f.height() >= 1080);
+
+Format f = formats.bestVideo().orElseThrow();
+f.itag(); f.mimeType(); f.codecs(); f.extension(); f.width(); f.height(); f.fps(); f.qualityLabel();
+f.bitrate(); f.contentLength(); f.audioTrackName(); f.isDefaultAudioTrack(); f.url();
+```
+
+Most high-quality formats hold video *or* audio. Combine them with any muxing tool (for example ffmpeg) if you
+need one file; the library does not mux.
+
+Format URLs expire after some hours; fetch the video info again then.
+
+## Download
+
+```java
+yt.download(format, Paths.get("video.mp4"));
+
+yt.download(format, Paths.get("video.mp4"), DownloadOptions.defaults()
+        .overwrite(true)                         // default: fail if the file exists
+        .chunkSize(5 * 1024 * 1024)               // default 10 MB per range request
+        .onProgress(p -> System.out.println(p.percent() + "% " + p.bytesPerSecond() + " B/s")));
+
+yt.download(format, outputStream, DownloadOptions.defaults());   // the stream is not closed
+
+CompletableFuture<Path> future = yt.downloadAsync(format, file, DownloadOptions.defaults());
+future.cancel(true);                             // stops the download
+```
+
+Data goes to `<file>.part` and is moved into place when complete, so a failed or cancelled download never leaves a
+broken file. After a broken connection the download continues at the first missing byte.
+
+## Async
+
+```java
+yt.videoInfoAsync(id).thenAccept(video -> ...);
+```
+Async calls run on a daemon thread pool owned by the downloader (`close()` stops it), or on your executor:
+`YoutubeDownloader.builder().executor(myExecutor)`.
+
+## Playlists and channels
+
+```java
+Playlist playlist = yt.playlist("https://www.youtube.com/playlist?list=PL2aBZuCeDwlRbJhDIkKXilZRz9ur4VVAA");
+playlist.details().title(); playlist.details().author(); playlist.details().videoCount();
+
+for (PlaylistVideo v : playlist.videos()) {      // pages are loaded while you iterate
+    System.out.println(v.index() + ". " + v.title() + " (" + v.lengthSeconds() + " s)");
+}
+playlist.stream().limit(50).forEach(...);        // loads only the first page
+List<PlaylistVideo> all = playlist.allVideos();
+
+Playlist uploads = yt.channelUploads("@NASA");   // also "UC...", ".../channel/UC...", ".../c/NASA", ".../user/..."
+```
+
+Get formats of a playlist video with `yt.videoInfo(v.videoId())`.
+
+## Search
+
+```java
+SearchResult result = yt.search("nasa artemis");
+result.videos();         // videos and shorts (isShort()), with author, channel, length, views
+result.channels();       // with handle and subscriber count
+result.playlists();
+result.estimatedResults();
+
+SearchResult next = result.nextPage();            // check hasNextPage() first
+
+yt.search(SearchQuery.of("nasa")
+        .filter(TypeField.VIDEO, DurationField.UNDER_4_MINUTES, UploadDateField.WEEK)
+        .sortBy(SortField.VIEW_COUNT));
+
+SearchResult typo = yt.search("rick astly never gona give");
+typo.correctedQuery();                           // "rick astley never gonna give"
+yt.search(typo.query().exact(true));             // search exactly the given text
+```
+
+Filters: `TypeField`, `UploadDateField`, `DurationField`, `FeatureField`, `FormatField`; sort: `SortField`.
+
+## Subtitles
+
+```java
+SubtitleTrack track = video.subtitles().get(0);
+track.languageCode(); track.name(); track.isAutoGenerated(); track.isTranslatable();
+
+String vtt = yt.subtitles(track, SubtitleFormat.VTT);       // also SRT, TTML, JSON3, SRV1, SRV2, SRV3
+String url = track.url(SubtitleFormat.SRT);                  // for another download tool
+```
+`yt.subtitles(track, format, "uk")` asks YouTube for a machine translation; YouTube currently answers it with HTTP 429.
+
+## Errors
+
+| Exception | Meaning | What to do |
+|---|---|---|
+| `VideoUnavailableException` | removed, private, region-locked, age-restricted; `reason()` is YouTube's text | nothing, or cookies for age-restricted videos |
+| `PlaylistUnavailableException` | the playlist does not exist or is private | |
+| `ChannelUnavailableException` | unknown channel | check the handle or URL |
+| `BotCheckException` | "Sign in to confirm you're not a bot" for every client | update the library or the client profiles, wait, or use another network |
+| `HttpException` | an HTTP error after the retries; `status()` | |
+| `DownloadException` | download failed, URL expired, file exists, size wrong | get the video info again for expired URLs |
+| `YoutubeException` | base class; anything else, such as network errors | |
+
+Every exception has `attempts()`: one line per client that was tried and why it failed, for example
+`[visionos: LOGIN_REQUIRED (Sign in to confirm your age), android_vr: ...]`. Please include it in bug reports.
+
+## Configuration
+
+```java
+YoutubeDownloader yt = YoutubeDownloader.builder()
+        .proxy("127.0.0.1", 8080)                // or proxy(host, port, user, password)
+        .retries(3)                              // I/O errors, timeouts, 429 and 5xx; default 2
+        .clients(List.of(ClientProfiles.VISIONOS, ClientProfiles.ANDROID_VR))
+        .challengeSolver(EjsSolver.node())       // see JS challenges
+        .cookies(YoutubeCookies.fromNetscapeFile(Paths.get("cookies.txt")))
+        .executor(myExecutor)
+        .build();
+
+YoutubeDownloader other = yt.toBuilder().proxy("10.0.0.1", 3128).build();   // a variant
+```
+
+Proxy credentials are sent to the proxy only and never set globally. For Basic auth with `https` through a proxy
+the JDK needs `-Djdk.http.auth.tunneling.disabledSchemes=` (empty), or use your own transport.
+
+### Client profiles
+
+A client profile is one YouTube app identity: name, version, user agent and device fields. Default order:
+`visionos`, `android_vr`, then `tv_samsung` (only with a JS solver). When YouTube starts to reject a profile
+(bot check, HTTP 400), compare with [yt-dlp's clients](https://github.com/yt-dlp/yt-dlp/blob/master/yt_dlp/extractor/youtube/_base.py)
+and update it yourself:
+
+```java
+ClientProfile visionos = ClientProfiles.VISIONOS.toBuilder().version("1.03").build();
+YoutubeDownloader yt = YoutubeDownloader.builder().clients(List.of(visionos, ClientProfiles.ANDROID_VR)).build();
+```
+
+### Your own HTTP stack
+
+Implement `HttpTransport` (one method) to use OkHttp, custom proxies or logging. The library handles retries and
+status codes on top of it. A sketch for OkHttp:
+
+```java
+HttpTransport okhttp = request -> {
+    Request.Builder b = new Request.Builder().url(request.url());
+    request.headers().forEach(b::header);
+    byte[] body = request.body();
+    b.method(request.method(), body == null ? null : RequestBody.create(body, null));   // OkHttp 4
+    Response r = client.newCall(b.build()).execute();
+    return new HttpTransport.Response() {
+        public int status() { return r.code(); }
+        public String header(String name) { return r.header(name); }
+        public InputStream body() { return r.body().byteStream(); }
+        public void close() { r.close(); }
+    };
+};
+YoutubeDownloader yt = YoutubeDownloader.builder().transport(okhttp).build();
+```
+
+The default `UrlConnectionTransport` has a 10 s connect and a 30 s read timeout
+(`UrlConnectionTransport.builder().readTimeout(...)` to change them) and sends only `http`/`https` requests.
+
+## JS challenges
+
+Some clients get stream URLs protected by challenges that only YouTube's own player JavaScript can solve. The
+library runs [yt-dlp's EJS scripts](https://github.com/yt-dlp/ejs) (bundled, hash-checked, Unlicense) in an
+external JavaScript runtime:
+
+```java
+EjsSolver solver = EjsSolver.detect();            // Node.js 22+ on the PATH, or null
+YoutubeDownloader yt = YoutubeDownloader.builder().challengeSolver(solver).build();
+```
+
+- `EjsSolver.node()` runs `node --permission -`: YouTube's code gets no file system or process access.
+- `EjsSolver.command(List.of("deno", "run", "--no-remote", "--no-npm", "--no-config", "-"))` for another runtime.
+- This enables the `tv_samsung` profile: a second, independent way to get formats, and "made for kids" videos.
+- Its ciphered URLs work only after the pre-roll ad (a few seconds); `download(...)` waits for that by itself
+  (`Format.availableAtMillis()`).
+- JVM only. On Android implement `ChallengeSolver`, for example with a WebView.
+
+## Logged-in requests (cookies)
+
+Cookies of a logged-in account unlock age-restricted videos. They are sent only to youtube.com and only by
+profiles that support them (`tv_samsung`, `web`), so a JS solver is needed as well:
+
+```java
+YoutubeDownloader yt = YoutubeDownloader.builder()
+        .cookies(YoutubeCookies.fromNetscapeFile(Paths.get("cookies.txt")))   // or fromHeader("a=1; b=2")
+        .challengeSolver(EjsSolver.node())
+        .build();
+```
+
+Export `cookies.txt` with a browser extension (for example "Get cookies.txt LOCALLY") from a private window: log in,
+open `https://www.youtube.com/robots.txt` in a new tab, close the YouTube tab, export, then close the private window
+so the browser does not rotate the cookies.
+
+**Cookies are a password**: whoever has them is logged in as you; keep the file private and never commit it.
+YouTube may block accounts used for automated downloads, so use a secondary account.
+
+## Android
+
+The library works on Android with a recent Android Gradle Plugin (Java 11 bytecode). For proxies with passwords
+and for the JS challenges, provide your own `HttpTransport` (for example OkHttp) and `ChallengeSolver`.
+
+## Development
+
+See [CONTRIBUTING.md](CONTRIBUTING.md): offline tests (`mvn test`), live checks against YouTube
+(`mvn test -Plive`), recording new fixtures (`mvn test -Precord`), and what to do when YouTube changes something.

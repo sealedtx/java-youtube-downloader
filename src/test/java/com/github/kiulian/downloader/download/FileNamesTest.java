@@ -36,8 +36,19 @@ class FileNamesTest {
             title.append("😀");
         }
         String safe = FileNames.safe(title.toString());
-        assertTrue(safe.length() <= 150);
+        assertTrue(safe.getBytes(java.nio.charset.StandardCharsets.UTF_8).length <= 200);
         assertTrue(safe.codePoints().allMatch(c -> c == "😀".codePointAt(0)));
+    }
+
+    @Test
+    void limitsBytesNotCharacters() {
+        StringBuilder title = new StringBuilder();
+        for (int i = 0; i < 150; i++) {
+            title.append('漢'); // 3 bytes each in UTF-8
+        }
+        String safe = FileNames.safe(title.toString());
+        assertTrue(safe.getBytes(java.nio.charset.StandardCharsets.UTF_8).length <= 200, safe.length() + " chars");
+        assertEquals(66, safe.length());
     }
 
     @Test

@@ -99,6 +99,16 @@ class JsClientTest {
         assertEquals(1, playerDownloads.get());
     }
 
+    @Test
+    void anAdWithoutSkipOffsetDoesNotBlockForItsWholeLength() {
+        String longAd = "{\"adPlacements\":[{\"adPlacementRenderer\":{\"config\":{\"adPlacementConfig\":{\"kind\":\"AD_PLACEMENT_KIND_START\"}},"
+                + "\"renderer\":{\"instreamVideoAdRenderer\":{\"playerVars\":\"length_seconds=3600&x=1\"}}}}]}";
+
+        long wait = new PlayerResponse(Json.parse(longAd)).availableAtMillis(1_000_000) - 1_000_000;
+
+        assertEquals(PlayerResponse.MAX_AD_WAIT_MILLIS, wait);
+    }
+
     private VideoExtractor extractor(ChallengeSolver solver) {
         Http http = new Http(youtube, RetryPolicy.NONE);
         return new VideoExtractor(new Innertube(http), ClientProfiles.defaults(), new PlayerScripts(http), solver);

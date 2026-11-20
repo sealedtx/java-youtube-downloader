@@ -29,7 +29,16 @@ public final class PlayerScripts {
         if (current != null && System.currentTimeMillis() - checkedAt < CHECK_INTERVAL_MILLIS) {
             return current;
         }
-        String api = http.text(Request.get(Innertube.ORIGIN + "/iframe_api").header("User-Agent", Innertube.WEB_USER_AGENT).build());
+        String api;
+        try {
+            api = http.text(Request.get(Innertube.ORIGIN + "/iframe_api").header("User-Agent", Innertube.WEB_USER_AGENT).build());
+        } catch (IOException e) {
+            if (current == null) {
+                throw e;
+            }
+            checkedAt = System.currentTimeMillis(); // keep the known player, check again in an hour
+            return current;
+        }
         Matcher id = PLAYER_ID.matcher(api);
         if (!id.find()) {
             throw new IOException("No player id in iframe_api");
