@@ -26,7 +26,13 @@ Downloading videos may violate copyrights. This project is for educational purpo
 | "Made for kids" videos | with a JS solver | needs Node.js 22+, see [JS challenges](#js-challenges) |
 | Age-restricted videos | with cookies and a JS solver | see [Logged-in requests](#logged-in-requests-cookies) |
 | Machine-translated subtitles | not working | YouTube answers HTTP 429 since 2026-11, also when logged in |
-| Formats of the web client | not supported | the web client gets SABR streaming only |
+| Formats of the web client | not supported | the web client gets SABR streaming only (see below) |
+
+**SABR** (Server-side Adaptive Bitrate) is the streaming protocol of YouTube's web player: instead of one
+download URL per format, the player sends its state (buffer, bandwidth) to a single endpoint and the server
+decides which chunks to send, in an undocumented binary format. Such formats come without a URL, so they cannot
+be downloaded with plain requests; the library skips them and says so in `warnings()`. The client profiles it
+uses (`visionos`, `android_vr`, `tv_samsung`) still get plain URLs.
 
 ## Install
 
