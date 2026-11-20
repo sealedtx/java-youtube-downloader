@@ -53,7 +53,7 @@ class VideoExtractorTest {
         FakeYoutube youtube = new FakeYoutube((client, id, call) -> BOT);
 
         BotCheckException error = assertThrows(BotCheckException.class, () -> extractor(youtube).videoInfo(ID));
-        assertEquals(4, error.attempts().size(), error.attempts().toString());
+        assertEquals(5, error.attempts().size(), error.attempts().toString());
     }
 
     @Test
@@ -129,7 +129,7 @@ class VideoExtractorTest {
 
         YoutubeException error = assertThrows(YoutubeException.class, () -> extractor(youtube).videoInfo(ID));
         assertEquals(Arrays.asList("visionos: no status (no reason given)", "android_vr: no status (no reason given)",
-                "tv_samsung: skipped, needs a challenge solver (for example EjsSolver.node())"), error.attempts());
+                "android_sdkless: no status (no reason given)", "tv_samsung: skipped, needs a challenge solver (for example EjsSolver.node())"), error.attempts());
     }
 
     @Test

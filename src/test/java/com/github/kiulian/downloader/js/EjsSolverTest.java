@@ -1,6 +1,7 @@
 package com.github.kiulian.downloader.js;
 
 import com.github.kiulian.downloader.YoutubeDownloader;
+import com.github.kiulian.downloader.client.ClientProfiles;
 import com.github.kiulian.downloader.internal.json.Json;
 import com.github.kiulian.downloader.internal.json.JsonNode;
 import com.github.kiulian.downloader.model.videos.VideoInfo;
@@ -91,7 +92,8 @@ class EjsSolverTest {
 
     @Test
     void madeForKidsVideoThroughTheWholePipeline() {
-        YoutubeDownloader yt = YoutubeDownloader.builder().transport(FakeYoutube.fromFixtures()).challengeSolver(solver).build();
+        YoutubeDownloader yt = YoutubeDownloader.builder().transport(FakeYoutube.fromFixtures()).challengeSolver(solver)
+                .clients(Collections.singletonList(ClientProfiles.TV_SAMSUNG)).build();
 
         VideoInfo video = yt.videoInfo(Corpus.MADE_FOR_KIDS);
 

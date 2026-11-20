@@ -23,7 +23,7 @@ Downloading videos may violate copyrights. This project is for educational purpo
 | Playlists, channel uploads | works | lazy paging; channel by id, `@handle`, `/c/`, `/user/` URL |
 | Search | works | filters, sort, pages, shorts, spelling correction |
 | Subtitles | works | VTT, SRT, TTML, JSON3, SRV1-3 |
-| "Made for kids" videos | with a JS solver | needs Node.js 22+, see [JS challenges](#js-challenges) |
+| "Made for kids" videos | works | via `android_sdkless`; with a JS solver also via `tv_samsung` |
 | Age-restricted videos | with cookies and a JS solver | see [Logged-in requests](#logged-in-requests-cookies) |
 | Machine-translated subtitles | not working | YouTube answers HTTP 429 since 2026-11, also when logged in |
 | Formats of the web client | not supported | the web client gets SABR streaming only (see below) |
@@ -32,7 +32,7 @@ Downloading videos may violate copyrights. This project is for educational purpo
 download URL per format, the player sends its state (buffer, bandwidth) to a single endpoint and the server
 decides which chunks to send, in an undocumented binary format. Such formats come without a URL, so they cannot
 be downloaded with plain requests; the library skips them and says so in `warnings()`. The client profiles it
-uses (`visionos`, `android_vr`, `tv_samsung`) still get plain URLs.
+uses (`visionos`, `android_vr`, `android_sdkless`, `tv_samsung`) still get plain URLs.
 
 ## Install
 
@@ -235,7 +235,7 @@ the JDK needs `-Djdk.http.auth.tunneling.disabledSchemes=` (empty), or use your 
 ### Client profiles
 
 A client profile is one YouTube app identity: name, version, user agent and device fields. Default order:
-`visionos`, `android_vr`, then `tv_samsung` (only with a JS solver). When YouTube starts to reject a profile
+`visionos`, `android_vr`, `android_sdkless`, then `tv_samsung` (only with a JS solver). When YouTube starts to reject a profile
 (bot check, HTTP 400), compare with [yt-dlp's clients](https://github.com/yt-dlp/yt-dlp/blob/master/yt_dlp/extractor/youtube/_base.py)
 and update it yourself:
 
@@ -282,7 +282,7 @@ YoutubeDownloader yt = YoutubeDownloader.builder().challengeSolver(solver).build
 
 - `EjsSolver.node()` runs `node --permission -`: YouTube's code gets no file system or process access.
 - `EjsSolver.command(List.of("deno", "run", "--no-remote", "--no-npm", "--no-config", "-"))` for another runtime.
-- This enables the `tv_samsung` profile: a second, independent way to get formats, and "made for kids" videos.
+- This enables the `tv_samsung` profile: an independent way to get formats that does not depend on the app clients.
 - Its ciphered URLs work only after the pre-roll ad (a few seconds); `download(...)` waits for that by itself
   (`Format.availableAtMillis()`).
 - JVM only. On Android implement `ChallengeSolver`, for example with a WebView.
