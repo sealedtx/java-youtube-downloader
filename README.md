@@ -48,17 +48,25 @@ Maven:
 <dependency>
   <groupId>com.github.sealedtx</groupId>
   <artifactId>java-youtube-downloader</artifactId>
-  <version>4.0.0-rc1</version>
+  <version>4.0.0</version>
 </dependency>
 ```
 
-Gradle:
+Gradle, `settings.gradle`:
 ```gradle
-repositories {
-    maven { url 'https://jitpack.io' }
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    repositories {
+        mavenCentral()
+        maven { url 'https://jitpack.io' }
+    }
 }
+```
+
+`build.gradle`:
+```gradle
 dependencies {
-    implementation 'com.github.sealedtx:java-youtube-downloader:4.0.0-rc1'
+    implementation 'com.github.sealedtx:java-youtube-downloader:4.0.0'
 }
 ```
 

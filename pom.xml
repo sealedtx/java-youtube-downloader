@@ -6,7 +6,7 @@
 
     <groupId>com.github.ikiulian</groupId>
     <artifactId>java-youtube-downloader</artifactId>
-    <version>4.0.0-rc1</version>
+    <version>4.0.0</version>
 
     <name>Java youtube video downloader</name>
     <description>YouTube video info, formats, playlists, search, subtitles and downloads for Java 11+</description>
