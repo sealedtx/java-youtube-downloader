@@ -38,3 +38,6 @@ hs_err_pid*
 .project
 .classpath
 .settings/
+
+# Local working notes
+docs/4.0-plan.md
