@@ -1,96 +1,99 @@
 package com.github.kiulian.downloader.model.search;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.NoSuchElementException;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
-import com.github.kiulian.downloader.model.search.query.*;
+/**
+ * One page of search results (about 20 items). Items inside shelves ("Shorts", "Latest from ...") are listed in
+ * place, in the order YouTube shows them; ads are left out.
+ */
+public final class SearchResult {
 
-public class SearchResult {
-
+    private final SearchQuery query;
+    private final List<SearchItem> items;
     private final long estimatedResults;
-    private final List<SearchResultItem> items;
-    private final QuerySuggestion suggestion;
-    private final QueryRefinementList refinementList;
-    private final String autoCorrectedQuery;
+    private final String correctedQuery;
+    private final List<String> refinements;
+    private final Supplier<SearchResult> nextPage;
 
-
-    public SearchResult(long estimatedResults, List<SearchResultItem> items,
-            Map<QueryElementType, QueryElement> queryElements) {
+    /**
+     * @param nextPage loads the next page, or {@code null} on the last page
+     */
+    public SearchResult(SearchQuery query, List<SearchItem> items, long estimatedResults, String correctedQuery,
+                        List<String> refinements, Supplier<SearchResult> nextPage) {
+        this.query = query;
+        this.items = Collections.unmodifiableList(new ArrayList<>(items));
         this.estimatedResults = estimatedResults;
-        this.items = items;
-        suggestion = (QuerySuggestion) queryElements.get(QueryElementType.SUGGESTION);
-        refinementList = (QueryRefinementList) queryElements.get(QueryElementType.REFINEMENT_LIST);
-        if (queryElements.containsKey(QueryElementType.AUTO_CORRECTION)) {
-            autoCorrectedQuery = ((QueryAutoCorrection) queryElements.get(QueryElementType.AUTO_CORRECTION)).query();
-        } else {
-            autoCorrectedQuery = null;
-        }
+        this.correctedQuery = correctedQuery;
+        this.refinements = Collections.unmodifiableList(new ArrayList<>(refinements));
+        this.nextPage = nextPage;
     }
 
-    public QuerySuggestion suggestion() {
-        return suggestion;
+    public SearchQuery query() {
+        return query;
     }
 
-    public QueryRefinementList refinements() {
-        return refinementList;
+    public List<SearchItem> items() {
+        return items;
     }
 
-    public boolean isAutoCorrected() {
-        return autoCorrectedQuery != null;
+    /** Videos and shorts of this page. */
+    public List<SearchVideo> videos() {
+        return ofType(SearchVideo.class);
     }
 
-    public String autoCorrectedQuery() {
-        return autoCorrectedQuery;
+    public List<SearchChannel> channels() {
+        return ofType(SearchChannel.class);
     }
 
-    public List<SearchResultVideoDetails> videos() {
-        List<SearchResultVideoDetails> videos = new LinkedList<>();
-        for (SearchResultItem item : items) {
-            if (item.type() == SearchResultItemType.VIDEO) {
-                videos.add(item.asVideo());
-            }
-        }
-        return videos;
+    public List<SearchPlaylist> playlists() {
+        return ofType(SearchPlaylist.class);
     }
 
-    public List<SearchResultChannelDetails> channels() {
-        List<SearchResultChannelDetails> channels = new LinkedList<>();
-        for (SearchResultItem item : items) {
-            if (item.type() == SearchResultItemType.CHANNEL) {
-                channels.add(item.asChannel());
-            }
-        }
-        return channels;
-    }
-
-    public List<SearchResultPlaylistDetails> playlists() {
-        List<SearchResultPlaylistDetails> videos = new LinkedList<>();
-        for (SearchResultItem item : items) {
-            if (item.type() == SearchResultItemType.PLAYLIST) {
-                videos.add(item.asPlaylist());
-            }
-        }
-        return videos;
-    }
-
-    public List<SearchResultShelf> shelves() {
-        List<SearchResultShelf> shelves = new LinkedList<>();
-        for (SearchResultItem item : items) {
-            if (item.type() == SearchResultItemType.SHELF) {
-                shelves.add(item.asShelf());
-            }
-        }
-        return shelves;
-    }
-
-    public boolean hasContinuation() {
-        return false;
-    }
-
+    /** YouTube's rough total. */
     public long estimatedResults() {
         return estimatedResults;
     }
 
-    public List<SearchResultItem> items() {
-        return items;
+    /**
+     * The query YouTube searched instead ("Showing results for ..."), or {@code null}. To get results for the
+     * original text, search again with {@code query().exact(true)}.
+     */
+    public String correctedQuery() {
+        return correctedQuery;
+    }
+
+    /** Related queries YouTube suggests, possibly empty. */
+    public List<String> refinements() {
+        return refinements;
+    }
+
+    public boolean hasNextPage() {
+        return nextPage != null;
+    }
+
+    /**
+     * Loads the next page. Each call sends a request.
+     *
+     * @throws NoSuchElementException on the last page
+     */
+    public SearchResult nextPage() {
+        if (nextPage == null) {
+            throw new NoSuchElementException("no more search results");
+        }
+        return nextPage.get();
+    }
+
+    private <T extends SearchItem> List<T> ofType(Class<T> type) {
+        return items.stream().filter(type::isInstance).map(type::cast).collect(Collectors.toList());
+    }
+
+    @Override
+    public String toString() {
+        return "SearchResult{" + query.text() + ", " + items.size() + " items}";
     }
 }

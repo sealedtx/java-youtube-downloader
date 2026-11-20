@@ -1,35 +1,108 @@
 package com.github.kiulian.downloader;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
-public abstract class YoutubeException extends Exception {
-    private YoutubeException(String message) {
-        super(message);
+/**
+ * Base class of all errors of this library.
+ * <p>
+ * {@link #attempts()} lists what was tried and why each try failed, for example
+ * {@code visionos: bot check (Sign in to confirm you're not a bot)}. Include it in bug reports.
+ */
+public class YoutubeException extends RuntimeException {
+
+    private final List<String> attempts;
+
+    public YoutubeException(String message, List<String> attempts, Throwable cause) {
+        super(withAttempts(message, attempts), cause);
+        this.attempts = Collections.unmodifiableList(new ArrayList<>(attempts));
     }
 
+    public YoutubeException(String message, Throwable cause) {
+        this(message, Collections.emptyList(), cause);
+    }
+
+    /** One line per failed try, in the order of the tries. */
+    public List<String> attempts() {
+        return attempts;
+    }
+
+    private static String withAttempts(String message, List<String> attempts) {
+        return attempts.isEmpty() ? message : message + " [" + String.join("; ", attempts) + "]";
+    }
+
+    /**
+     * YouTube answered with an HTTP error status.
+     */
+    public static class HttpException extends YoutubeException {
+        private final int status;
+
+        public HttpException(int status, String message, Throwable cause) {
+            super(message, cause);
+            this.status = status;
+        }
+
+        public int status() {
+            return status;
+        }
+    }
+
+    /**
+     * The video cannot be played: removed, private, region-locked, age-restricted and similar.
+     * {@link #reason()} is YouTube's own explanation.
+     */
+    public static class VideoUnavailableException extends YoutubeException {
+        private final String reason;
+
+        public VideoUnavailableException(String videoId, String reason, List<String> attempts) {
+            super("Video " + videoId + " is unavailable: " + reason, attempts, null);
+            this.reason = reason;
+        }
+
+        public String reason() {
+            return reason;
+        }
+    }
+
+    /** The playlist does not exist or is private. {@link #reason()} is YouTube's own explanation. */
+    public static class PlaylistUnavailableException extends YoutubeException {
+        private final String reason;
+
+        public PlaylistUnavailableException(String playlistId, String reason) {
+            super("Playlist " + playlistId + " is unavailable: " + reason, null);
+            this.reason = reason;
+        }
+
+        public String reason() {
+            return reason;
+        }
+    }
+
+    /** YouTube does not know this channel. */
+    public static class ChannelUnavailableException extends YoutubeException {
+        public ChannelUnavailableException(String channel, Throwable cause) {
+            super("Channel not found: " + channel, cause);
+        }
+    }
+
+    /**
+     * YouTube asked to "sign in to confirm you're not a bot" for every client that was tried. Usually helps:
+     * update the library, wait, or use another network. See the README.
+     */
+    public static class BotCheckException extends YoutubeException {
+        public BotCheckException(String videoId, List<String> attempts) {
+            super("YouTube asked for a bot check for video " + videoId, attempts, null);
+        }
+    }
+
+    /**
+     * A format could not be downloaded: HTTP error, expired URL, connection broken or ended early after all retries,
+     * or a problem with the target file. A partial file is never left behind.
+     */
     public static class DownloadException extends YoutubeException {
-
-        public DownloadException(String message) {
-            super(message);
-        }
-    }
-
-    public static class BadPageException extends YoutubeException {
-
-        public BadPageException(String message) {
-            super(message);
-        }
-    }
-
-    public static class CipherException extends YoutubeException {
-
-        public CipherException(String message) {
-            super(message);
-        }
-    }
-
-    public static class InvalidJsUrlException extends YoutubeException.CipherException {
-        public InvalidJsUrlException(String message) {
-            super(message);
+        public DownloadException(String message, Throwable cause) {
+            super(message, cause);
         }
     }
 

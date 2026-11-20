@@ -1,129 +1,74 @@
 package com.github.kiulian.downloader.model.videos;
 
+import com.github.kiulian.downloader.model.subtitles.SubtitleTrack;
+import com.github.kiulian.downloader.model.videos.formats.Formats;
 
-
-
-import com.github.kiulian.downloader.model.Filter;
-import com.github.kiulian.downloader.model.videos.formats.AudioFormat;
-import com.github.kiulian.downloader.model.videos.formats.VideoWithAudioFormat;
-import com.github.kiulian.downloader.model.videos.formats.Format;
-import com.github.kiulian.downloader.model.videos.formats.VideoFormat;
-import com.github.kiulian.downloader.model.subtitles.SubtitlesInfo;
-
-import java.util.LinkedList;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
-public class VideoInfo {
+/**
+ * Everything the library found about a video.
+ * <p>
+ * The result can be partial: if formats could not be extracted, {@link #formats()} is empty and
+ * {@link #warnings()} says why. Check the warnings before you report a bug.
+ */
+public final class VideoInfo {
 
-    private final VideoDetails videoDetails;
-    private final List<Format> formats;
-    private final List<SubtitlesInfo> subtitlesInfo;
+    private final VideoDetails details;
+    private final Formats formats;
+    private final List<SubtitleTrack> subtitles;
+    private final String hlsManifestUrl;
+    private final String dashManifestUrl;
+    private final String client;
+    private final List<String> warnings;
 
-    public VideoInfo(VideoDetails videoDetails, List<Format> formats, List<SubtitlesInfo> subtitlesInfo) {
-        this.videoDetails = videoDetails;
-        this.formats = formats;
-        this.subtitlesInfo = subtitlesInfo;
+    public VideoInfo(VideoDetails details, Formats formats, List<SubtitleTrack> subtitles,
+                     String hlsManifestUrl, String dashManifestUrl, String client, List<String> warnings) {
+        this.details = Objects.requireNonNull(details, "details");
+        this.formats = Objects.requireNonNull(formats, "formats");
+        this.subtitles = Collections.unmodifiableList(new ArrayList<>(subtitles));
+        this.hlsManifestUrl = hlsManifestUrl;
+        this.dashManifestUrl = dashManifestUrl;
+        this.client = client;
+        this.warnings = Collections.unmodifiableList(new ArrayList<>(warnings));
     }
 
     public VideoDetails details() {
-        return videoDetails;
+        return details;
     }
 
-    public List<Format> formats() {
+    public Formats formats() {
         return formats;
     }
 
-    public List<SubtitlesInfo> subtitlesInfo() {
-        return subtitlesInfo;
+    public List<SubtitleTrack> subtitles() {
+        return subtitles;
     }
 
-    public List<Format> findFormats(Filter<Format> filter) {
-        return filter.select(formats);
+    /** HLS manifest (live streams use it), or {@code null}. */
+    public String hlsManifestUrl() {
+        return hlsManifestUrl;
     }
 
-    public Format findFormatByItag(int itag) {
-        for (Format format : formats) {
-            if (format.itag().id() == itag)
-                return format;
-        }
-        return null;
+    /** DASH manifest, or {@code null}. */
+    public String dashManifestUrl() {
+        return dashManifestUrl;
     }
 
-    public List<VideoWithAudioFormat> videoWithAudioFormats() {
-        List<VideoWithAudioFormat> find = new LinkedList<>();
-
-        for (Format format : formats) {
-            if (format instanceof VideoWithAudioFormat) {
-                find.add((VideoWithAudioFormat) format);
-            }
-        }
-        return find;
+    /** Name of the client profile whose answer was used. */
+    public String client() {
+        return client;
     }
 
-    public VideoFormat bestVideoWithAudioFormat() {
-        VideoFormat bestFormat = null;
-        for (Format format : formats) {
-            if (!(format instanceof VideoWithAudioFormat)) {
-                continue;
-            }
-            VideoFormat videoFormat = (VideoFormat) format;
-            if (bestFormat == null || videoFormat.videoQuality().compare(bestFormat.videoQuality()) > 0) {
-                bestFormat = videoFormat;
-            }
-        }
-        return bestFormat;
+    /** Things that went wrong without failing the request: skipped formats, clients that failed first. */
+    public List<String> warnings() {
+        return warnings;
     }
 
-    public List<VideoFormat> videoFormats() {
-        List<VideoFormat> find = new LinkedList<>();
-
-        for (Format format : formats) {
-            if (format instanceof VideoFormat) {
-                find.add((VideoFormat) format);
-            }
-        }
-        return find;
+    @Override
+    public String toString() {
+        return "VideoInfo{" + details + ", " + formats.size() + " formats, client=" + client + "}";
     }
-
-    public VideoFormat bestVideoFormat() {
-        VideoFormat bestFormat = null;
-        for (Format format : formats) {
-            if (!(format instanceof VideoFormat)) {
-                continue;
-            }
-            VideoFormat videoFormat = (VideoFormat) format;
-            if (bestFormat == null || videoFormat.videoQuality().compare(bestFormat.videoQuality()) > 0) {
-                bestFormat = videoFormat;
-            }
-        }
-        return bestFormat;
-    }
-
-    public List<AudioFormat> audioFormats() {
-        List<AudioFormat> find = new LinkedList<>();
-
-        for (Format format : formats) {
-            if (!(format instanceof AudioFormat)) {
-                continue;
-            }
-            find.add((AudioFormat) format);
-        }
-        return find;
-    }
-
-    public AudioFormat bestAudioFormat() {
-        AudioFormat bestFormat = null;
-        for (Format format : formats) {
-            if (!(format instanceof AudioFormat)) {
-                continue;
-            }
-            AudioFormat audioFormat = (AudioFormat) format;
-            if (bestFormat == null || audioFormat.audioQuality().compare(bestFormat.audioQuality()) > 0) {
-                bestFormat = audioFormat;
-            }
-        }
-        return bestFormat;
-    }
-
-
 }

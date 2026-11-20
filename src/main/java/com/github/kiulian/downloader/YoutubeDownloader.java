@@ -1,102 +1,403 @@
 package com.github.kiulian.downloader;
 
-
-
-import static com.github.kiulian.downloader.model.Utils.createOutDir;
-
-import java.io.File;
-import java.io.IOException;
-import java.util.List;
-
-import com.github.kiulian.downloader.cipher.CachedCipherFactory;
-import com.github.kiulian.downloader.downloader.Downloader;
-import com.github.kiulian.downloader.downloader.DownloaderImpl;
-import com.github.kiulian.downloader.downloader.request.*;
-import com.github.kiulian.downloader.downloader.response.Response;
-import com.github.kiulian.downloader.downloader.response.ResponseImpl;
-import com.github.kiulian.downloader.extractor.ExtractorImpl;
-import com.github.kiulian.downloader.model.playlist.PlaylistInfo;
+import com.github.kiulian.downloader.auth.YoutubeCookies;
+import com.github.kiulian.downloader.client.ClientProfile;
+import com.github.kiulian.downloader.client.ClientProfiles;
+import com.github.kiulian.downloader.download.DownloadOptions;
+import com.github.kiulian.downloader.http.HttpTransport;
+import com.github.kiulian.downloader.http.UrlConnectionTransport;
+import com.github.kiulian.downloader.internal.Ids;
+import com.github.kiulian.downloader.internal.download.FormatDownloader;
+import com.github.kiulian.downloader.internal.http.Http;
+import com.github.kiulian.downloader.internal.http.RetryPolicy;
+import com.github.kiulian.downloader.internal.youtube.Innertube;
+import com.github.kiulian.downloader.internal.youtube.PlayerScripts;
+import com.github.kiulian.downloader.internal.youtube.PlaylistExtractor;
+import com.github.kiulian.downloader.js.ChallengeSolver;
+import com.github.kiulian.downloader.internal.youtube.SearchExtractor;
+import com.github.kiulian.downloader.internal.youtube.SubtitleDownloader;
+import com.github.kiulian.downloader.model.subtitles.SubtitleFormat;
+import com.github.kiulian.downloader.model.subtitles.SubtitleTrack;
+import com.github.kiulian.downloader.model.search.SearchQuery;
 import com.github.kiulian.downloader.model.search.SearchResult;
-import com.github.kiulian.downloader.model.subtitles.SubtitlesInfo;
+import com.github.kiulian.downloader.internal.youtube.VideoExtractor;
+import com.github.kiulian.downloader.model.playlist.Playlist;
 import com.github.kiulian.downloader.model.videos.VideoInfo;
-import com.github.kiulian.downloader.parser.Parser;
-import com.github.kiulian.downloader.parser.ParserImpl;
+import com.github.kiulian.downloader.model.videos.formats.Format;
 
-public class YoutubeDownloader {
+import java.io.OutputStream;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.function.Supplier;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
 
-    private final Config config;
-    private final Downloader downloader;
-    private final Parser parser;
+/**
+ * Entry point of the library. Thread-safe; create one and reuse it.
+ *
+ * <pre>{@code
+ * YoutubeDownloader yt = YoutubeDownloader.create();
+ * VideoInfo video = yt.videoInfo("https://youtu.be/jNQXAC9IVRw");
+ * Format audio = video.formats().bestAudio().orElseThrow();
+ * }</pre>
+ *
+ * Errors are unchecked {@link YoutubeException}s; async methods complete exceptionally with them.
+ */
+public final class YoutubeDownloader implements AutoCloseable {
 
-    public YoutubeDownloader() {
-        this(Config.buildDefault());
+    private final Builder settings;
+    private final VideoExtractor videos;
+    private final PlaylistExtractor playlists;
+    private final SearchExtractor searches;
+    private final SubtitleDownloader subtitles;
+    private final FormatDownloader downloads;
+    private ExecutorService ownExecutor;
+    private boolean closed;
+
+    private YoutubeDownloader(Builder builder) {
+        this.settings = builder.copy();
+        RetryPolicy retryPolicy = RetryPolicy.retries(builder.retries);
+        Http http = new Http(builder.transport(), retryPolicy);
+        Innertube innertube = new Innertube(http, builder.webClient, builder.cookies);
+        this.videos = new VideoExtractor(innertube, builder.clients, new PlayerScripts(http), builder.challengeSolver);
+        this.playlists = new PlaylistExtractor(innertube);
+        this.searches = new SearchExtractor(innertube);
+        this.subtitles = new SubtitleDownloader(http, innertube);
+        Map<String, String> userAgents = new HashMap<>();
+        for (ClientProfile client : builder.clients) {
+            userAgents.put(client.name(), client.userAgent());
+        }
+        this.downloads = new FormatDownloader(http, retryPolicy, userAgents, Innertube.WEB_USER_AGENT);
     }
 
-    public YoutubeDownloader(Config config) {
-        this.config = config;
-        this.downloader = new DownloaderImpl(config);
-        this.parser = new ParserImpl(config, downloader, new ExtractorImpl(downloader), new CachedCipherFactory(downloader));
+    /** Downloader with default settings. */
+    public static YoutubeDownloader create() {
+        return builder().build();
     }
 
-    public YoutubeDownloader(Config config, Downloader downloader) {
-        this(config, downloader, new ParserImpl(config, downloader, new ExtractorImpl(downloader), new CachedCipherFactory(downloader)));
+    public static Builder builder() {
+        return new Builder();
     }
 
-    public YoutubeDownloader(Config config, Downloader downloader, Parser parser) {
-        this.config = config;
-        this.parser = parser;
-        this.downloader = downloader;
+    /** A builder with the settings of this downloader, to make a variant (for example with another proxy). */
+    public Builder toBuilder() {
+        return settings.copy();
     }
 
-    public Config getConfig() {
-        return config;
+    /**
+     * Metadata, formats and subtitle tracks of a video.
+     *
+     * @param videoIdOrUrl an 11-character id or any YouTube video URL
+     * @throws IllegalArgumentException if it is neither
+     * @throws YoutubeException.VideoUnavailableException if YouTube says the video cannot be played
+     * @throws YoutubeException.BotCheckException if every client got a bot check
+     */
+    public VideoInfo videoInfo(String videoIdOrUrl) {
+        return videos.videoInfo(Ids.videoId(videoIdOrUrl));
     }
 
-    public Response<VideoInfo> getVideoInfo(RequestVideoInfo request) {
-        return parser.parseVideo(request);
+    /** {@link #videoInfo(String)} on the executor. */
+    public CompletableFuture<VideoInfo> videoInfoAsync(String videoIdOrUrl) {
+        String videoId = Ids.videoId(videoIdOrUrl);
+        return async(() -> videos.videoInfo(videoId));
     }
 
-    public Response<List<SubtitlesInfo>> getSubtitlesInfo(RequestSubtitlesInfo request) {
-        return parser.parseSubtitlesInfo(request);
+    /**
+     * A playlist; its videos are loaded page by page while you iterate.
+     *
+     * @param playlistIdOrUrl a playlist id or any YouTube URL with a {@code list} parameter
+     * @throws IllegalArgumentException if it is neither
+     * @throws YoutubeException.PlaylistUnavailableException if the playlist does not exist or is private
+     */
+    public Playlist playlist(String playlistIdOrUrl) {
+        return playlists.playlist(Ids.playlistId(playlistIdOrUrl));
     }
 
-    public Response<PlaylistInfo> getChannelUploads(RequestChannelUploads request) {
-        return parser.parseChannelsUploads(request);
+    /**
+     * The uploads of a channel as a playlist.
+     *
+     * @param channel channel id ({@code UC...}), handle ({@code @NASA}) or channel URL ({@code /channel/}, {@code /@},
+     *                {@code /c/}, {@code /user/})
+     * @throws YoutubeException.ChannelUnavailableException if YouTube does not know the channel
+     */
+    public Playlist channelUploads(String channel) {
+        return playlists.channelUploads(channel);
     }
 
-    public Response<PlaylistInfo> getPlaylistInfo(RequestPlaylistInfo request) {
-        return parser.parsePlaylist(request);
+    /** Search with YouTube's default settings. */
+    public SearchResult search(String text) {
+        return search(SearchQuery.of(text));
     }
 
-    public Response<SearchResult> search(RequestSearchResult request) {
-        return parser.parseSearchResult(request);
+    /**
+     * One page of search results; {@link SearchResult#nextPage()} loads the next one.
+     *
+     * <pre>{@code
+     * yt.search(SearchQuery.of("nasa").filter(TypeField.VIDEO, DurationField.UNDER_4_MINUTES).sortBy(SortField.VIEW_COUNT))
+     * }</pre>
+     */
+    public SearchResult search(SearchQuery query) {
+        return searches.search(query);
     }
 
-    public Response<SearchResult> searchContinuation(RequestSearchContinuation request) {
-        return parser.parseSearchContinuation(request);
+    /**
+     * The text of a subtitle track, for example {@code yt.subtitles(video.subtitles().get(0), SubtitleFormat.SRT)}.
+     */
+    public String subtitles(SubtitleTrack track, SubtitleFormat format) {
+        return subtitles.text(track, format, null);
     }
 
-    public Response<SearchResult> search(RequestSearchable request) {
-        return parser.parseSearcheable(request);
+    /**
+     * The text of a subtitle track, machine-translated by YouTube to {@code translateTo} (a language code such as
+     * {@code uk}). Note: since 2026-11 YouTube refuses translations for the default clients with HTTP 429.
+     */
+    public String subtitles(SubtitleTrack track, SubtitleFormat format, String translateTo) {
+        return subtitles.text(track, format, Objects.requireNonNull(translateTo, "translateTo"));
     }
 
-    public Response<File> downloadVideoFile(RequestVideoFileDownload request) {
-        File outDir = request.getOutputDirectory();
+    /** Downloads the format to {@code file} with default options. */
+    public Path download(Format format, Path file) {
+        return download(format, file, DownloadOptions.defaults());
+    }
+
+    /**
+     * Downloads the format to {@code file}. The data goes to {@code file + ".part"} first and is moved into place
+     * when complete, so a failed or cancelled download never leaves a broken file. A name for the file:
+     * {@link com.github.kiulian.downloader.download.FileNames#of(String, Format)}.
+     *
+     * @throws YoutubeException.DownloadException on HTTP errors, an expired URL, a wrong size or if the file exists
+     */
+    public Path download(Format format, Path file, DownloadOptions options) {
+        return downloads.toFile(format, file, options);
+    }
+
+    /** Downloads the format into the stream; the stream is not closed. On failure it may hold part of the data. */
+    public void download(Format format, OutputStream out, DownloadOptions options) {
+        downloads.toStream(format, out, options);
+    }
+
+    /** {@link #download(Format, Path, DownloadOptions)} on the executor. {@code cancel(true)} stops it. */
+    public CompletableFuture<Path> downloadAsync(Format format, Path file, DownloadOptions options) {
+        return async(() -> downloads.toFile(format, file, options));
+    }
+
+    private <T> CompletableFuture<T> async(Supplier<T> work) {
+        Task<T> task = new Task<>();
         try {
-            createOutDir(outDir);
-        } catch (IOException e) {
-            return ResponseImpl.error(e);
+            executor().execute(() -> {
+                if (!task.start()) {
+                    return; // cancelled before it ran
+                }
+                try {
+                    task.complete(work.get());
+                } catch (Throwable e) {
+                    task.completeExceptionally(e);
+                } finally {
+                    task.finish();
+                }
+            });
+        } catch (RuntimeException e) {
+            task.completeExceptionally(e); // rejected by the executor, or the downloader is closed
+        }
+        return task;
+    }
+
+    /**
+     * A future whose {@code cancel} interrupts the running work, which plain CompletableFuture does not. Start, finish
+     * and cancel share a lock, so a cancel never misses the worker and never interrupts the thread's next task.
+     */
+    private static final class Task<T> extends CompletableFuture<T> {
+        private Thread worker;
+
+        synchronized boolean start() {
+            if (isDone()) {
+                return false;
+            }
+            worker = Thread.currentThread();
+            return true;
         }
 
-        return downloader.downloadVideoAsFile(request);
+        synchronized void finish() {
+            worker = null;
+            Thread.interrupted(); // leave a clean pool thread after a cancel
+        }
+
+        @Override
+        public boolean cancel(boolean mayInterruptIfRunning) {
+            boolean cancelled = super.cancel(mayInterruptIfRunning);
+            if (cancelled) {
+                synchronized (this) {
+                    if (worker != null) {
+                        worker.interrupt();
+                    }
+                }
+            }
+            return cancelled;
+        }
     }
 
-    public Response<Void> downloadVideoStream(RequestVideoStreamDownload request) {
-        return downloader.downloadVideoAsStream(request);
+    /**
+     * Stops the executor this downloader created for async calls; a custom executor is left alone. Async calls after
+     * this complete with {@link IllegalStateException}; sync calls keep working.
+     */
+    @Override
+    public synchronized void close() {
+        closed = true;
+        if (ownExecutor != null) {
+            ownExecutor.shutdown();
+            ownExecutor = null;
+        }
     }
 
-    public Response<String> downloadSubtitle(RequestWebpage request) {
-        return downloader.downloadWebpage(request);
+    private synchronized Executor executor() {
+        if (settings.executor != null) {
+            return settings.executor;
+        }
+        if (closed) {
+            throw new IllegalStateException("YoutubeDownloader is closed");
+        }
+        if (ownExecutor == null) {
+            AtomicInteger number = new AtomicInteger();
+            ownExecutor = Executors.newCachedThreadPool(task -> {
+                Thread thread = new Thread(task, "yt-downloader-" + number.incrementAndGet());
+                thread.setDaemon(true);
+                return thread;
+            });
+        }
+        return ownExecutor;
     }
 
+    public static final class Builder {
+        private HttpTransport transport;
+        private String proxyHost;
+        private int proxyPort;
+        private String proxyUser;
+        private String proxyPassword;
+        private int retries = 2;
+        private List<ClientProfile> clients = ClientProfiles.defaults();
+        private ClientProfile webClient = ClientProfiles.WEB;
+        private ChallengeSolver challengeSolver;
+        private YoutubeCookies cookies;
+        private Executor executor;
+
+        private Builder() {
+        }
+
+        /** Your own HTTP stack. Proxy settings of this builder then do not apply. */
+        public Builder transport(HttpTransport transport) {
+            this.transport = Objects.requireNonNull(transport, "transport");
+            return this;
+        }
+
+        /** HTTP proxy for the default transport. */
+        public Builder proxy(String host, int port) {
+            this.proxyHost = Objects.requireNonNull(host, "host");
+            this.proxyPort = port;
+            return this;
+        }
+
+        /** HTTP proxy with credentials for the default transport; they are sent to the proxy only. */
+        public Builder proxy(String host, int port, String user, String password) {
+            proxy(host, port);
+            this.proxyUser = Objects.requireNonNull(user, "user");
+            this.proxyPassword = Objects.requireNonNull(password, "password");
+            return this;
+        }
+
+        /** How often a failed request is sent again (I/O errors, timeouts, 429 and 5xx). Default 2. */
+        public Builder retries(int retries) {
+            if (retries < 0) {
+                throw new IllegalArgumentException("retries must not be negative");
+            }
+            this.retries = retries;
+            return this;
+        }
+
+        /** Client profiles to try, in order. Default {@link ClientProfiles#defaults()}. */
+        public Builder clients(List<ClientProfile> clients) {
+            if (clients.isEmpty()) {
+                throw new IllegalArgumentException("at least one client profile is needed");
+            }
+            this.clients = Collections.unmodifiableList(new ArrayList<>(clients));
+            return this;
+        }
+
+        /**
+         * Solver for YouTube's JS challenges, for example {@code EjsSolver.node()} (needs Node.js 22+). Enables the
+         * client profiles that need the JS player, such as {@link ClientProfiles#TV_SAMSUNG}, which also serves
+         * "made for kids" videos. Without it those profiles are skipped.
+         */
+        public Builder challengeSolver(ChallengeSolver challengeSolver) {
+            this.challengeSolver = Objects.requireNonNull(challengeSolver, "challengeSolver");
+            return this;
+        }
+
+        /**
+         * Account cookies, for age-restricted, private and members-only videos. They go only to youtube.com and only
+         * from client profiles that support cookies ({@link ClientProfiles#TV_SAMSUNG}, {@link ClientProfiles#WEB});
+         * for videos that need a login this means a challenge solver is needed too. See {@link YoutubeCookies} for
+         * the risks.
+         */
+        public Builder cookies(YoutubeCookies cookies) {
+            this.cookies = Objects.requireNonNull(cookies, "cookies");
+            return this;
+        }
+
+        /** Client profile for playlists, channels and search. Default {@link ClientProfiles#WEB}. */
+        public Builder webClient(ClientProfile webClient) {
+            this.webClient = Objects.requireNonNull(webClient, "webClient");
+            return this;
+        }
+
+        /** Executor for async methods. Default: a daemon thread pool owned by the downloader. */
+        public Builder executor(Executor executor) {
+            this.executor = Objects.requireNonNull(executor, "executor");
+            return this;
+        }
+
+        public YoutubeDownloader build() {
+            if (transport != null && proxyHost != null) {
+                throw new IllegalStateException("proxy settings apply only to the default transport; configure the proxy in your transport");
+            }
+            return new YoutubeDownloader(this);
+        }
+
+        private HttpTransport transport() {
+            if (transport != null) {
+                return transport;
+            }
+            UrlConnectionTransport.Builder builder = UrlConnectionTransport.builder();
+            if (proxyHost != null) {
+                builder.proxy(proxyHost, proxyPort);
+            }
+            if (proxyUser != null) {
+                builder.proxyCredentials(proxyUser, proxyPassword);
+            }
+            return builder.build();
+        }
+
+        private Builder copy() {
+            Builder copy = new Builder();
+            copy.transport = transport;
+            copy.proxyHost = proxyHost;
+            copy.proxyPort = proxyPort;
+            copy.proxyUser = proxyUser;
+            copy.proxyPassword = proxyPassword;
+            copy.retries = retries;
+            copy.clients = clients;
+            copy.webClient = webClient;
+            copy.challengeSolver = challengeSolver;
+            copy.cookies = cookies;
+            copy.executor = executor;
+            return copy;
+        }
+    }
 }
