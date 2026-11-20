@@ -235,8 +235,8 @@ the JDK needs `-Djdk.http.auth.tunneling.disabledSchemes=` (empty), or use your 
 ### Client profiles
 
 A client profile is one YouTube app identity: name, version, user agent and device fields. Default order:
-`visionos`, `android_vr`, `android_sdkless`, then `tv_samsung` (only with a JS solver). When YouTube starts to reject a profile
-(bot check, HTTP 400), compare with [yt-dlp's clients](https://github.com/yt-dlp/yt-dlp/blob/master/yt_dlp/extractor/youtube/_base.py)
+`visionos`, `android_vr`, `android_sdkless`, then `tv_samsung` (only with a JS solver). When YouTube starts to
+reject a profile (bot check, HTTP 400), compare with [yt-dlp's clients](https://github.com/yt-dlp/yt-dlp/blob/master/yt_dlp/extractor/youtube/_base.py)
 and update it yourself:
 
 ```java
