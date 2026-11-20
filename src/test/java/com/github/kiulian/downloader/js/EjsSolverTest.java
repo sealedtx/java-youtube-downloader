@@ -69,6 +69,27 @@ class EjsSolverTest {
     }
 
     @Test
+    void aRuntimeThatDoesNotReadStdinTimesOut() {
+        EjsSolver stuck = EjsSolver.command(java.util.Arrays.asList("sh", "-c", "sleep 30")).withTimeout(java.time.Duration.ofSeconds(1));
+        long start = System.currentTimeMillis();
+
+        IOException error = assertThrows(IOException.class, () -> stuck.solve("p0000000", "", Collections.singleton("abc"), Collections.emptySet()));
+        assertTrue(error.getMessage().contains("timed out"), error.getMessage());
+        assertTrue(System.currentTimeMillis() - start < 10_000);
+    }
+
+    @Test
+    void lotsOfStderrDoesNotBlockTheRuntime() {
+        EjsSolver noisy = EjsSolver.command(java.util.Arrays.asList("sh", "-c", "cat > /dev/null; head -c 300000 /dev/zero | tr '\\0' x >&2; echo '{\"type\":\"error\",\"error\":\"nope\"}'"))
+                .withTimeout(java.time.Duration.ofSeconds(20));
+        long start = System.currentTimeMillis();
+
+        IOException error = assertThrows(IOException.class, () -> noisy.solve("p0000000", "", Collections.singleton("abc"), Collections.emptySet()));
+        assertTrue(error.getMessage().contains("nope"), error.getMessage());
+        assertTrue(System.currentTimeMillis() - start < 10_000, "blocked on a full stderr pipe");
+    }
+
+    @Test
     void madeForKidsVideoThroughTheWholePipeline() {
         YoutubeDownloader yt = YoutubeDownloader.builder().transport(FakeYoutube.fromFixtures()).challengeSolver(solver).build();
 

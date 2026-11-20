@@ -82,7 +82,7 @@ class FormatDownloaderTest {
         assertArrayEquals(MEDIA, Files.readAllBytes(file));
         assertEquals(Arrays.asList("0-999", "1000-1999", "2000-2999", "3000-3499"), ranges);
         assertEquals(100, progress.get(progress.size() - 1).percent());
-        assertFalse(Files.exists(dir.resolve("a.m4a.part")));
+        assertEquals(0, partFiles());
     }
 
     @Test
@@ -105,7 +105,7 @@ class FormatDownloaderTest {
         assertThrows(DownloadException.class, () -> downloader.toFile(format(MEDIA.length), file, DownloadOptions.defaults().chunkSize(1000)));
         assertEquals(4, ranges.size(), "first chunk plus three tries of the second: " + ranges);
         assertFalse(Files.exists(file));
-        assertFalse(Files.exists(dir.resolve("a.m4a.part")));
+        assertEquals(0, partFiles());
     }
 
     @Test
@@ -127,7 +127,7 @@ class FormatDownloaderTest {
         assertTrue(error.getMessage().contains("expired or YouTube blocked this client"), error.getMessage());
         assertEquals(1, ranges.size());
         assertFalse(Files.exists(file));
-        assertFalse(Files.exists(dir.resolve("a.m4a.part")));
+        assertEquals(0, partFiles());
     }
 
     @Test
@@ -195,8 +195,50 @@ class FormatDownloaderTest {
 
             assertTrue(future.cancel(true));
             assertTrue(future.isCancelled());
-            waitUntil(() -> !Files.exists(dir.resolve("slow.m4a.part")));
+            waitUntil(() -> partFiles() == 0);
             assertFalse(Files.exists(file));
+        }
+    }
+
+    @Test
+    void parallelDownloadsOfTheSameFileNeverMixTheirBytes() throws Exception {
+        Path file = dir.resolve("same.m4a");
+        delayPer100BytesMillis = 2;
+        List<Throwable> errors = new CopyOnWriteArrayList<>();
+        List<Thread> threads = new ArrayList<>();
+        for (int i = 0; i < 2; i++) {
+            Thread thread = new Thread(() -> {
+                try {
+                    downloader.toFile(format(MEDIA.length), file, DownloadOptions.defaults().chunkSize(1000));
+                } catch (DownloadException e) {
+                    errors.add(e);
+                }
+            });
+            threads.add(thread);
+            thread.start();
+        }
+        for (Thread thread : threads) {
+            thread.join(10_000);
+        }
+
+        assertArrayEquals(MEDIA, Files.readAllBytes(file));
+        assertEquals(1, errors.size(), "the second one finds the file already there");
+        assertEquals(0, partFiles());
+    }
+
+    @Test
+    void ignoresAnExpiryItCannotRead() {
+        Format odd = Format.builder(140, server.url("/videoplayback?itag=140&expire=99999999999999999999")).contentLength(MEDIA.length).build();
+
+        downloader.toStream(odd, new ByteArrayOutputStream(), DownloadOptions.defaults());
+        assertEquals(1, ranges.size());
+    }
+
+    private long partFiles() {
+        try (java.util.stream.Stream<Path> files = Files.list(dir)) {
+            return files.filter(f -> f.getFileName().toString().endsWith(".part")).count();
+        } catch (IOException e) {
+            throw new java.io.UncheckedIOException(e);
         }
     }
 

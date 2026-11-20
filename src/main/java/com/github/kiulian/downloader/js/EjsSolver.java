@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
@@ -44,6 +45,13 @@ public final class EjsSolver implements ChallengeSolver {
     private static final int CACHED_PLAYERS = 4;
 
     private static volatile String scripts;
+
+    // blocking pipe I/O gets its own threads, not the shared ForkJoin pool
+    private static final Executor DAEMON_THREADS = task -> {
+        Thread thread = new Thread(task, "ejs-solver-io");
+        thread.setDaemon(true);
+        thread.start();
+    };
 
     private final List<String> command;
     private final long timeoutMillis;
@@ -83,20 +91,36 @@ public final class EjsSolver implements ChallengeSolver {
 
     /** {@link #node()} if a Node.js 22+ is on the {@code PATH}, otherwise {@code null}. Starts {@code node --version}. */
     public static EjsSolver detect() {
+        Process process = null;
         try {
-            Process process = new ProcessBuilder("node", "--version").redirectErrorStream(true).start();
-            String version = new String(readAll(process.getInputStream(), 1024), StandardCharsets.UTF_8).trim();
+            process = new ProcessBuilder("node", "--version").redirectErrorStream(true).start();
+            Process started = process;
+            CompletableFuture<Output> output = CompletableFuture.supplyAsync(() -> drain(started.getInputStream(), 1024), DAEMON_THREADS);
             if (!process.waitFor(10, TimeUnit.SECONDS) || process.exitValue() != 0) {
                 return null;
             }
+            String version = new String(output.get(5, TimeUnit.SECONDS).bytes, StandardCharsets.UTF_8).trim();
             int major = Integer.parseInt(version.replaceFirst("^v", "").split("\\.")[0]);
             return major >= 22 ? node() : null;
-        } catch (IOException | NumberFormatException e) {
+        } catch (IOException | NumberFormatException | ExecutionException | TimeoutException e) {
             return null;
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             return null;
+        } finally {
+            if (process != null) {
+                process.destroyForcibly();
+            }
         }
+    }
+
+    /** The same solver with another limit for one run of the JS runtime (default 60 s). */
+    public EjsSolver withTimeout(Duration timeout) {
+        long millis = timeout.toMillis();
+        if (millis <= 0) {
+            throw new IllegalArgumentException("timeout must be positive");
+        }
+        return new EjsSolver(command, millis);
     }
 
     @Override
@@ -164,28 +188,31 @@ public final class EjsSolver implements ChallengeSolver {
 
     private String run(String script) throws IOException {
         Process process = new ProcessBuilder(command).start();
-        // blocking reads get their own threads, not the shared ForkJoin pool
-        Executor readers = task -> {
-            Thread thread = new Thread(task, "ejs-solver-output");
-            thread.setDaemon(true);
-            thread.start();
-        };
-        CompletableFuture<byte[]> stdout = CompletableFuture.supplyAsync(() -> readQuietly(process.getInputStream(), MAX_OUTPUT_BYTES), readers);
-        CompletableFuture<byte[]> stderr = CompletableFuture.supplyAsync(() -> readQuietly(process.getErrorStream(), 64 * 1024), readers);
-        try (OutputStream in = process.getOutputStream()) {
-            in.write(script.getBytes(StandardCharsets.UTF_8));
-        }
+        byte[] input = script.getBytes(StandardCharsets.UTF_8);
+        CompletableFuture<Output> stdout = CompletableFuture.supplyAsync(() -> drain(process.getInputStream(), MAX_OUTPUT_BYTES), DAEMON_THREADS);
+        CompletableFuture<Output> stderr = CompletableFuture.supplyAsync(() -> drain(process.getErrorStream(), 64 * 1024), DAEMON_THREADS);
+        // the write blocks if the process does not read, so it runs on its own thread and the timeout below still holds
+        CompletableFuture.runAsync(() -> {
+            try (OutputStream in = process.getOutputStream()) {
+                in.write(input);
+            } catch (IOException ignored) {
+                // the process ended early; its exit code and stderr say why
+            }
+        }, DAEMON_THREADS);
         try {
             if (!process.waitFor(timeoutMillis, TimeUnit.MILLISECONDS)) {
                 throw new IOException("Challenge solver timed out after " + timeoutMillis + " ms: " + String.join(" ", command));
             }
-            byte[] out = stdout.get(5, TimeUnit.SECONDS);
+            Output out = stdout.get(5, TimeUnit.SECONDS);
             if (process.exitValue() != 0) {
-                String error = new String(stderr.get(5, TimeUnit.SECONDS), StandardCharsets.UTF_8).trim();
+                String error = new String(stderr.get(5, TimeUnit.SECONDS).bytes, StandardCharsets.UTF_8).trim();
                 throw new IOException("Challenge solver exited with " + process.exitValue() + ": "
                         + (error.length() > 500 ? error.substring(0, 500) + "..." : error));
             }
-            return new String(out, StandardCharsets.UTF_8);
+            if (out.truncated) {
+                throw new IOException("Challenge solver output is larger than " + MAX_OUTPUT_BYTES + " bytes");
+            }
+            return new String(out.bytes, StandardCharsets.UTF_8);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new IOException("Interrupted while solving challenges", e);
@@ -224,11 +251,33 @@ public final class EjsSolver implements ChallengeSolver {
         }
     }
 
-    private static byte[] readQuietly(InputStream in, int maxBytes) {
+    /** Reads to the end so the process never blocks on a full pipe; keeps at most {@code maxBytes}. */
+    private static Output drain(InputStream in, int maxBytes) {
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        boolean truncated = false;
+        byte[] buffer = new byte[8192];
         try {
-            return readAll(in, maxBytes);
-        } catch (IOException e) {
-            return new byte[0];
+            int n;
+            while ((n = in.read(buffer)) != -1) {
+                int keep = Math.min(n, maxBytes - out.size());
+                if (keep > 0) {
+                    out.write(buffer, 0, keep);
+                }
+                truncated |= keep < n;
+            }
+        } catch (IOException ignored) {
+            // the process was destroyed; what was read so far is all there is
+        }
+        return new Output(out.toByteArray(), truncated);
+    }
+
+    private static final class Output {
+        final byte[] bytes;
+        final boolean truncated;
+
+        Output(byte[] bytes, boolean truncated) {
+            this.bytes = bytes;
+            this.truncated = truncated;
         }
     }
 

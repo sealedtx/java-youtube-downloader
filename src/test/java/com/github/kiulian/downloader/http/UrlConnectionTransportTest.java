@@ -171,6 +171,50 @@ class UrlConnectionTransportTest {
         assertEquals(Collections.singletonList("null"), serverAuth);
     }
 
+    @Test
+    void cookiesFollowRedirectsOnlyOnTheSameHost() throws IOException {
+        List<String> cookiesSeen = new CopyOnWriteArrayList<>();
+        try (TestHttpServer other = new TestHttpServer()) {
+            other.handle("/", exchange -> {
+                cookiesSeen.add("other:" + exchange.getRequestHeaders().getFirst("Cookie"));
+                respond(exchange, 200, "other host");
+            });
+            server.handle("/same", exchange -> {
+                exchange.getResponseHeaders().add("Location", "/target");
+                respond(exchange, 302, "");
+            });
+            server.handle("/target", exchange -> {
+                cookiesSeen.add("target:" + exchange.getRequestHeaders().getFirst("Cookie"));
+                respond(exchange, 200, "same host");
+            });
+            server.handle("/away", exchange -> {
+                exchange.getResponseHeaders().add("Location", other.url("/steal"));
+                respond(exchange, 302, "");
+            });
+
+            try (Response same = transport.send(Request.get(server.url("/same")).header("Cookie", "SID=secret").build())) {
+                assertEquals("same host", read(same));
+            }
+            try (Response away = transport.send(Request.get(server.url("/away")).header("Cookie", "SID=secret").build())) {
+                assertEquals(302, away.status(), "not followed to another host");
+            }
+            try (Response plain = transport.send(Request.get(server.url("/away")).build())) {
+                assertEquals("other host", read(plain), "requests without secrets follow redirects as usual");
+            }
+        }
+        assertEquals(Arrays.asList("target:SID=secret", "other:null"), cookiesSeen);
+    }
+
+    @Test
+    void aBodyThatIsNotGzipFailsCleanly() {
+        server.handle("/fake", exchange -> {
+            exchange.getResponseHeaders().add("Content-Encoding", "gzip");
+            respond(exchange, 200, "plain text");
+        });
+
+        assertThrows(IOException.class, () -> transport.send(Request.get(server.url("/fake")).build()));
+    }
+
     private static String read(Response response) throws IOException {
         return new String(response.body().readAllBytes(), UTF_8);
     }

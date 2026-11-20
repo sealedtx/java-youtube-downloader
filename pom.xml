@@ -6,10 +6,11 @@
 
     <groupId>com.github.ikiulian</groupId>
     <artifactId>java-youtube-downloader</artifactId>
-    <version>4.0.0-SNAPSHOT</version>
+    <version>4.0.0-rc1</version>
 
     <name>Java youtube video downloader</name>
-    <description>Java parser for retrieving youtube video meta info</description>
+    <description>YouTube video info, formats, playlists, search, subtitles and downloads for Java 11+</description>
+    <url>https://github.com/sealedtx/java-youtube-downloader</url>
 
     <licenses>
         <license>

@@ -29,6 +29,7 @@ import java.util.Locale;
  */
 final class PlayerResponse {
 
+    static final long MAX_AD_WAIT_MILLIS = 30_000;
     private static final Pattern N_PARAM = Pattern.compile("([?&]n=)([^&]*)");
 
     private final JsonNode json;
@@ -238,6 +239,8 @@ final class PlayerResponse {
             }
             waitMillis = Math.max(waitMillis, millis);
         }
+        // skip offsets are seconds; an ad without one would make us wait its whole length, so cap the wait
+        waitMillis = Math.min(waitMillis, MAX_AD_WAIT_MILLIS);
         return waitMillis > 0 ? nowMillis + waitMillis : 0;
     }
 

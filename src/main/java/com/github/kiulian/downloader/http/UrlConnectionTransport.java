@@ -52,30 +52,68 @@ public final class UrlConnectionTransport implements HttpTransport {
 
     @Override
     public Response send(Request request) throws IOException {
-        URL url = new URL(request.url());
+        boolean ownEncoding = false;
+        boolean secrets = false;
+        for (String name : request.headers().keySet()) {
+            ownEncoding |= name.equalsIgnoreCase("Accept-Encoding");
+            secrets |= name.equalsIgnoreCase("Cookie") || name.equalsIgnoreCase("Authorization");
+        }
+        URL url = checked(new URL(request.url()));
+        // with cookies or credentials, redirects are followed here and only to the same host,
+        // so they never reach another server (older JDK 11 updates forward them)
+        for (int redirects = 0; ; redirects++) {
+            HttpURLConnection connection = open(url, request, ownEncoding, !secrets);
+            int status = connection.getResponseCode();
+            String location = connection.getHeaderField("Location");
+            if (secrets && status >= 300 && status < 400 && location != null && request.body() == null && redirects < 5) {
+                URL next = new URL(url, location);
+                if (next.getProtocol().equals(url.getProtocol()) && next.getHost().equalsIgnoreCase(url.getHost())
+                        && next.getPort() == url.getPort()) {
+                    closeQuietly(connection);
+                    url = next;
+                    continue;
+                }
+            }
+            InputStream in = status >= 400 ? connection.getErrorStream() : connection.getInputStream();
+            if (in == null) {
+                in = new ByteArrayInputStream(new byte[0]);
+            }
+            if (!ownEncoding && "gzip".equalsIgnoreCase(connection.getContentEncoding())) {
+                try {
+                    in = gunzip(in);
+                } catch (IOException e) {
+                    in.close(); // a body that is not gzip must not keep the connection open
+                    throw e;
+                }
+            }
+            return new UrlConnectionResponse(status, connection, in);
+        }
+    }
+
+    private static URL checked(URL url) throws MalformedURLException {
         String protocol = url.getProtocol();
         if (!"https".equals(protocol) && !"http".equals(protocol)) {
             throw new MalformedURLException("Unsupported URL scheme: " + protocol);
         }
+        return url;
+    }
+
+    private HttpURLConnection open(URL url, Request request, boolean ownEncoding, boolean followRedirects) throws IOException {
         HttpURLConnection connection = (HttpURLConnection) (proxy != null ? url.openConnection(proxy) : url.openConnection());
         connection.setConnectTimeout(connectTimeoutMillis);
         connection.setReadTimeout(readTimeoutMillis);
-        connection.setInstanceFollowRedirects(true);
+        connection.setInstanceFollowRedirects(followRedirects);
         connection.setUseCaches(false);
         if (proxyAuthenticator != null) {
             connection.setAuthenticator(proxyAuthenticator);
         }
         connection.setRequestMethod(request.method());
-
-        boolean ownEncoding = false;
         for (Map.Entry<String, String> header : request.headers().entrySet()) {
             connection.setRequestProperty(header.getKey(), header.getValue());
-            ownEncoding |= header.getKey().equalsIgnoreCase("Accept-Encoding");
         }
         if (!ownEncoding) {
             connection.setRequestProperty("Accept-Encoding", "gzip");
         }
-
         byte[] body = request.body();
         if (body != null) {
             connection.setDoOutput(true);
@@ -84,16 +122,16 @@ public final class UrlConnectionTransport implements HttpTransport {
                 out.write(body);
             }
         }
+        return connection;
+    }
 
-        int status = connection.getResponseCode();
-        InputStream in = status >= 400 ? connection.getErrorStream() : connection.getInputStream();
-        if (in == null) {
-            in = new ByteArrayInputStream(new byte[0]);
+    private static void closeQuietly(HttpURLConnection connection) {
+        try {
+            InputStream in = connection.getErrorStream() != null ? connection.getErrorStream() : connection.getInputStream();
+            in.close();
+        } catch (IOException ignored) {
+            // nothing to release
         }
-        if (!ownEncoding && "gzip".equalsIgnoreCase(connection.getContentEncoding())) {
-            in = gunzip(in);
-        }
-        return new UrlConnectionResponse(status, connection, in);
     }
 
     // Some servers send "Content-Encoding: gzip" with an empty body; GZIPInputStream would fail on it.

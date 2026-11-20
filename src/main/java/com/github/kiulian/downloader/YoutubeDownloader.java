@@ -60,6 +60,7 @@ public final class YoutubeDownloader implements AutoCloseable {
     private final SubtitleDownloader subtitles;
     private final FormatDownloader downloads;
     private ExecutorService ownExecutor;
+    private boolean closed;
 
     private YoutubeDownloader(Builder builder) {
         this.settings = builder.copy();
@@ -190,41 +191,66 @@ public final class YoutubeDownloader implements AutoCloseable {
 
     private <T> CompletableFuture<T> async(Supplier<T> work) {
         Task<T> task = new Task<>();
-        executor().execute(() -> {
-            if (task.isDone()) {
-                return;
-            }
-            task.worker = Thread.currentThread();
-            try {
-                task.complete(work.get());
-            } catch (Throwable e) {
-                task.completeExceptionally(e);
-            } finally {
-                task.worker = null;
-                Thread.interrupted(); // leave a clean pool thread after a cancel
-            }
-        });
+        try {
+            executor().execute(() -> {
+                if (!task.start()) {
+                    return; // cancelled before it ran
+                }
+                try {
+                    task.complete(work.get());
+                } catch (Throwable e) {
+                    task.completeExceptionally(e);
+                } finally {
+                    task.finish();
+                }
+            });
+        } catch (RuntimeException e) {
+            task.completeExceptionally(e); // rejected by the executor, or the downloader is closed
+        }
         return task;
     }
 
-    /** A future whose {@code cancel} interrupts the running work, which plain CompletableFuture does not. */
+    /**
+     * A future whose {@code cancel} interrupts the running work, which plain CompletableFuture does not. Start, finish
+     * and cancel share a lock, so a cancel never misses the worker and never interrupts the thread's next task.
+     */
     private static final class Task<T> extends CompletableFuture<T> {
-        volatile Thread worker;
+        private Thread worker;
+
+        synchronized boolean start() {
+            if (isDone()) {
+                return false;
+            }
+            worker = Thread.currentThread();
+            return true;
+        }
+
+        synchronized void finish() {
+            worker = null;
+            Thread.interrupted(); // leave a clean pool thread after a cancel
+        }
 
         @Override
         public boolean cancel(boolean mayInterruptIfRunning) {
             boolean cancelled = super.cancel(mayInterruptIfRunning);
-            Thread running = worker;
-            if (cancelled && running != null) {
-                running.interrupt();
+            if (cancelled) {
+                synchronized (this) {
+                    if (worker != null) {
+                        worker.interrupt();
+                    }
+                }
             }
             return cancelled;
         }
     }
 
-    /** Stops the executor this downloader created for async calls; a custom executor is left alone. */
+    /**
+     * Stops the executor this downloader created for async calls; a custom executor is left alone. Async calls after
+     * this complete with {@link IllegalStateException}; sync calls keep working.
+     */
     @Override
     public synchronized void close() {
+        closed = true;
         if (ownExecutor != null) {
             ownExecutor.shutdown();
             ownExecutor = null;
@@ -234,6 +260,9 @@ public final class YoutubeDownloader implements AutoCloseable {
     private synchronized Executor executor() {
         if (settings.executor != null) {
             return settings.executor;
+        }
+        if (closed) {
+            throw new IllegalStateException("YoutubeDownloader is closed");
         }
         if (ownExecutor == null) {
             AtomicInteger number = new AtomicInteger();

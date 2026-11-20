@@ -16,6 +16,7 @@ import java.io.InputStream;
 import java.io.InterruptedIOException;
 import java.io.OutputStream;
 import java.nio.file.AtomicMoveNotSupportedException;
+import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -32,7 +33,7 @@ import java.util.regex.Pattern;
 public final class FormatDownloader {
 
     private static final int BUFFER_SIZE = 64 * 1024;
-    private static final Pattern EXPIRE = Pattern.compile("[?&]expire=(\\d+)");
+    private static final Pattern EXPIRE = Pattern.compile("[?&]expire=(\\d{1,12})(?:&|$)");
 
     private final Http http;
     private final RetryPolicy retryPolicy;
@@ -54,13 +55,13 @@ public final class FormatDownloader {
         if (!options.overwrite() && Files.exists(file)) {
             throw new DownloadException("File already exists: " + file + "; use DownloadOptions.overwrite(true)", null);
         }
-        Path part = file.resolveSibling(file.getFileName() + ".part");
+        Path part = null;
         try {
-            if (file.getParent() != null) {
-                Files.createDirectories(file.getParent());
-            }
-            try (OutputStream out = new BufferedOutputStream(Files.newOutputStream(part,
-                    StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE))) {
+            Path dir = file.toAbsolutePath().getParent();
+            Files.createDirectories(dir);
+            // unique and created new: parallel downloads of the same target never share it, and no existing file is touched
+            part = Files.createTempFile(dir, file.getFileName() + ".", ".part");
+            try (OutputStream out = new BufferedOutputStream(Files.newOutputStream(part, StandardOpenOption.WRITE))) {
                 copy(format, out, options);
             }
             move(part, file, options.overwrite());
@@ -68,7 +69,9 @@ public final class FormatDownloader {
         } catch (IOException e) {
             throw failure(format, e);
         } finally {
-            deleteQuietly(part);
+            if (part != null) {
+                deleteQuietly(part);
+            }
         }
     }
 
@@ -149,8 +152,16 @@ public final class FormatDownloader {
 
     private static void move(Path part, Path file, boolean overwrite) throws IOException {
         if (!overwrite) {
-            Files.move(part, file); // fails if the file appeared meanwhile
-            return;
+            // a hard link fails atomically if the file exists, even when another download finishes at the same moment
+            try {
+                Files.createLink(file, part);
+                return; // the part file is deleted by the caller
+            } catch (FileAlreadyExistsException e) {
+                throw e;
+            } catch (UnsupportedOperationException | IOException noHardLinks) {
+                Files.move(part, file); // file systems without hard links: checks, then renames
+                return;
+            }
         }
         try {
             Files.move(part, file, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);

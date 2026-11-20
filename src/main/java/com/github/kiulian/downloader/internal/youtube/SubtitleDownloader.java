@@ -3,6 +3,7 @@ package com.github.kiulian.downloader.internal.youtube;
 import com.github.kiulian.downloader.YoutubeException;
 import com.github.kiulian.downloader.YoutubeException.HttpException;
 import com.github.kiulian.downloader.http.HttpTransport.Request;
+import com.github.kiulian.downloader.internal.Redact;
 import com.github.kiulian.downloader.internal.http.Http;
 import com.github.kiulian.downloader.internal.http.HttpStatusException;
 import com.github.kiulian.downloader.model.subtitles.SubtitleFormat;
@@ -26,7 +27,7 @@ public final class SubtitleDownloader {
     public String text(SubtitleTrack track, SubtitleFormat format, String translateTo) {
         String url = track.url(format, translateTo);
         if (PlayerResponse.trustedUrl(url) == null) {
-            throw new IllegalArgumentException("Subtitle URL is not on a YouTube host: " + url);
+            throw new IllegalArgumentException("Subtitle URL is not on a YouTube host: " + Redact.url(url));
         }
         try {
             Request.Builder request = Request.get(url).header("User-Agent", Innertube.WEB_USER_AGENT);
