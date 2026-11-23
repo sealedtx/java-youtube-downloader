@@ -138,16 +138,16 @@ class VideoExtractorTest {
                 + "\"endscreen\":{\"endscreenRenderer\":{\"elements\":[{\"endscreenElementRenderer\":{\"title\":{\"runs\":[{\"text\":\"Another video\"}]}}}]}},"
                 + "\"streamingData\":{\"adaptiveFormats\":[" + format(140, "https://rr1.googlevideo.com/videoplayback?itag=140", "audio/mp4") + "]}}";
         String next = "{\"contents\":{\"twoColumnWatchNextResults\":{\"results\":{\"results\":{\"contents\":["
-                + "{\"videoPrimaryInfoRenderer\":{\"title\":{\"runs\":[{\"text\":\"We are back!\"}]},"
+                + "{\"videoPrimaryInfoRenderer\":{\"title\":{\"runs\":[{\"text\":\"Test title\"}]},"
                 + "\"viewCount\":{\"videoViewCountRenderer\":{\"viewCount\":{\"simpleText\":\"102,250 views\"}}}}},"
-                + "{\"videoSecondaryInfoRenderer\":{\"owner\":{\"videoOwnerRenderer\":{\"title\":{\"runs\":[{\"text\":\"Drugslab\"}]}}}}}]}}},"
+                + "{\"videoSecondaryInfoRenderer\":{\"owner\":{\"videoOwnerRenderer\":{\"title\":{\"runs\":[{\"text\":\"Test channel\"}]}}}}}]}}},"
                 + "\"secondaryResults\":{\"x\":{\"videoPrimaryInfoRenderer\":{\"title\":{\"simpleText\":\"Wrong\"}}}}}}";
         FakeYoutube youtube = new FakeYoutube((FakeYoutube.Router) request -> request.url().contains("/youtubei/v1/next") ? next : withoutTitle);
 
         VideoInfo video = extractor(youtube).videoInfo(ID);
 
-        assertEquals("We are back!", video.details().title());
-        assertEquals("Drugslab", video.details().author());
+        assertEquals("Test title", video.details().title());
+        assertEquals("Test channel", video.details().author());
         assertEquals(102_250, video.details().viewCount());
         assertEquals(60, video.details().lengthSeconds());
     }

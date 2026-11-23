@@ -53,14 +53,14 @@ class VideoInfoFixtureTest {
     }
 
     @Test
-    void musicVideoWithManySubtitles() {
-        VideoInfo video = yt.videoInfo(Corpus.N3WPORT);
+    void openMovieWithManySubtitles() {
+        VideoInfo video = yt.videoInfo(Corpus.SINTEL);
 
-        assertEquals(186, video.details().lengthSeconds());
-        assertTrue(video.details().keywords().contains("n3wport"));
-        assertEquals(720, video.formats().bestVideo().orElseThrow(AssertionError::new).height());
-        assertEquals("avc1.64001F", video.formats().byItag(136).orElseThrow(AssertionError::new).codecs());
-        assertEquals(12, video.subtitles().size());
+        assertEquals(888, video.details().lengthSeconds());
+        assertTrue(video.details().keywords().contains("sintel"));
+        assertEquals(872, video.formats().bestVideo().orElseThrow(AssertionError::new).height());
+        assertEquals("avc1.4D401F", video.formats().byItag(136).orElseThrow(AssertionError::new).codecs());
+        assertEquals(30, video.subtitles().size());
     }
 
     @Test
@@ -112,7 +112,7 @@ class VideoInfoFixtureTest {
     @Test
     void visitorDataIsFetchedOnce() {
         yt.videoInfo(Corpus.ZOO);
-        yt.videoInfo(Corpus.N3WPORT);
+        yt.videoInfo(Corpus.SINTEL);
         assertEquals(1, youtube.visitorDataCalls());
     }
 }
