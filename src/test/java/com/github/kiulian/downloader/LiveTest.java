@@ -73,7 +73,7 @@ class LiveTest {
 
     static Stream<Arguments> clientsAndVideos() {
         return ClientProfiles.defaults().stream()
-                .flatMap(client -> Stream.of(Corpus.ZOO, Corpus.MUSIC).map(video -> Arguments.of(client, video)));
+                .flatMap(client -> Stream.of(Corpus.ZOO, Corpus.BUNNY).map(video -> Arguments.of(client, video)));
     }
 
     @ParameterizedTest(name = "{0} gives downloadable audio and video for {1}")
@@ -101,7 +101,7 @@ class LiveTest {
                     assertEquals("Me at the zoo", v.details().title());
                     assertFalse(v.subtitles().isEmpty());
                 }),
-                new VideoCase("music video", Corpus.MUSIC, v -> {
+                new VideoCase("1080p video with subtitles", Corpus.BUNNY, v -> {
                     assertTrue(v.formats().bestVideo().get().height() >= 1080, "best video below 1080p");
                     assertFalse(v.subtitles().isEmpty());
                 }),
@@ -270,8 +270,8 @@ class LiveTest {
 
     @Test
     void subtitlesInSeveralFormats() {
-        check("subtitles " + Corpus.N3WPORT, () -> {
-            SubtitleTrack track = YT.videoInfo(Corpus.N3WPORT).subtitles().get(0);
+        check("subtitles " + Corpus.SINTEL, () -> {
+            SubtitleTrack track = YT.videoInfo(Corpus.SINTEL).subtitles().get(0);
             String vtt = YT.subtitles(track, SubtitleFormat.VTT);
             String srt = YT.subtitles(track, SubtitleFormat.SRT);
             String json3 = YT.subtitles(track, SubtitleFormat.JSON3);
@@ -314,7 +314,7 @@ class LiveTest {
             assertTrue(cookies.isLoggedIn(), "the file has no login cookies: " + cookies.names());
             YoutubeDownloader yt = YoutubeDownloader.builder().challengeSolver(SOLVER).cookies(cookies)
                     .clients(Collections.singletonList(ClientProfiles.TV_SAMSUNG)).build();
-            VideoInfo video = yt.videoInfo(Corpus.MUSIC);
+            VideoInfo video = yt.videoInfo(Corpus.BUNNY);
             Format audio = video.formats().bestAudio().get();
             String range = range(audio, ClientProfiles.TV_SAMSUNG.userAgent(), 0, 65_535);
             assertTrue(range.startsWith("OK"), "logged-in download: " + range);

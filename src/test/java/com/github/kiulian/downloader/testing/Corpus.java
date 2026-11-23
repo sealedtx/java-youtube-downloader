@@ -10,37 +10,37 @@ public final class Corpus {
 
     /** "Me at the zoo", the first YouTube video: tiny, two subtitle tracks, duplicate audio itags (DRC). */
     public static final String ZOO = "jNQXAC9IVRw";
-    /** Music video with 12 subtitle tracks and up to 720p without a JS runtime. */
-    public static final String N3WPORT = "DFdOcVpRhWI";
+    /** Sintel (Blender Foundation, CC-BY): 30 subtitle tracks and up to 872p without a JS runtime. */
+    public static final String SINTEL = "eRsGyueVLvQ";
     /** Private video. */
     public static final String PRIVATE = "yZIXLfi8CZQ";
     /** Well-formed id of a video that does not exist. */
     public static final String MISSING = "aaaaaaaaaaa";
 
-    public static final List<String> VIDEOS = Arrays.asList(ZOO, N3WPORT, PRIVATE, MISSING);
+    public static final List<String> VIDEOS = Arrays.asList(ZOO, SINTEL, PRIVATE, MISSING);
 
     /** Search text whose results mix videos, shorts and a channel. */
     public static final String SEARCH = "nasa artemis";
     /** Misspelled search text that YouTube corrects. */
-    public static final String SEARCH_TYPO = "rick astly never gona give";
+    public static final String SEARCH_TYPO = "big buk bunny blendr";
 
-    // live checks only (checked 2026-11-19)
-    /** Rick Astley, Never Gonna Give You Up: music video up to 2160p, several subtitle tracks. */
-    public static final String MUSIC = "dQw4w9WgXcQ";
-    /** Costa Rica in 4K 60fps HDR. */
-    public static final String UHD = "LXb3EKWsInQ";
-    /** MrBeast, $456,000 Squid Game: about 20 dubbed audio tracks with visionos. */
-    public static final String MULTI_AUDIO = "0e3GPea1Tyg";
-    /** NASA short, vertical. */
-    public static final String SHORT = "6jT7GbxRIcw";
+    // live checks only (checked 2026-11-23)
+    /** Big Buck Bunny (Blender Foundation, CC-BY): up to 1080p, three subtitle tracks. */
+    public static final String BUNNY = "YE7VzlLtp-4";
+    /** Big Buck Bunny in 4K 60fps (Blender Foundation, CC-BY); the first result of {@link #SEARCH_TYPO}. */
+    public static final String UHD = "aqz-KE-bpKQ";
+    /** NASA, Artemis II launch trailer: 20 dubbed audio tracks with visionos. */
+    public static final String MULTI_AUDIO = "Vg-EQ7MOu6I";
+    /** NASA JPL short, vertical. */
+    public static final String SHORT = "GZAm_gtnOts";
     /** NASA's Mariner Missions: about 4 hours. */
     public static final String LONG = "Qjx3u9_FZHo";
     /** U.S. Spacewalk: an ended live stream of 10 hours. */
     public static final String WAS_LIVE = "VlB_ZtDLAOQ";
-    /** Drugslab "We are back!": age-restricted, needs cookies and the JS solver (tv_samsung). */
+    /** Age-restricted video: needs cookies and the JS solver (tv_samsung). */
     public static final String AGE_RESTRICTED = "AgGa7xohni8";
-    /** Baby Shark Dance: "made for kids", which the JS-less clients do not get. */
-    public static final String MADE_FOR_KIDS = "XqZsoesa55w";
+    /** NASA Space Place compilation: "made for kids", which the JS-less clients do not get. */
+    public static final String MADE_FOR_KIDS = "Pmajp_gN00w";
 
     /** #AskNASA: 22 videos, owner NASA, one page. */
     public static final String ASK_NASA = "PL2aBZuCeDwlRbJhDIkKXilZRz9ur4VVAA";

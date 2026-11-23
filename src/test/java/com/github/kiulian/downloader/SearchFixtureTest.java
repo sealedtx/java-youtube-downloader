@@ -87,7 +87,8 @@ class SearchFixtureTest {
     void shortVideosByViewCount() {
         SearchResult result = yt.search(SearchQuery.of("nasa").filter(TypeField.VIDEO, DurationField.UNDER_4_MINUTES).sortBy(SortField.VIEW_COUNT));
 
-        List<SearchVideo> videos = result.videos();
+        // a live stream has no length and counts viewers, not views
+        List<SearchVideo> videos = result.videos().stream().filter(v -> !v.isLive()).collect(Collectors.toList());
         assertTrue(videos.size() >= 10);
         assertTrue(videos.stream().allMatch(v -> v.lengthSeconds() > 0 && v.lengthSeconds() < 240), "all under 4 minutes");
         assertTrue(videos.get(0).viewCount() >= videos.get(videos.size() - 1).viewCount(), "sorted by views");
@@ -97,8 +98,8 @@ class SearchFixtureTest {
     void misspelledQueryIsCorrected() {
         SearchResult result = yt.search(Corpus.SEARCH_TYPO);
 
-        assertEquals("rick astley never gonna give", result.correctedQuery());
-        assertEquals(Corpus.MUSIC, result.videos().get(0).videoId());
+        assertEquals("big buck bunny blender", result.correctedQuery());
+        assertEquals(Corpus.UHD, result.videos().get(0).videoId());
     }
 
     private static Set<String> ids(SearchResult result) {

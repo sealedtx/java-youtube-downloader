@@ -61,7 +61,7 @@ class SearchExtractorTest {
     @Test
     void readsOldPlaylistAndShortShapes() {
         String page = "{\"contents\":[{\"playlistRenderer\":{\"playlistId\":\"PL1234567890ab\",\"title\":{\"simpleText\":\"List\"},\"videoCount\":\"7\"}},"
-                + "{\"reelItemRenderer\":{\"videoId\":\"6jT7GbxRIcw\",\"headline\":{\"simpleText\":\"A short\"},\"viewCountText\":{\"simpleText\":\"2.8M views\"}}}]}";
+                + "{\"reelItemRenderer\":{\"videoId\":\"GZAm_gtnOts\",\"headline\":{\"simpleText\":\"A short\"},\"viewCountText\":{\"simpleText\":\"2.8M views\"}}}]}";
 
         List<SearchItem> items = search(request -> page, SearchQuery.of("x")).items();
 
@@ -76,12 +76,12 @@ class SearchExtractorTest {
     void pagesUntilThereIsNoToken() {
         String first = "{\"contents\":[" + VIDEO + ",{\"continuationItemRenderer\":{\"continuationEndpoint\":{\"continuationCommand\":{\"token\":\"t1\"}}}}]}";
         String second = "{\"onResponseReceivedCommands\":[{\"appendContinuationItemsAction\":{\"continuationItems\":["
-                + VIDEO.replace("jNQXAC9IVRw", "DFdOcVpRhWI") + "]}}]}";
+                + VIDEO.replace("jNQXAC9IVRw", "eRsGyueVLvQ") + "]}}]}";
 
         SearchResult page1 = search(request -> new String(request.body(), UTF_8).contains("\"continuation\"") ? second : first, SearchQuery.of("x"));
         SearchResult page2 = page1.nextPage();
 
-        assertEquals("DFdOcVpRhWI", page2.videos().get(0).videoId());
+        assertEquals("eRsGyueVLvQ", page2.videos().get(0).videoId());
         assertFalse(page2.hasNextPage());
         assertThrows(NoSuchElementException.class, page2::nextPage);
         assertEquals(page2.items().size(), page1.nextPage().items().size(), "a page can be loaded again");

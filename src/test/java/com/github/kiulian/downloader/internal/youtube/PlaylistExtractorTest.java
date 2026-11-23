@@ -51,7 +51,7 @@ class PlaylistExtractorTest {
         String page = "{\"contents\":[" + lockup("LOCKUP_CONTENT_TYPE_VIDEO", "jNQXAC9IVRw")
                 + ",{\"continuationItemViewModel\":{\"continuationCommand\":{\"token\":\"same\"}}}]}";
         String next = "{\"onResponseReceivedActions\":[{\"appendContinuationItemsAction\":{\"continuationItems\":["
-                + lockup("LOCKUP_CONTENT_TYPE_VIDEO", "DFdOcVpRhWI")
+                + lockup("LOCKUP_CONTENT_TYPE_VIDEO", "eRsGyueVLvQ")
                 + ",{\"continuationItemViewModel\":{\"continuationCommand\":{\"token\":\"same\"}}}]}}]}";
 
         Playlist playlist = extractor(request -> {

@@ -181,8 +181,8 @@ yt.search(SearchQuery.of("nasa")
         .filter(TypeField.VIDEO, DurationField.UNDER_4_MINUTES, UploadDateField.WEEK)
         .sortBy(SortField.VIEW_COUNT));
 
-SearchResult typo = yt.search("rick astly never gona give");
-typo.correctedQuery();                           // "rick astley never gonna give"
+SearchResult typo = yt.search("big buk bunny blendr");
+typo.correctedQuery();                           // "big buck bunny blender"
 yt.search(typo.query().exact(true));             // search exactly the given text
 ```
 
