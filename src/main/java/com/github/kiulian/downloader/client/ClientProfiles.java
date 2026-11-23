@@ -34,6 +34,17 @@ public final class ClientProfiles {
             .build();
 
     /**
+     * YouTube Android app without {@code androidSdkVersion}: that way it needs no PO token (from yt-dlp#14693).
+     * Plain URLs up to 2160p.
+     */
+    public static final ClientProfile ANDROID_SDKLESS = ClientProfile.builder("android_sdkless", "ANDROID", 3)
+            .version("20.10.38")
+            .userAgent("com.google.android.youtube/20.10.38 (Linux; U; Android 11) gzip")
+            .context("osName", "Android")
+            .context("osVersion", "11")
+            .build();
+
+    /**
      * Samsung TV app. Needs the JS player: used only with a {@code ChallengeSolver} (for example
      * {@code EjsSolver.node()}). Serves "made for kids" videos, which visionos and android_vr do not.
      * Ciphered formats become valid only after the pre-roll ad; the downloader waits for that.
@@ -58,7 +69,7 @@ public final class ClientProfiles {
             .supportsCookies(true)
             .build();
 
-    private static final List<ClientProfile> DEFAULTS = Collections.unmodifiableList(Arrays.asList(VISIONOS, ANDROID_VR, TV_SAMSUNG));
+    private static final List<ClientProfile> DEFAULTS = Collections.unmodifiableList(Arrays.asList(VISIONOS, ANDROID_VR, ANDROID_SDKLESS, TV_SAMSUNG));
 
     private ClientProfiles() {
     }
